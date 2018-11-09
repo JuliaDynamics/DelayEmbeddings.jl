@@ -1,8 +1,8 @@
 """
-Delay coordinates embedding, `Dataset` structure and neibhborhoods.
+Delay coordinates embedding, `Dataset` structure and neighhborhoods.
 Basic package used in the ecosystem of DynamicalSystems.jl.
 """
-module DelayEmbedding
+module DelayEmbeddings
 
 include("dataset.jl")
 include("reconstruction.jl")
