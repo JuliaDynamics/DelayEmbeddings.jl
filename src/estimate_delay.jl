@@ -1,5 +1,5 @@
 using StatsBase: autocor
-using LsqFit: curve_fit
+# using LsqFit: curve_fit
 export estimate_delay
 
 #####################################################################################
