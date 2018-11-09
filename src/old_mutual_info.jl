@@ -3,6 +3,7 @@ using Distances: chebyshev
 using SpecialFunctions: digamma
 using StatsBase: autocor
 
+export mutinfo, mutinfo_delaycurve
 #####################################################################################
 #                                Mutual Information                                 #
 #####################################################################################

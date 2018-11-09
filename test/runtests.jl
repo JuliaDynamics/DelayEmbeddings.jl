@@ -6,6 +6,7 @@ ti = time()
 include("dataset_tests.jl")
 # Reconstruction:
 include("reconstruction_tests.jl")
+include("R_params.jl")
 
 ti = time() - ti
 println("\nTest took total time of:")

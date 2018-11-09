@@ -1,9 +1,6 @@
 using NearestNeighbors
 
-export estimate_dimension
-export mutinfo, mutinfo_delaycurve
 export estimate_dimension, stochastic_indicator
-
 #####################################################################################
 #                                Estimate Dimension                                 #
 #####################################################################################

@@ -1,4 +1,4 @@
-using DynamicalSystemsBase
+using ChaosTools, DelayEmbeddings
 using Test
 
 """
@@ -24,7 +24,7 @@ test_value = (val, vmin, vmax) -> @test vmin <= val <= vmax
     x = data[:,1]
     @test estimate_delay(x,"first_zero") <= 2
     @test estimate_delay(x,"first_min")  <= 2
-    @test estimate_delay(x,"exp_decay")  <= 2
+    # @test estimate_delay(x,"exp_decay")  <= 2
     # @test 3 <= estimate_delay(x,"mutual_inf"; k=1) <= 10
     # @test 3 <= estimate_delay(x,"mutual_inf"; k=10) <= 10
 
@@ -48,12 +48,12 @@ test_value = (val, vmin, vmax) -> @test vmin <= val <= vmax
     # data = trajectory(ds,1000;dt=dt)
     # x = data[500:end,1]
     # # @test 0.1 <= estimate_delay(x,"mutual_inf")*dt <= 0.4
-    @test 0.1 <= estimate_delay(x,"exp_decay")*dt  <= 0.4
+    # @test 0.1 <= estimate_delay(x,"exp_decay")*dt  <= 0.4
     #
     dt = 0.1
     data = trajectory(ds,2000;dt=dt)
     x = data[:,1]
-    @test 0.1 <= estimate_delay(x,"exp_decay")*dt  <= 0.4
+    # @test 0.1 <= estimate_delay(x,"exp_decay")*dt  <= 0.4
 end
 
 
