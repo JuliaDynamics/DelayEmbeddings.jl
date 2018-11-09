@@ -9,4 +9,7 @@ include("reconstruction.jl")
 include("various.jl")
 include("neighborhoods.jl")
 
+include("estimate_delay.jl")
+include("estimate_dimension.jl")
+
 end

@@ -1,4 +1,4 @@
-using DynamicalSystemsBase
+using DelayEmbeddings
 using Test, StaticArrays
 
 println("\nTesting neighborhoods...")

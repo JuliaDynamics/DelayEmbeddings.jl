@@ -1,4 +1,4 @@
-using Test, StaticArrays
+using Test, StaticArrays, DelayEmbeddings
 
 println("\nTesting reconstruct")
 
