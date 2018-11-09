@@ -2,9 +2,7 @@ using DelayEmbeddings
 
 ti = time()
 
-# Dataset:
 include("dataset_tests.jl")
-# Reconstruction:
 include("reconstruction_tests.jl")
 include("R_params.jl")
 

@@ -1,6 +1,8 @@
 using ChaosTools, DelayEmbeddings
 using Test
 
+println("\nTesting neighborhoods...")
+
 """
     saturation_point(x, y; threshold = 0.01, dxi::Int = 1, tol = 0.2)
 Decompose the curve `y(x)` into linear regions using `linear_regions(x, y; dxi, tol)`

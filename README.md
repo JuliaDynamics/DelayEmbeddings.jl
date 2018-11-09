@@ -1,4 +1,12 @@
 # DelayEmbeddings.jl
+
+![DynamicalSystems.jl logo: The Double Pendulum](https://i.imgur.com/nFQFdB0.gif)
+
+| **Documentation**   |  **Travis**     | **AppVeyor** | Gitter |
+|:--------:|:-------------------:|:-----:|:-----:|
+|[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://JuliaDynamics.github.io/DynamicalSystems.jl/latest) | [![Build Status](https://travis-ci.org/JuliaDynamics/DelayEmbeddings.jl.svg?branch=master)](https://travis-ci.org/JuliaDynamics/DelayEmbeddings.jl) | [![Build status](https://ci.appveyor.com/api/projects/status/1vstt1c39gv8e4sl/branch/master?svg=true)](https://ci.appveyor.com/project/JuliaDynamics/delayembeddings-jl/branch/master) | [![Gitter](https://img.shields.io/gitter/room/nwjs/nw.js.svg)](https://gitter.im/JuliaDynamics/Lobby)
+
+
 This repo is a minimal package used throughout JuliaDynamics. The features are:
 
 1. Defines the `Dataset` structure, which is a wrapper of `Vector{SVector}`, used in **DynamicalSystems.jl**.
