@@ -8,7 +8,7 @@ export estimate_delay
 """
     estimate_delay(s, method::String) -> τ
 
-Estimate an optimal delay to be used in [`reconstruct`](@ref).
+Estimate an optimal delay to be used in [`reconstruct`](@ref) or [`embed`](@ref).
 Return the exponential decay time `τ` rounded to an integer.
 
 The `method` can be one of the following:
