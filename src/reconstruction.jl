@@ -120,7 +120,8 @@ end
 """
     embed(s, D, τ)
 Perform a delay coordinates embedding on signal `s` with embedding dimension `D`
-and delay time `τ`.
+and delay time `τ`. The result is returned as a [`Dataset`](@ref), which is a
+vector of static vectors.
 
 See [`reconstruct`](@ref) for an advanced version that supports multiple delay
 times and can reconstruct multiple timeseries efficiently.
