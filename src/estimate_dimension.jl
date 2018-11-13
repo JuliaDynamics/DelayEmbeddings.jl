@@ -14,7 +14,7 @@ temporal neighbors `γ` to be used in [`reconstruct`](@ref) or [`embed`](@ref).
 Given the scalar timeseries `s` and the embedding delay `τ` compute the
 values of `E₁` for each `γ ∈ γs`, according to Cao's Method (eq. 3 of [1]).
 Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
-neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref).
+neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
 
 Return the vector of all computed `E₁`s. To estimate a good value for `γ` from this,
 find `γ` for which the value `E₁` saturates at some value around 1.

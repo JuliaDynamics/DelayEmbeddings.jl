@@ -1,6 +1,6 @@
 using StaticArrays
 using Base: @_inline_meta
-export reconstruct, DelayEmbedding, AbstractEmbedding, MTDelayEmbedding
+export reconstruct, DelayEmbedding, AbstractEmbedding, MTDelayEmbedding, embed
 
 #####################################################################################
 #                        Delay Embedding Reconstruction                             #
@@ -74,7 +74,7 @@ that the timeseries were recorded from, for proper `γ` and `τ` [1, 2].
 The case of different delay times allows reconstructing systems with many time scales,
 see [3].
 
-*Notice* - The dimension of the returned dataset is `γ+1`!
+*Notice* - The dimension of the returned dataset (i.e. embedding dimension) is `γ+1`!
 
 ### Multiple Timeseries
 To make a reconstruction out of a multiple timeseries (i.e. trajectory) the number
@@ -116,6 +116,17 @@ end
     end
     return Dataset{γ+1, T}(data)
 end
+
+"""
+    embed(s, D, τ)
+Perform a delay coordinates embedding on signal `s` with embedding dimension `D`
+and delay time `τ`.
+
+See [`reconstruct`](@ref) for an advanced version that supports multiple delay
+times and can reconstruct multiple timeseries efficiently.
+"""
+embed(s, D, τ) = reconstruct(s, D-1, τ)
+
 
 #####################################################################################
 #                              MultiDimensional R                                   #

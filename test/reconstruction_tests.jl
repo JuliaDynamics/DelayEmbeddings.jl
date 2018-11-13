@@ -15,6 +15,7 @@ println("\nTesting reconstruct")
 
     		@test R[(1+τ):end, 1] == R[1:end-τ, 2]
     		@test size(R) == (length(s) - τ*D, D+1)
+            @test embed(s, D+1, τ) == R
     	end
     end
 
