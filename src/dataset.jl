@@ -119,6 +119,9 @@ end
 # Empty dataset:
 Dataset{D, T}() where {D,T} = Dataset(SVector{D,T}[])
 
+# Identity constructor:
+Dataset(x::Dataset) = x
+
 ###########################################################################
 # Dataset(Vectors of stuff)
 ###########################################################################
