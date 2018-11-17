@@ -126,7 +126,7 @@ vector of static vectors.
 See [`reconstruct`](@ref) for an advanced version that supports multiple delay
 times and can reconstruct multiple timeseries efficiently.
 """
-embed(s, D, τ) = (D>1) ? reconstruct(s, D-1, τ) : Dataset(s)
+embed(s, D, τ) = (D==1) ? Dataset(s) : reconstruct(s, D-1, τ)
 
 
 #####################################################################################
