@@ -70,7 +70,8 @@ then the ``n``-th entry is
 
 The reconstructed dataset can have same
 invariant quantities (like e.g. lyapunov exponents) with the original system
-that the timeseries were recorded from, for proper `γ` and `τ` [1, 2].
+that the timeseries were recorded from, for proper `γ` and `τ`.
+This is known as the Takens embedding theorem [1, 2].
 The case of different delay times allows reconstructing systems with many time scales,
 see [3].
 
