@@ -40,7 +40,6 @@ end
 
 function _average_a(s::AbstractVector{T},γ,τ) where T
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
-    R1 = reconstruct(s,γ+1,τ)
     R2 = reconstruct(s[1:end-τ],γ,τ)
     tree2 = KDTree(R2)
     nind = (x = knn(tree2, R2.data, 2)[1]; [ind[1] for ind in x])
@@ -52,9 +51,10 @@ function _average_a(s::AbstractVector{T},γ,τ) where T
             j = knn(tree2, R2[i], 3, true)[1][end]
             δ = norm(R2[i]-R2[j], Inf)
         end
-        e += norm(R1[i]-R1[j], Inf) / δ
+        δ1 = max(δ, abs(s[i+γ*τ+τ] - s[j+γ*τ+τ]))
+        e += δ1/δ
     end
-    return e / length(R1)
+    return e / (length(R2)-1)
 end
 
 function dimension_indicator(s,γ,τ) #this is E1, equation (3) of Cao
