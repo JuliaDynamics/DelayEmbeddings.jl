@@ -120,7 +120,8 @@ end
 Dataset{D, T}() where {D,T} = Dataset(SVector{D,T}[])
 
 # Identity constructor:
-Dataset(x::Dataset) = x
+Dataset{D, T}(s::Dataset{D, T}) where {D,T} = s
+Dataset(s::Dataset) = s
 
 ###########################################################################
 # Dataset(Vectors of stuff)
