@@ -107,7 +107,7 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 """
 function reconstruct(s::AbstractVector{T}, γ, τ) where {T}
     if γ == 0
-        return Dataset(s)
+        return Dataset{1, T}(s)
     end
     de::DelayEmbedding{γ} = DelayEmbedding(Val{γ}(), τ)
     return reconstruct(s, de)
