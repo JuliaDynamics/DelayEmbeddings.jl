@@ -1,7 +1,7 @@
 using ChaosTools, DelayEmbeddings
 using Test
 
-println("\nTesting neighborhoods...")
+println("\nTesting R-param. estimation...")
 
 """
     saturation_point(x, y; threshold = 0.01, dxi::Int = 1, tol = 0.2)

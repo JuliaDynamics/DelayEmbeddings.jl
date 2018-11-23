@@ -106,6 +106,9 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 [3] : K. Judd & A. Mees, [Physica D **120**, pp 273 (1998)](https://www.sciencedirect.com/science/article/pii/S0167278997001188)
 """
 function reconstruct(s::AbstractVector{T}, γ, τ) where {T}
+    if γ == 0
+        return Dataset{1, T}(s)
+    end
     de::DelayEmbedding{γ} = DelayEmbedding(Val{γ}(), τ)
     return reconstruct(s, de)
 end
@@ -127,7 +130,7 @@ vector of static vectors.
 See [`reconstruct`](@ref) for an advanced version that supports multiple delay
 times and can reconstruct multiple timeseries efficiently.
 """
-embed(s, D, τ) = (D==1) ? Dataset(s) : reconstruct(s, D-1, τ)
+embed(s, D, τ) = reconstruct(s, D-1, τ)
 
 
 #####################################################################################
@@ -188,6 +191,9 @@ end
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     γ, τ) where {A, B, T, M}
 
+    if γ == 0
+        return Dataset{B, T}(s)
+    end
     de::MTDelayEmbedding{γ, B, γ*B} = MTDelayEmbedding(γ, τ, B)
     reconstruct(s, de)
 end

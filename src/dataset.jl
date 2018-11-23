@@ -125,6 +125,9 @@ Dataset(x::Dataset) = x
 ###########################################################################
 # Dataset(Vectors of stuff)
 ###########################################################################
+Dataset{1, T}(s::AbstractVector{T}) where {T<:Number} =
+Dataset{1, T}(reinterpret(SVector{1, T}, s))
+
 function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
     D = length(v[1])
     L = length(v)
