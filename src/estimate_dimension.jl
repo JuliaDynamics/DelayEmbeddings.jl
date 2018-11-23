@@ -39,8 +39,8 @@ find `γ` for which the value `E₁` saturates at some value around 1.
 estimate_dimension(s,γ,τ=1:5) = afnn(s,γ,τ,Inf) # By default it is `afnn` with Inf-norm
 
 function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, p=Inf) where {T}
-    E1s = zeros(T, length(γs))
-    aafter = zero(T)
+    E1s = zeros(length(γs))
+    aafter = 0.0
     aprev = _average_a(s, γs[1], τ, p)
     for (i, γ) ∈ enumerate(γs)
         aafter = _average_a(s, γ+1, τ, p)
@@ -51,7 +51,7 @@ function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, p=Inf) where {T}
 end
 # then use function `saturation_point(γs, E1s)` from ChaosTools
 
-function _average_a(s::AbstractVector{T},γ,τ,p) where T
+function _average_a(s::AbstractVector{T},γ,τ,p) where {T}
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
     R2 = reconstruct(s[1:end-τ],γ,τ)
     tree2 = KDTree(R2)
@@ -154,7 +154,7 @@ reconstruction using a geometrical construction", *Phys. Review A 45*(6), 3403-3
 function fnn(s::AbstractVector, τ::Int, γs = 1:5, Rtol=10., Atol=2.)
     Rtol2 = Rtol^2
     Ra = std(s, corrected=false)
-    nfnn = zeros(Int, length(γs))
+    nfnn = zeros(length(γs))
     for (k, γ) ∈ enumerate(γs)
         y = reconstruct(s[1:end-τ],γ,τ)
         tree = KDTree(y)
