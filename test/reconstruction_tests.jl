@@ -1,6 +1,6 @@
 using Test, StaticArrays, DelayEmbeddings
 
-println("\nTesting reconstruct")
+println("\nTesting reconstruct...")
 
 @testset "reconstruct" begin
 
