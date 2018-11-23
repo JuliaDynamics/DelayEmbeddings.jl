@@ -110,12 +110,16 @@ function reconstruct(s::AbstractVector{T}, γ, τ) where {T}
     return reconstruct(s, de)
 end
 @inline function reconstruct(s::AbstractVector{T}, de::DelayEmbedding{γ}) where {T, γ}
-    L = length(s) - maximum(de.delays)
-    data = Vector{SVector{γ+1, T}}(undef, L)
-    @inbounds for i in 1:L
-        data[i] = de(s, i)
+    if length(de.delays) == 0
+        return Dataset(s)
+    else
+        L = length(s) - maximum(de.delays)
+        data = Vector{SVector{γ+1, T}}(undef, L)
+        @inbounds for i in 1:L
+            data[i] = de(s, i)
+        end
+        return Dataset{γ+1, T}(data)
     end
-    return Dataset{γ+1, T}(data)
 end
 
 """
@@ -127,7 +131,7 @@ vector of static vectors.
 See [`reconstruct`](@ref) for an advanced version that supports multiple delay
 times and can reconstruct multiple timeseries efficiently.
 """
-embed(s, D, τ) = (D==1) ? Dataset(s) : reconstruct(s, D-1, τ)
+embed(s, D, τ) = reconstruct(s, D-1, τ)
 
 
 #####################################################################################
@@ -195,11 +199,15 @@ end
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     de::MTDelayEmbedding{γ, B, F}) where {A, B, T, M, γ, F}
 
-    L = size(s)[1] - maximum(de.delays)
-    X = (γ+1)*B
-    data = Vector{SVector{X, T}}(undef, L)
-    @inbounds for i in 1:L
-        data[i] = de(s, i)
+    if length(de.delays) == 0
+        return Dataset(s)
+    else
+        L = size(s)[1] - maximum(de.delays)
+        X = (γ+1)*B
+        data = Vector{SVector{X, T}}(undef, L)
+        @inbounds for i in 1:L
+            data[i] = de(s, i)
+        end
+        return Dataset{X, T}(data)
     end
-    return Dataset{X, T}(data)
 end
