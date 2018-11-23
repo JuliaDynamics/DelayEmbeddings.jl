@@ -191,6 +191,9 @@ end
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     γ, τ) where {A, B, T, M}
 
+    if γ == 0
+        return Dataset{B, T}(s)
+    end
     de::MTDelayEmbedding{γ, B, γ*B} = MTDelayEmbedding(γ, τ, B)
     reconstruct(s, de)
 end
@@ -198,15 +201,11 @@ end
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     de::MTDelayEmbedding{γ, B, F}) where {A, B, T, M, γ, F}
 
-    if length(de.delays) == 0
-        return Dataset(s)
-    else
-        L = size(s)[1] - maximum(de.delays)
-        X = (γ+1)*B
-        data = Vector{SVector{X, T}}(undef, L)
-        @inbounds for i in 1:L
-            data[i] = de(s, i)
-        end
-        return Dataset{X, T}(data)
+    L = size(s)[1] - maximum(de.delays)
+    X = (γ+1)*B
+    data = Vector{SVector{X, T}}(undef, L)
+    @inbounds for i in 1:L
+        data[i] = de(s, i)
     end
+    return Dataset{X, T}(data)
 end
