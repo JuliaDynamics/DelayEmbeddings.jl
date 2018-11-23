@@ -106,20 +106,19 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 [3] : K. Judd & A. Mees, [Physica D **120**, pp 273 (1998)](https://www.sciencedirect.com/science/article/pii/S0167278997001188)
 """
 function reconstruct(s::AbstractVector{T}, γ, τ) where {T}
+    if γ == 0
+        return Dataset(s)
+    end
     de::DelayEmbedding{γ} = DelayEmbedding(Val{γ}(), τ)
     return reconstruct(s, de)
 end
 @inline function reconstruct(s::AbstractVector{T}, de::DelayEmbedding{γ}) where {T, γ}
-    if length(de.delays) == 0
-        return Dataset(s)
-    else
-        L = length(s) - maximum(de.delays)
-        data = Vector{SVector{γ+1, T}}(undef, L)
-        @inbounds for i in 1:L
-            data[i] = de(s, i)
-        end
-        return Dataset{γ+1, T}(data)
+    L = length(s) - maximum(de.delays)
+    data = Vector{SVector{γ+1, T}}(undef, L)
+    @inbounds for i in 1:L
+        data[i] = de(s, i)
     end
+    return Dataset{γ+1, T}(data)
 end
 
 """
