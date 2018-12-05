@@ -16,7 +16,7 @@ function _increase_distance(δ::T, s::AbstractVector, i::Int, j::Int, γ::Int, �
 end
 
 """
-    estimate_dimension(s::AbstractVector, τ:Int, γs = 1:5, method = "afnn", p = Inf; kwargs...)
+    estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn"; kwargs...)
 
 Compute a quantity that can estimate an optimal amount of
 temporal neighbors `γ` to be used in [`reconstruct`](@ref) or [`embed`](@ref).
@@ -52,7 +52,7 @@ find `γ` for which the value `E₁` saturates at some value around 1.
 
 [1] : Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
 """
-function estimate_dimension(s::AbstractVector, τ:Int, γs = 1:5, method = "afnn"; kwargs...)
+function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn"; kwargs...)
     if method == "afnn"
         return afnn(s, τ, γs)
     elseif method == "fnn"
