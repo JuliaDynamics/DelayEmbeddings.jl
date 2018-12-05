@@ -16,14 +16,30 @@ function _increase_distance(δ::T, s::AbstractVector, i::Int, j::Int, γ::Int, �
 end
 
 """
-    estimate_dimension(s::AbstractVector, τ:Int, γs = 1:5) -> E₁s
+    estimate_dimension(s::AbstractVector, τ:Int, γs = 1:5, method = "afnn", p = Inf; kwargs...)
 
 Compute a quantity that can estimate an optimal amount of
 temporal neighbors `γ` to be used in [`reconstruct`](@ref) or [`embed`](@ref).
 
 ## Description
-Given the scalar timeseries `s` and the embedding delay `τ` compute the
-values of `E₁` for each `γ ∈ γs`, according to Cao's Method (eq. 3 of [1]).
+Given the scalar timeseries `s` and the embedding delay `τ` compute a quantity
+for each `γ ∈ γs` based on the "nearest neighbors" in the embedded time series.
+
+The quantity that is calculated depends on the algorithm defined by the string `method`:
+
+* `"afnn"` (default) is Cao's "Averaged False Nearest Neighbors" method [1], which
+    gives a ratio of distances between nearest neighbors. This ratio saturates
+    around `1.0` near the optimal value of `γ` (see [`afnn`](@ref)).
+* `"fnn"` is Kennel's "False Nearest Neighbors" method [2], which gives the
+    number of points that cease to be "nearest neighbors" when the dimension
+    increases. This number drops down to zero near the optimal value of `γ`.
+    This method accepts the keyword arguments `Rtol` and `Atol`, which stand
+    for the "tolerances" required by Kennel's algorithm (see [`fnn`](@ref)).
+* `"f1nn"` is Krakovská's "False First Nearest Neighbors" method [3], which
+    gives the ratio of pairs of points that cease to be "nearest neighbors"
+    when the dimension increases. This number drops down to zero near the
+    optimal value of `γ` (see [`f1nn`](@ref)).
+
 Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
 neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
 
@@ -36,8 +52,46 @@ find `γ` for which the value `E₁` saturates at some value around 1.
 
 [1] : Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
 """
-estimate_dimension(s,γ,τ=1:5) = afnn(s,γ,τ,Inf) # By default it is `afnn` with Inf-norm
+function estimate_dimension(s::AbstractVector, τ:Int, γs = 1:5, method = "afnn"; kwargs...)
+    if method == "afnn"
+        return afnn(s, τ, γs)
+    elseif method == "fnn"
+        return fnn(s, τ, γs; kwargs...)
+    elseif method == "f1nn"
+        return f1nn(s, τ, γs)
+    end
+end
 
+
+"""
+    afnn(s::AbstractVector, τ:Int, γs = 1:5, p = Inf)
+
+Compute the parameter E₁ of Cao's "averaged false nearest neighbors" method for
+determining the minimum embedding dimension of the time series `s`, with
+a sequence of `τ`-delayed temporal neighbors [1].
+
+## Description
+Given the scalar timeseries `s` and the embedding delay `τ` compute the
+values of `E₁` for each `γ ∈ γs`, according to Cao's Method (eq. 3 of [1]).
+
+This quantity is a ratio of the averaged distances between the nearest neighbors
+of the reconstructed time series, which quantifies the increment of those
+distances when the number of temporal neighbors changes from `γ` to `γ+1`.
+
+Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
+neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
+
+Return the vector of all computed `E₁`s. To estimate a good value for `γ` from this,
+find `γ` for which the value `E₁` saturates at some value around 1.
+
+*Note: This method does not work for datasets with perfectly periodic signals.*
+
+See also: [`estimate_dimension`](@ref), [`fnn`](@ref), [`f1nn`](@ref).
+
+## References
+
+[1] : Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
+"""
 function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, p=Inf) where {T}
     E1s = zeros(length(γs))
     aafter = 0.0
@@ -53,20 +107,20 @@ end
 
 function _average_a(s::AbstractVector{T},γ,τ,p) where {T}
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
-    R2 = reconstruct(s[1:end-τ],γ,τ)
-    tree2 = KDTree(R2)
-    nind = (x = knn(tree2, R2.data, 2)[1]; [ind[1] for ind in x])
+    Rγ = reconstruct(s[1:end-τ],γ,τ)
+    tree2 = KDTree(Rγ)
+    nind = (x = knn(tree2, Rγ.data, 2)[1]; [ind[1] for ind in x])
     e=0.
     for (i,j) ∈ enumerate(nind)
-        δ = norm(R2[i]-R2[j], p)
-        #If R2[i] and R2[j] are still identical, choose the next nearest neighbor
+        δ = norm(Rγ[i]-Rγ[j], p)
+        #If Rγ[i] and Rγ[j] are still identical, choose the next nearest neighbor
         if δ == 0.
-            j = knn(tree2, R2[i], 3, true)[1][end]
-            δ = norm(R2[i]-R2[j], p)
+            j = knn(tree2, Rγ[i], 3, true)[1][end]
+            δ = norm(Rγ[i]-Rγ[j], p)
         end
         e += _increase_distance(δ,s,i,j,γ,τ,p)/δ
     end
-    return e / (length(R2)-1)
+    return e / (length(Rγ)-1)
 end
 
 function dimension_indicator(s,γ,τ,p=Inf) #this is E1, equation (3) of Cao
@@ -98,23 +152,23 @@ function stochastic_indicator(s::AbstractVector{T},τ, γs=1:4) where T # E2, eq
     #Calculate E* for Dimension γ+1
     E2s = Float64[]
     for γ ∈ γs
-        R1 = reconstruct(s,γ+1,τ)
-        tree1 = KDTree(R1[1:end-1-τ])
+        Rγ1 = reconstruct(s,γ+1,τ)
+        tree1 = KDTree(Rγ1[1:end-1-τ])
         method = FixedMassNeighborhood(2)
 
         Es1 = 0.
-        nind = (x = neighborhood(R1[1:end-τ], tree1, method); [ind[1] for ind in x])
+        nind = (x = neighborhood(Rγ1[1:end-τ], tree1, method); [ind[1] for ind in x])
         for  (i,j) ∈ enumerate(nind)
-            Es1 += abs(R1[i+τ][end] - R1[j+τ][end]) / length(R1)
+            Es1 += abs(Rγ1[i+τ][end] - Rγ1[j+τ][end]) / length(Rγ1)
         end
 
         #Calculate E* for Dimension γ
-        R2 = reconstruct(s,γ,τ)
-        tree2 = KDTree(R2[1:end-1-τ])
+        Rγ = reconstruct(s,γ,τ)
+        tree2 = KDTree(Rγ[1:end-1-τ])
         Es2 = 0.
-        nind = (x = neighborhood(R2[1:end-τ], tree2, method); [ind[1] for ind in x])
+        nind = (x = neighborhood(Rγ[1:end-τ], tree2, method); [ind[1] for ind in x])
         for  (i,j) ∈ enumerate(nind)
-            Es2 += abs(R2[i+τ][end] - R2[j+τ][end]) / length(R2)
+            Es2 += abs(Rγ[i+τ][end] - Rγ[j+τ][end]) / length(Rγ)
         end
         push!(E2s, Es1/Es2)
     end
@@ -122,7 +176,7 @@ function stochastic_indicator(s::AbstractVector{T},τ, γs=1:4) where T # E2, eq
 end
 
 """
-    fnn(s::AbstractVector, τ:Int, γs = 1:5, Rtol=10., Atol=2.)
+    fnn(s::AbstractVector, τ:Int, γs = 1:5; Rtol=10., Atol=2.)
 
 Calculate the number of "false nearest neighbors" (FNN) of the datasets created
 from `s` with a sequence of `τ`-delayed temporal neighbors.
@@ -134,7 +188,8 @@ each other at dimension `γ`, but are separated at dimension `γ+1`. Kennel's
 criteria for detecting FNN are based on a threshold for the relative increment
 of the distance between the nearest neighbors (`Rtol`, eq. 4 in [1]), and
 another threshold for the ratio between the increased distance and the
-"size of the attractor" (`Atol`, eq. 5 in [1]).
+"size of the attractor" (`Atol`, eq. 5 in [1]). These thresholds are given
+as keyword arguments.
 
 The returned value is a vector with the number of FNN for each `γ ∈ γs`. The
 optimal value for `γ` is found at the point where the number of FNN approaches
@@ -143,7 +198,7 @@ zero.
 Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
 neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
 
-See also: [`estimate_dimension](@ref), [`f1nn`](@ref).
+See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`f1nn`](@ref).
 
 ## References
 
@@ -151,7 +206,7 @@ See also: [`estimate_dimension](@ref), [`f1nn`](@ref).
 reconstruction using a geometrical construction", *Phys. Review A 45*(6), 3403-3411
 (1992).
 """
-function fnn(s::AbstractVector, τ::Int, γs = 1:5, Rtol=10., Atol=2.)
+function fnn(s::AbstractVector, τ::Int, γs = 1:5; Rtol=10., Atol=2.)
     Rtol2 = Rtol^2
     Ra = std(s, corrected=false)
     nfnn = zeros(length(γs))
@@ -197,7 +252,7 @@ is found at the point where this ratio approaches zero.
 Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
 neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
 
-See also: [`estimate_dimension](@ref), [`fnn`](@ref).
+See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`fnn`](@ref).
 
 ## References
 
@@ -239,7 +294,7 @@ function _compare_first_nn(s::AbstractVector{T},γ::Int,τ::Int,Rγ::Dataset{D,T
             nf1nn += 1
         end
     end
-    # `R1` is returned to re-use it if necessary
+    # `Rγ1` is returned to re-use it if necessary
     return (nf1nn, Rγ1)
 end
 
