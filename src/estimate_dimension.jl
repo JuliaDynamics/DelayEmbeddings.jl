@@ -33,7 +33,7 @@ The quantity that is calculated depends on the algorithm defined by the string `
 * `"fnn"` is Kennel's "False Nearest Neighbors" method [2], which gives the
     number of points that cease to be "nearest neighbors" when the dimension
     increases. This number drops down to zero near the optimal value of `γ`.
-    This method accepts the keyword arguments `Rtol` and `Atol`, which stand
+    This method accepts the keyword arguments `rtol` and `atol`, which stand
     for the "tolerances" required by Kennel's algorithm (see [`fnn`](@ref)).
 * `"f1nn"` is Krakovská's "False First Nearest Neighbors" method [3], which
     gives the ratio of pairs of points that cease to be "nearest neighbors"
@@ -43,14 +43,14 @@ The quantity that is calculated depends on the algorithm defined by the string `
 Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
 neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
 
-Return the vector of all computed `E₁`s. To estimate a good value for `γ` from this,
-find `γ` for which the value `E₁` saturates at some value around 1.
-
-*Note: This method does not work for datasets with perfectly periodic signals.*
-
 ## References
 
 [1] : Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
+
+[2] : M. Kennel *et al.*, [Phys. Review A **45**(6), 3403-3411](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.45.3403)
+(1992).
+
+[3] : Anna Krakovská *et al.*, [J. Complex Sys. 932750 (2015)](https://doi.org/10.1155/2015/932750)
 """
 function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn"; kwargs...)
     if method == "afnn"
@@ -176,7 +176,7 @@ function stochastic_indicator(s::AbstractVector{T},τ, γs=1:4) where T # E2, eq
 end
 
 """
-    fnn(s::AbstractVector, τ:Int, γs = 1:5; Rtol=10., Atol=2.)
+    fnn(s::AbstractVector, τ:Int, γs = 1:5; rtol=10., atol=2.)
 
 Calculate the number of "false nearest neighbors" (FNN) of the datasets created
 from `s` with a sequence of `τ`-delayed temporal neighbors.
@@ -186,9 +186,9 @@ Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ
 the "false nearest neighbors" (FNN) are the pairs of points that are nearest to
 each other at dimension `γ`, but are separated at dimension `γ+1`. Kennel's
 criteria for detecting FNN are based on a threshold for the relative increment
-of the distance between the nearest neighbors (`Rtol`, eq. 4 in [1]), and
+of the distance between the nearest neighbors (`rtol`, eq. 4 in [1]), and
 another threshold for the ratio between the increased distance and the
-"size of the attractor" (`Atol`, eq. 5 in [1]). These thresholds are given
+"size of the attractor" (`atol`, eq. 5 in [1]). These thresholds are given
 as keyword arguments.
 
 The returned value is a vector with the number of FNN for each `γ ∈ γs`. The
@@ -206,8 +206,8 @@ See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`f1nn`](@ref).
 reconstruction using a geometrical construction", *Phys. Review A 45*(6), 3403-3411
 (1992).
 """
-function fnn(s::AbstractVector, τ::Int, γs = 1:5; Rtol=10., Atol=2.)
-    Rtol2 = Rtol^2
+function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10., atol=2.)
+    rtol2 = rtol^2
     Ra = std(s, corrected=false)
     nfnn = zeros(length(γs))
     for (k, γ) ∈ enumerate(γs)
@@ -223,8 +223,8 @@ function fnn(s::AbstractVector, τ::Int, γs = 1:5; Rtol=10., Atol=2.)
                 δ = norm(y[i]-y[j], 2)
             end
             δ1 = _increase_distance(δ,s,i,j,γ,τ,2)
-            cond_1 = ((δ1/δ)^2 - 1 > Rtol2) # equation (4) of Kennel
-            cond_2 = (δ1/Ra > Atol)         # equation (5) of Kennel
+            cond_1 = ((δ1/δ)^2 - 1 > rtol2) # equation (4) of Kennel
+            cond_2 = (δ1/Ra > atol)         # equation (5) of Kennel
             if cond_1 | cond_2
                 nfnn[k] += 1
             end
@@ -234,7 +234,7 @@ function fnn(s::AbstractVector, τ::Int, γs = 1:5; Rtol=10., Atol=2.)
 end
 
 """
-    f1nn(s::AbstractVector, τ:Int, γs = 1:5, Rtol=10., Atol=2.)
+    f1nn(s::AbstractVector, τ:Int, γs = 1:5, rtol=10., atol=2.)
 
 Calculate the ratio of "false first nearest neighbors" (FFNN) of the datasets created
 from `s` with a sequence of `τ`-delayed temporal neighbors.
@@ -263,11 +263,11 @@ Sys* 932750 (2015), DOI: 10.1155/2015/932750
 function f1nn(s::AbstractVector, τ::Int, γs = 1:5)
     f1nn_ratio = zeros(length(γs))
     γ_prev = 0 # to recall what γ has been analyzed before
-    Rγ = reconstruct(s[1:end-τ],γs[1],τ) # this is for the first iteration 
+    Rγ = reconstruct(s[1:end-τ],γs[1],τ) # this is for the first iteration
     for (i, γ) ∈ enumerate(γs)
         if i>1 && γ!=γ_prev+1
             # Re-calculate the series with γ delayed dims if γ does not follow
-            # the dimension of the previous iteration 
+            # the dimension of the previous iteration
             Rγ = reconstruct(s[1:end-τ],γ,τ)
         end
         (nf1nn, Rγ) = _compare_first_nn(s,γ,τ,Rγ)
@@ -286,7 +286,7 @@ function _compare_first_nn(s::AbstractVector{T},γ::Int,τ::Int,Rγ::Dataset{D,T
     Rγ1 = reconstruct(s,γ+1,τ)
     tree1 = KDTree(Rγ1)
     nf1nn = 0
-    # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k` 
+    # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k`
     nind = (x = knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
     for  (i,j) ∈ enumerate(nind)
         k = knn(tree1, Rγ1.data[i], 2, true)[1][end]
@@ -297,4 +297,3 @@ function _compare_first_nn(s::AbstractVector{T},γ::Int,τ::Int,Rγ::Dataset{D,T
     # `Rγ1` is returned to re-use it if necessary
     return (nf1nn, Rγ1)
 end
-
