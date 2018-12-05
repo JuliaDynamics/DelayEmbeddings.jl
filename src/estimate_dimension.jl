@@ -234,7 +234,7 @@ function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10., atol=2.)
 end
 
 """
-    f1nn(s::AbstractVector, τ:Int, γs = 1:5, rtol=10., atol=2.)
+    f1nn(s::AbstractVector, τ:Int, γs = 1:5)
 
 Calculate the ratio of "false first nearest neighbors" (FFNN) of the datasets created
 from `s` with a sequence of `τ`-delayed temporal neighbors.

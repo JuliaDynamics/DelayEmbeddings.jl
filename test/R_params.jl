@@ -103,12 +103,12 @@ end
 
     τ = 15
     Ds = 1:5
-    number_fnn = DelayEmbeddings.estimate_dimension(s_roessler, τ, Ds, "fnn"; atol=15)
+    number_fnn = DelayEmbeddings.estimate_dimension(s_roessler, τ, Ds, "fnn"; rtol=15)
     @test findfirst(number_fnn .≈ 0.0) ∈ [2, 3]
 
     τ = 1
     Ds = 1:5
-    number_fnn = DelayEmbeddings.estimate_dimension(s_lorenz, τ, Ds, "fnn"; atol=1, atol=3.0)
+    number_fnn = DelayEmbeddings.estimate_dimension(s_lorenz, τ, Ds, "fnn"; atol=1, rtol=3.0)
     @test findfirst(number_fnn .≈ 0.0) ∈ [2, 3]
 
     # Test `f1nn` method
