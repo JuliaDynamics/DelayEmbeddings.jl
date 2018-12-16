@@ -1,5 +1,4 @@
 using StatsBase: autocor
-using KernelDensity
 # using LsqFit: curve_fit
 export estimate_delay
 
@@ -114,47 +113,104 @@ end
 ## Average Mutual Information
 
 """
-    ami(x, τs, ε)
+    mutualinformation(s, τs[; nbins, binwidth])
+    
+Calculate the mutual information between the time series `s` and its images
+delayed by `τ` points for `τ` ∈ `τs`.
+
+## Description:
+
+The joint space of `s` and its `τ`-delayed image (`sτ`) is partitioned as a
+rectangular grid, and the mutual information is computed from the joint and
+marginal frequencies of `s` and `sτ` in the grid as defined in [1].
+The mutual information values are returned in a vector of the same length
+as `τs`.
+
+If any of the optional keyword parameters is given, the grid will be a
+homogeneous partition of the space where `s` and `sτ` are defined.
+The margins of that partition will be divided in a number of bins equal
+to `nbins`, such that the width of each bin will be `binwidth`, and the range
+of nonzero values of `s` will be in the centre. If only of those two parameters
+is given, the other will be automatically calculated to adjust the size of the
+grid to the area where `s` and `sτ` are nonzero.
+
+If no parameter is given, the space will be partitioned by a recursive bisection
+algorithm based on the method given in [1].
+
+Notice that the recursive method of [1] evaluates the joint frequencies of `s`
+and `sτ` in each cell resulting from a partition, and stops when the data points
+are uniformly distributed across the sub-partitions of the following levels.
+For performance and stability reasons, the automatic partition method implemented
+in this function is only used to divide the axes of the grid, using the marginal
+frequencies of `s`.
+
+## References:
+[1]: Fraser A.M. & Swinney H.L. "Independent coordinates for strange attractors
+from mutual information" *Phys. Rev. A 33*(2), 1986, 1134:1140.
 """
-function ami_hist(x::AbstractVector{T}, τs::AbstractVector, ε) where {T}
+function mutualinformation(s::AbstractVector{T}, τs::AbstractVector{Int}; kwargs...) where {T}
     n = length(x)
-    xs = sort(x)
-    # Set up the histogram structure
-    offset = ε - rem(xs[end]-xs[1], ε)
-    start = xs[1]   - offset
-    stop  = xs[end] + offset
-    edges = start:ε:stop
-    nbins = length(edges) - 1
-    f = zeros(typeof(0.0), nbins)
-    # Calculate the marginal entropy of `x`
-    marginal_entropy = _marginalentropy!(f, xs, edges)
-    # `perm` can be used to sort other series along ascending values of `x`
     nτ = n-maximum(τs)
-    perm = sortperm(x[1:nτ])
-    # `hist_x` contains the histogram of the trimmed `x`.
-    hist_x = zeros(Int, nbins)
-    _frequencies!(hist_x, x[perm], edges)
-    # Calculate the joint entropy and the AMI for each `τ`
-    ami_values = zeros(T, length(τs))
-    for (i, τ) in enumerate(τs)
-        xτ = view(x, τ+1:n)[perm] # delayed and reordered time series
-        joint_entropy = _jointentropy!(f, xτ, edges, hist_x)
-        ami_values[i] = (2*marginal_entropy - joint_entropy)
+    perm = sortperm(s[1:nτ])
+    # Choose partition method
+    (bins, edges) = isempty(kwargs) ? _bisect(s[perm]) : _equalbins(s[perm]; kwargs...)
+    f = zeros(length(bins))
+    # Calculate the MI for each `τ`
+    mi_values = zeros(length(τs))
+    for (i, τ) ∈ enumerate(τs)
+        sτ = view(s, τ+1:n)[perm] # delayed and reordered time series
+        mi_values[i] = _mutualinfo!(f, sτ, bins, edges)
     end
-    return ami_values
+    return mi_values
+end
+
+
+"""
+    _mutualinfo!(f, sτ, edges, bins0)
+    
+Calculate the mutual information between the distribution of the delayed time
+series `sτ` and its original image.
+
+The two series are partitioned in a joint histogram with axes divided by the
+points given in `edges`; the distribution of the original image is given by
+`bins0`.
+The values of `sτ` must be arranged such that all the points of the bin `(1,j)`
+are contained in the first `bins0[1]` positions, the points of the bin `(2,j)
+are contained in the following `bins[2]` positions, etc.
+  
+The vector `f` is used as a placeholder to pre-allocate the histogram.
+"""
+function _mutualinfo!(f::AbstractVector, sτ::AbstractVector,
+    bins0::AbstractVector{<:Integer}, edges::AbstractVector)
+
+    # Initialize values
+    mi = 0.0                    # `h` will contain the result
+    processed = 0               # number of points of `sτ` that have been used
+    # Go through `bins0`
+    n = length(sτ)
+    logn = log2(n)
+    for b in bins0
+        frag = view(sτ, processed.+(1:b)) # fragment of `sτ` in the `b`-th bin
+        processed += b
+        _frequencies!(f, edges, sort(frag)) # store the values of the histogram in `f`
+        for (i,g) in enumerate(f)
+            (g != 0) && (mi += g/n*(log2(g/b/bins0[i])+logn))
+        end
+    end
+    return mi
 end
 
 """
-    _frequencies!(f, x, edges)
+    _frequencies!(f, s, edges)
 
-Calculate a histogram of values of `x` along the bins defined by `edges`.
-Both `x` and `edges` must be sorted ascendingly. The frequencies (counts)
-of `x` in each bien will be stored in the pre-allocated vector `f`. 
+Calculate a histogram of values of `s` along the bins defined by `edges`.
+Both `s` and `edges` must be sorted ascendingly. The frequencies (counts)
+of `s` in each bin will be stored in the pre-allocated vector `f`. 
 """ 
-function _frequencies!(f::AbstractVector{T}, x::AbstractVector, edges::AbstractVector) where {T} 
+function _frequencies!(f::AbstractVector{T}, edges::AbstractVector, s::AbstractVector) where {T} 
     # Initialize the array of frequencies to zero
     fill!(f, zero(T))
-    n = length(x)
+    n = length(s)
     nbins = length(edges) - 1
     b = 1 # start in the first bin
     for i = 1:n
@@ -162,163 +218,92 @@ function _frequencies!(f::AbstractVector{T}, x::AbstractVector, edges::AbstractV
             f[end] += n-i+1
             break
         end
-        # when `x[i]` goes after theupper limit of the current bin,
-        # move to the next bin and repeat until `x[i]` is found 
-        while x[i] > edges[b+1]
+        # when `s[i]` goes after the upper limit of the current bin,
+        # move to the next bin and repeat until `s[i]` is found 
+        while s[i] > edges[b+1]
             b += 1
         end
         f[b] += 1 # add point to the current bin
     end
 end
 
-_binsize(edges::AbstractRange, i) = step(edges)
-_binsize(edges::AbstractVector, i::Int) = -(edges[i] - edges[i+1]) 
+### Functions for creating histograms ###
+
+# For type stability, all must return the same type of tuple
+Histogram{T} = Tuple{Vector{<:Integer}, Vector{T}} where {T}
 
 """
-    _marginalentropy!(f, x, edges)
+    _equalbins(s[; nbins, binwidth])
     
-Calculate the entropy of the distribution of `x` in the bins defined by `edges`.
-The vector `f` is used as a placeholder to pre-allocate the histogram.
-`x` must be sorted ascendingly, and `edges` must be a `Range` object with
-homogeneous spacing. 
+Create a histogram of the sorted series `s` with bins of the same width.
+Either the number of bins (`nbins`) or their width (`binwidth`) must be
+given as keyword argument (but not both).
 """
-function _marginalentropy!(f::AbstractVector, x::AbstractVector, edges::AbstractVector)
-    # Initialize values
-    h = 0.0                     # `h` will contain the result
-    _frequencies!(f, x, edges)  # store the values of the histogram in `f`
-    # Update the entropy with the values of nonzero bins
-    n = length(x)
-    for (i,g) in enumerate(f)
-        ε = _binsize(edges, i)
-        (g != 0) && (h += -g/n*(log2(g/n) - log2(ε)))
-    end
-    return h
-end
-
-
-"""
-    _jointentropy!(f, x, edges, bins0)
-    
-Calculate the jointy entropy of the distribution of `x` in the bins defined by
-`edges` and pre-calculated `bins0` that refer to the order of the elements of `x`.
-`x` must be sorted in such a way that all the points of the bin `(1,j)` are
-contained in the first `bins0[1]` data points of `x`, the points of the bin `(2,j)
-are contained in the following `bins[2]` data points, etc.
-  
-The vector `f` is used as a placeholder to pre-allocate the histogram.
-"""
-function _jointentropy!(f::AbstractVector, x::AbstractVector,
-    edges::AbstractVector, bins0::AbstractVector{I}) where {I<:Int}
-
-    # Initialize values
-    h = 0.0                     # `h` will contain the result
-    processed = 0               # number of points of `x` that have been used
-    # Go through `bins0`
-    n = length(x)
-    for b in bins0
-        xb = view(x, processed.+(1:b)) # fragment of `x` in the `b`-th bin
-        processed += b
-        _frequencies!(f, sort(xb), edges) # store the values of the histogram in `f`
-        for (i,g) in enumerate(f)
-            ε = _binsize(edges, i)
-            (g != 0) && (h += -g/n*(log2(g/n) - 2log2(ε)))
-        end
-    end
-    return h
-end
-
-
-
-function ami_kde(x::AbstractVector{T}, τs::AbstractVector{Int}) where {T}
-    n = length(x)
-    np = min(2048, prevpow(2, n))
-    dx = kde(x, npoints=np)
-    #
-    tails_width = 4.0*KernelDensity.default_bandwidth(x)
-    tp = round(Int, np*tails_width/(dx.x[end]-dx.x[1]))
-    #
-    # dx.density .*= step(dx.x)
-    px = @view dx.density[tp+1:end-tp]
-    hx = -sum(px.*log2.(px))*step(dx.x)
-    ami = zeros(T, length(τs))
-    # 
-    np2 = min(256, 2^floor(Int, log2(n)))
-    tp = div(tp*np2,np)
-    for (i,τ) in enumerate(τs)
-        hxy = zero(T)
-        dxy = kde((x[1:n-τ], x[τ+1:n]), npoints=(np2,np2))
-        # dxy.density .*= (step(dxy.x) * step(dxy.y))
-        pxy = @view dxy.density[tp+1:end-tp, tp+1:end-tp]
-        for p in pxy
-            if p ≉ 0
-                hxy -= p*log2(p)
-            end
-        end
-        hxy *= (step(dxy.x)*step(dxy.y))
-        ami[i] = 2hx - hxy
-    end
-    return ami
-end
-
-# Histogram tree based on Fraser's and Sweeney's algorithm
-
-mutable struct FSHistogram{T}
-    data::AbstractVector{T}
-    bins::AbstractVector{Int}
-    edges::AbstractVector{T}
-    entropy::Float64
-end
-struct FSNode
-    tree::FSHistogram
-    level::Int
-    data::SubArray
-end
-FSNode(tree::FSHistogram) = FSNode(tree, 1, tree.data)
-function FSHistogram(data::AbstractVector)
-    data = sort(data)
-    bins = Int[]
-    edges = data[1:1]
-    entropy = log2(data[end]-data[1])
-    h = FSHistogram(data, bins, edges, entropy)
-    bin0 = @view data[:]
-    node = FSNode(h, 0, bin0)
-    # _branch!(node)
-    return h
-end
-
-function _branch!(node::FSNode)
-    # `x` must be sorted 
-    if _uniformtest(node.data)
-        push!(node.tree.bins, length(node.data))
-        push!(node.tree.edges, node.data[end])
+function _equalbins(s::AbstractVector{T}; kwargs...)::Histogram{T} where {T}
+    # only one of `nbins` or `binwidth` can be passed 
+    if length(kwargs) > 1
+        throw(ArgumentError("the keyword argument can only be either `nbins` or `binwidth`"))
+    elseif haskey(kwargs, :nbins)     # fixed number of bins
+        nbins = Int(kwargs[:nbins])
+        r = range(s[1], stop=s[end], length=nbins+1)
+    elseif haskey(kwargs, :binwidth)
+        binwidth = T(kwargs[:binwidth])        
+        nbins = Int(div(s[end]-s[1],binwidth)+1)
+        start = (s[1]+s[end]-nbins*binwidth)/2
+        r = range(start, step=binwidth, length=nbins+1)
     else
-        n = length(node.data)
+        throw(ArgumentError("`nbins` or `binwidth` keyword argument required"))
+    end
+    bins = zeros(Int, nbins)
+    _frequencies!(bins, r, s)
+    edges = T[minimum(s); s[cumsum(bins)]]
+    return (bins, edges)
+end
+
+"""
+    _bisect(s)
+    
+Create a partition histogram of the sorted series `s` with a partition of its
+space defined by a recursive bisection method. The first level partition
+divides `s` in two segments with equal number of points; each
+partition is divided into two further sub-pantitions, etc.,
+until the distribution of the points in the highest level
+subpartition is homogeneous.
+"""
+function _bisect(s::AbstractVector{T})::Histogram{T} where {T}
+    # set up the vectors to return
+    bins = Int[]
+    edges = T[minimum(s)]
+    _bisect!(bins, edges, s) # recursive step
+    return (bins, edges)
+end
+
+function _bisect!(bins, edges, s)
+    if _uniformtest(s) # no further partitions if it is uniform
+        push!(bins, length(s))
+        push!(edges, s[end])
+    else
+        n = length(s)
         half = div(n, 2)
-        range_data = node.data[end] - node.data[1]
-        ratio_left  = (node.data[half] - node.data[1])/range_data
-        ratio_right = (node.data[end] - node.data[half+1])/range_data
-        # update entropy
-        if ratio_left ≈ 0 || ratio_right ≈ 0
-            @warn "many coincident points; calculations may be biased."
-            push!(node.tree.bins, length(node.data))
-            push!(node.tree.edges, node.data[end])
-            return
-        end
-        node.tree.entropy += 2.0^(-node.level)*(1 + log2(ratio_left*ratio_right)/2)
         # first half
-        bin1 = @view node.data[1:half]
-        node1 = FSNode(node.tree, node.level+1, bin1)
-        _branch!(node1)
+        _bisect!(bins, edges, view(s, 1:half))
         # second half
-        bin2 = @view node.data[half+1:end]
-        node2 = FSNode(node.tree, node.level+1, bin2)
-        _branch!(node2)
+        _bisect!(bins, edges, view(s, half+1:n))
     end
     return
 end
 
-function _uniformtest(x) # `x` is assumed to be sorted 
-    n = length(x)
+"""
+    _uniformtest(s)
+    
+Test uniformity in the values of the sorted vector `s`.
+"""
+function _uniformtest(s) 
+    n = length(s)
+    # less than 10 points is not enough to test
+    # between 10 and 19 points, divide the range of values in two sub-ranges
+    # for 20 or more, divide the range in four sub-ranges
+    # and make a chi-squared test
     if n <  10
         return true
     else
@@ -330,22 +315,18 @@ function _uniformtest(x) # `x` is assumed to be sorted
             critical_chisq = 6.251 # df=3, p=0.1
         end
     end
-    binwidth = (x[end]-x[1])/nbins
+    binwidth = (s[end]-s[1])/nbins
     expected = round(Int, n/nbins)
     chisq = 0.0
     # set up first iteration
     first_item = 1
     for i = 1:nbins
-        next_first = searchsortedfirst(x, x[1]+i*binwidth; lt=≤)
+        next_first = searchsortedfirst(s, s[1]+i*binwidth; lt=≤)
         observed = next_first - first_item
         chisq += (observed-expected)^2/expected
-        (next_first > n) && break # stop if arrived at the end of `x`
+        (next_first > n) && break # stop if arrived at the end of `s`
         first_item = next_first
     end
     return (chisq < critical_chisq)
-end    
-
-
-
-
+end
 
