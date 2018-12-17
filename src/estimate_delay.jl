@@ -6,21 +6,25 @@ export estimate_delay
 #                               Estimate Delay Times                                #
 #####################################################################################
 """
-    estimate_delay(s, method::String) -> τ
+    estimate_delay(s, method::String; kwargs...) -> τ
 
 Estimate an optimal delay to be used in [`reconstruct`](@ref) or [`embed`](@ref).
 Return the exponential decay time `τ` rounded to an integer.
 
 The `method` can be one of the following:
 
-* `"first_zero"` : find first delay at which the auto-correlation function becomes 0.
-* `"first_min"` : return delay of first minimum of the auto-correlation function.
+* `"ac_zero"` : find first delay at which the auto-correlation function becomes 0.
+* `"ac_min"` : return delay of first minimum of the auto-correlation function.
+* `"mi_zero", "mi_min"` : Same as above, but instead of using the autocorrelation function
+  of `s`, they use the mutual information of `s` with itself (shifted for varius `τs`).
+  Keywords `τs, nbins, binwidth` are propagated into [`mutualinformation`](@ref).
+  `τs` defaults to `1:2:100`.
 """
-function estimate_delay(x::AbstractVector, method::String; maxtau=100, k=1)
-    method ∈ ("first_zero", "first_min") ||
+function estimate_delay(x::AbstractVector, method::String; τs = 1:2:100, kwargs...)
+    method ∈ ("ac_zero", "ac_min", "ac_zero", "ac_min") ||
         throw(ArgumentError("Unknown method"))
 
-    if method=="first_zero"
+    if method=="ac_zero"
         c = autocor(x, 0:length(x)÷10; demean=true)
         i = 1
         # Find 0 crossing:
@@ -30,8 +34,26 @@ function estimate_delay(x::AbstractVector, method::String; maxtau=100, k=1)
         end
         return i
 
-    elseif method=="first_min"
+    elseif method=="ac_min"
         c = autocor(x, 0:length(x)÷10, demean=true)
+        i = 1
+        # Find min crossing:
+        while c[i+1] < c[i]
+            i+= 1
+            i == length(c)-1 && break
+        end
+        return i
+    elseif method == "mi_zero"
+        c = mutualinformation(s, τs; kwargs...)
+        i = 1
+        # Find 0 crossing:
+        while c[i] > 0
+            i += 1
+            i == length(c) && break
+        end
+        return i
+    elseif method=="mi_min"
+        c = mutualinformation(s, τs; kwargs...)
         i = 1
         # Find min crossing:
         while c[i+1] < c[i]
@@ -44,14 +66,6 @@ function estimate_delay(x::AbstractVector, method::String; maxtau=100, k=1)
     #     # Find exponential fit:
     #     τ = exponential_decay(c)
     #     return round(Int,τ)
-    # elseif method=="mutual_inf"
-    #     m = mutinfo(k, x, x)
-    #     L = length(x)
-    #     for i=1:maxtau
-    #         n = mutinfo(k, view(x, 1:L-i), view(x, 1+i:L))
-    #         n > m && return i
-    #         m = n
-    #     end
     end
 end
 
@@ -114,7 +128,7 @@ end
 
 """
     mutualinformation(s, τs[; nbins, binwidth])
-    
+
 Calculate the mutual information between the time series `s` and its images
 delayed by `τ` points for `τ` ∈ `τs`.
 
@@ -167,7 +181,7 @@ end
 
 """
     _mutualinfo!(f, sτ, edges, bins0)
-    
+
 Calculate the mutual information between the distribution of the delayed time
 series `sτ` and its original image.
 
@@ -177,7 +191,7 @@ points given in `edges`; the distribution of the original image is given by
 The values of `sτ` must be arranged such that all the points of the bin `(1,j)`
 are contained in the first `bins0[1]` positions, the points of the bin `(2,j)
 are contained in the following `bins[2]` positions, etc.
-  
+
 The vector `f` is used as a placeholder to pre-allocate the histogram.
 """
 function _mutualinfo!(f::AbstractVector, sτ::AbstractVector,
@@ -205,9 +219,9 @@ end
 
 Calculate a histogram of values of `s` along the bins defined by `edges`.
 Both `s` and `edges` must be sorted ascendingly. The frequencies (counts)
-of `s` in each bin will be stored in the pre-allocated vector `f`. 
-""" 
-function _frequencies!(f::AbstractVector{T}, edges::AbstractVector, s::AbstractVector) where {T} 
+of `s` in each bin will be stored in the pre-allocated vector `f`.
+"""
+function _frequencies!(f::AbstractVector{T}, edges::AbstractVector, s::AbstractVector) where {T}
     # Initialize the array of frequencies to zero
     fill!(f, zero(T))
     n = length(s)
@@ -219,7 +233,7 @@ function _frequencies!(f::AbstractVector{T}, edges::AbstractVector, s::AbstractV
             break
         end
         # when `s[i]` goes after the upper limit of the current bin,
-        # move to the next bin and repeat until `s[i]` is found 
+        # move to the next bin and repeat until `s[i]` is found
         while s[i] > edges[b+1]
             b += 1
         end
@@ -234,20 +248,20 @@ Histogram{T} = Tuple{Vector{<:Integer}, Vector{T}} where {T}
 
 """
     _equalbins(s[; nbins, binwidth])
-    
+
 Create a histogram of the sorted series `s` with bins of the same width.
 Either the number of bins (`nbins`) or their width (`binwidth`) must be
 given as keyword argument (but not both).
 """
 function _equalbins(s::AbstractVector{T}; kwargs...)::Histogram{T} where {T}
-    # only one of `nbins` or `binwidth` can be passed 
+    # only one of `nbins` or `binwidth` can be passed
     if length(kwargs) > 1
         throw(ArgumentError("the keyword argument can only be either `nbins` or `binwidth`"))
     elseif haskey(kwargs, :nbins)     # fixed number of bins
         nbins = Int(kwargs[:nbins])
         r = range(s[1], stop=s[end], length=nbins+1)
     elseif haskey(kwargs, :binwidth)
-        binwidth = T(kwargs[:binwidth])        
+        binwidth = T(kwargs[:binwidth])
         nbins = Int(div(s[end]-s[1],binwidth)+1)
         start = (s[1]+s[end]-nbins*binwidth)/2
         r = range(start, step=binwidth, length=nbins+1)
@@ -262,7 +276,7 @@ end
 
 """
     _bisect(s)
-    
+
 Create a partition histogram of the sorted series `s` with a partition of its
 space defined by a recursive bisection method. The first level partition
 divides `s` in two segments with equal number of points; each
@@ -295,10 +309,10 @@ end
 
 """
     _uniformtest(s)
-    
+
 Test uniformity in the values of the sorted vector `s`.
 """
-function _uniformtest(s) 
+function _uniformtest(s)
     n = length(s)
     # less than 10 points is not enough to test
     # between 10 and 19 points, divide the range of values in two sub-ranges
@@ -329,4 +343,3 @@ function _uniformtest(s)
     end
     return (chisq < critical_chisq)
 end
-
