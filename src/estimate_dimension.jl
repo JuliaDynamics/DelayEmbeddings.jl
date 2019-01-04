@@ -116,7 +116,7 @@ function _average_a(s::AbstractVector{T},γ,τ,metric) where {T}
             j = knn(tree2, Rγ[i], 3, true)[1][end]
             δ = evaluate(metric, Rγ[i], Rγ[j])
         end
-        e += _increase_distance(δ,s,i,j,γ,τ,p)/δ
+        e += _increase_distance(δ,s,i,j,γ,τ,metric)/δ
     end
     return e / (length(Rγ)-1)
 end
@@ -234,7 +234,7 @@ function f1nn(s::AbstractVector, τ::Int, γs = 1:5, metric = Euclidean())
     return f1nn_ratio
 end
 
-function _compare_first_nn(s::AbstractVector{T},γ::Int,τ::Int,Rγ::Dataset{D,T},metric) where {D} where {T}
+function _compare_first_nn(s, γ::Int, τ::Int, Rγ::Dataset{D,T}, metric) where {D,T}
     # This function compares the first nearest neighbors of `s`
     # embedded with Dimensions `γ` and `γ+1` (the former given as input)
     tree = KDTree(Rγ,metric)
@@ -243,7 +243,7 @@ function _compare_first_nn(s::AbstractVector{T},γ::Int,τ::Int,Rγ::Dataset{D,T
     nf1nn = 0
     # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k`
     nind = (x = knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
-    for  (i,j) ∈ enumerate(nind)
+    @inbounds for  (i,j) ∈ enumerate(nind)
         k = knn(tree1, Rγ1.data[i], 2, true)[1][end]
         if j != k
             nf1nn += 1
