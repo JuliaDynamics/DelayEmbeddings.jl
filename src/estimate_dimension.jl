@@ -34,7 +34,8 @@ The quantity that is calculated depends on the algorithm defined by the string `
 `"afnn"` and `"f1nn"` also support the `metric` keyword, which can be any of
 `Cityblock(), Euclidean(), Chebyshev()`. This metric is used both
 for computing the nearest neighbors (`KDTree`s) as well as the distances necessary for
-Cao's method (eqs. (2, 3) of [1]). Defaults to `Euclidean()`.
+Cao's method (eqs. (2, 3) of [1]). Defaults to `Euclidean()` (note that [1] used
+`Chebyshev`).
 
 Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
 neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
@@ -62,7 +63,7 @@ end
 
 
 """
-    afnn(s::AbstractVector, τ:Int, γs = 1:5, metric=Chebyshev())
+    afnn(s::AbstractVector, τ:Int, γs = 1:5, metric=Euclidean())
 
 Compute the parameter E₁ of Cao's "averaged false nearest neighbors" method for
 determining the minimum embedding dimension of the time series `s`, with
@@ -90,7 +91,7 @@ See also: [`estimate_dimension`](@ref), [`fnn`](@ref), [`f1nn`](@ref).
 
 [1] : Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
 """
-function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Chebyshev()) where {T}
+function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Euclidean()) where {T}
     E1s = zeros(length(γs))
     aafter = 0.0
     aprev = _average_a(s, γs[1], τ, metric)
