@@ -28,6 +28,7 @@ use as `τ` the decay time.
 function estimate_delay(x::AbstractVector, method::String,
     τs = 1:2:min(100, length(x)); kwargs...)
 
+    issorted(τs) || @error "`τs` must be sorted"
     method ∈ ("ac_zero", "ac_min", "mi_min") ||
         throw(ArgumentError("Unknown method"))
 
