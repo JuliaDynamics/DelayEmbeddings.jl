@@ -1,6 +1,5 @@
 using StatsBase: autocor
-# using LsqFit: curve_fit
-export estimate_delay
+export estimate_delay, exponential_decay_fit, autocor
 
 #####################################################################################
 #                               Estimate Delay Times                                #
@@ -16,27 +15,24 @@ The `method` can be one of the following:
 * `"mi_min"` : delay of first minimum of mutual information of `s` with itself
   (shifted for various `τs`).
   Keywords `nbins, binwidth` are propagated into [`mutualinformation`](@ref).
+* `"exp_decay"` : [`exponential_decay_fit`](@ref) of the correlation function rounded
+   to an integer (uses least squares on `c(t) = exp(-t/τ)` to find `τ`).
+* `"exp_extrema"` : same as above but the exponential fit is done to the
+  absolute value of the local extrema of the correlation function.
 
-Both the mutual information and correlation function are computed _only_ for
-delays `τs`. This means that the `min` methods can never return the first value
-of `τs`! Start `τs` from `0` if you want to check for first value.
-
-Another way to estimate the delay time (not supported here) is to fit an
-exponential decay to the correlation function (if it does not oscillate) and
-use as `τ` the decay time.
+Both the mutual information and correlation function (`autocor`) are computed _only_
+for delays `τs`. This means that the `min` methods can never return the first value
+of `τs`!
 """
 function estimate_delay(x::AbstractVector, method::String,
     τs = 1:2:min(100, length(x)); kwargs...)
 
-    issorted(τs) || @error "`τs` must be sorted"
-    method ∈ ("ac_zero", "ac_min", "mi_min") ||
-        throw(ArgumentError("Unknown method"))
+    issorted(τs) || error("`τs` must be sorted")
 
     if method=="ac_zero"
         c = autocor(x, τs; demean=true)
         i = 1
-        # Find 0 crossing:
-        while c[i] > 0
+        while c[i] > 0 # Find 0 crossing
             i += 1
             if i == length(c)
                 @warn "Did not cross 0 value, returning last `τ`."
@@ -50,11 +46,28 @@ function estimate_delay(x::AbstractVector, method::String,
     elseif method=="mi_min"
         c = mutualinformation(x, τs; kwargs...)
         return mincrossing(c, τs)
-    # elseif method=="exp_decay"
-    #     c = autocor(x, demean=true)
-    #     # Find exponential fit:
-    #     τ = exponential_decay(c)
-    #     return round(Int,τ)
+    elseif method=="exp_decay"
+        c = autocor(x, τs; demean=true)
+        if any(x -> x ≤ 0, c)
+            error("The correlation function has elements that are ≤ 0. "*
+            "We can't fit an exponential to it. Please choose another method.")
+        end
+        τ = exponential_decay_fit(τs, c)
+        return round(Int,τ)
+    elseif method=="exp_extrema"
+        c = autocor(x, τs; demean=true)
+        max_ind, min_ind = localextrema(c)
+        idxs = sort!(append!(max_ind, min_ind))
+        ca = abs.(c[idxs])
+        τa = τs[idxs]
+        if any(x -> x ≤ 0, ca)
+            error("The absolute correlation function has elements that are = 0. "*
+            "We can't fit an exponential to it. Please choose another method.")
+        end
+        τ = exponential_decay_fit(τa, ca)
+        return round(Int,τ)
+    else
+        throw(ArgumentError("Unknown method for `estimate_delay`."))
     end
 end
 
@@ -70,60 +83,70 @@ function mincrossing(c, τs)
     return τs[i]
 end
 
+"""
+    exponential_decay_fit(x, y, weight = :equal) -> τ
+Perform a least square fit of the form `y = exp(-x/τ)` and return `τ`.
+Taken from:  http://mathworld.wolfram.com/LeastSquaresFittingExponential.html.
+Assumes equal lengths of `x, y` and that `y ≥ 0`.
 
-# Here is the code that does exponential decay:
-# """
-#     localextrema(y) -> max_ind, min_ind
-# Find the local extrema of given array `y`, by scanning point-by-point. Return the
-# indices of the maxima (`max_ind`) and the indices of the minima (`min_ind`).
-# """
-# function localextrema end
-# @inbounds function localextrema(y)
-#     l = length(y)
-#     i = 1
-#     maxargs = Int[]
-#     minargs = Int[]
-#     if y[1] > y[2]
-#         push!(maxargs, 1)
-#     elseif y[1] < y[2]
-#         push!(minargs, 1)
-#     end
-#
-#     for i in 2:l-1
-#         left = i-1
-#         right = i+1
-#         if  y[left] < y[i] > y[right]
-#             push!(maxargs, i)
-#         elseif y[left] > y[i] < y[right]
-#             push!(minargs, i)
-#         end
-#     end
-#
-#     if y[l] > y[l-1]
-#         push!(maxargs, l)
-#     elseif y[l] < y[l-1]
-#         push!(minargs, l)
-#     end
-#     return maxargs, minargs
-# end
+To use the method that gives more weight to small values of `y`, use `weight = :small`.
+"""
+function exponential_decay_fit(X, Y, weight = :equal)
+    @inbounds begin
+        L = length(X)
+        b = if weight == :equal
+            sy = sum(Y); sx = sum(X)
+            a1 = sum(X[i]*Y[i]*log(Y[i]) for i in 1:L)
+            a2 = sum(X[i]*Y[i] for i in 1:L)
+            a3 = sum(Y[i]*log(Y[i]) for i in 1:L)
+            a4 = sum(X[i]*X[i]*Y[i] for i in 1:L)
+            b = (sy*a1 - a2*a3) / (sy*a4 - a2*a2)
+        elseif weight == :small
+            sx = sum(X)
+            c1 = sum(X[i]*log(Y[i]) for i in 1:L)
+            c2 = sum(log(y) for y in Y)
+            c3 = sum(x*x for x in X)
+            b = (L*c1 - sx*c2)/(L*c3 - sx*sx)
+        end
+        return -1.0/b
+    end
+end
 
-# function exponential_decay_extrema(c::AbstractVector)
-#     ac = abs.(c)
-#     ma, mi = localextrema(ac)
-#     # ma start from 1 but correlation is expected to start from x=0
-#     ydat = ac[ma]; xdat = ma .- 1
-#     # Do curve fit from LsqFit
-#     model(x, p) = @. exp(-x/p[1])
-#     decay = curve_fit(model, xdat, ydat, [1.0]).param[1]
-#     return decay
-# end
-#
-# function exponential_decay(c::AbstractVector)
-#     # Do curve fit from LsqFit
-#     model(x, p) = @. exp(-x/p[1])
-#     decay = curve_fit(model, 0:length(c)-1, abs.(c), [1.0]).param[1]
-#     return decay
-# end
+"""
+    localextrema(y) -> max_ind, min_ind
+Find the local extrema of given array `y`, by scanning point-by-point. Return the
+indices of the maxima (`max_ind`) and the indices of the minima (`min_ind`).
+"""
+function localextrema(y)
+    @inbounds begin
+        l = length(y)
+        i = 1
+        maxargs = Int[]
+        minargs = Int[]
+        if y[1] > y[2]
+            push!(maxargs, 1)
+        elseif y[1] < y[2]
+            push!(minargs, 1)
+        end
+
+        for i in 2:l-1
+            left = i-1
+            right = i+1
+            if  y[left] < y[i] > y[right]
+                push!(maxargs, i)
+            elseif y[left] > y[i] < y[right]
+                push!(minargs, i)
+            end
+        end
+
+        if y[l] > y[l-1]
+            push!(maxargs, l)
+        elseif y[l] < y[l-1]
+            push!(minargs, l)
+        end
+        return maxargs, minargs
+    end
+end
 
 #####################################################################################
 #                               Estimate Delay Times                                #
@@ -133,7 +156,8 @@ export mutualinformation
     mutualinformation(s, τs[; nbins, binwidth])
 
 Calculate the mutual information between the time series `s` and its images
-delayed by `τ` points for `τ` ∈ `τs`.
+delayed by `τ` points for `τ` ∈ `τs`, using an _improvement_ of the method
+outlined by Fraser & Swinney in [1].
 
 ## Description
 
@@ -165,7 +189,8 @@ frequencies of `s`.
 [1]: Fraser A.M. & Swinney H.L. "Independent coordinates for strange attractors
 from mutual information" *Phys. Rev. A 33*(2), 1986, 1134:1140.
 """
-function mutualinformation(s::AbstractVector{T}, τs::AbstractVector{Int}; kwargs...) where {T}
+function mutualinformation(s::AbstractVector{T}, τs::AbstractVector{Int};
+    kwargs...) where {T}
     n = length(s)
     nτ = n-maximum(τs)
     perm = sortperm(s[1:nτ])
@@ -224,7 +249,8 @@ Calculate a histogram of values of `s` along the bins defined by `edges`.
 Both `s` and `edges` must be sorted ascendingly. The frequencies (counts)
 of `s` in each bin will be stored in the pre-allocated vector `f`.
 """
-function _frequencies!(f::AbstractVector{T}, edges::AbstractVector, s::AbstractVector) where {T}
+function _frequencies!(f::AbstractVector{T}, edges::AbstractVector,
+    s::AbstractVector) where {T}
     # Initialize the array of frequencies to zero
     fill!(f, zero(T))
     n = length(s)
@@ -254,12 +280,13 @@ Histogram{T} = Tuple{Vector{<:Integer}, Vector{T}} where {T}
 
 Create a histogram of the sorted series `s` with bins of the same width.
 Either the number of bins (`nbins`) or their width (`binwidth`) must be
-given as keyword argument (but not both).
+given as keyword argument (**but not both**).
 """
 function _equalbins(s::AbstractVector{T}; kwargs...)::Histogram{T} where {T}
     # only one of `nbins` or `binwidth` can be passed
     if length(kwargs) > 1
-        throw(ArgumentError("the keyword argument can only be either `nbins` or `binwidth`"))
+        throw(ArgumentError("the keyword argument can only be either `nbins` "*
+        "or `binwidth`"))
     elseif haskey(kwargs, :nbins)     # fixed number of bins
         nbins = Int(kwargs[:nbins])
         r = range(s[1], stop=s[end], length=nbins+1)
