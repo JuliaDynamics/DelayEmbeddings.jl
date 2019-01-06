@@ -6,67 +6,67 @@ export estimate_delay
 #                               Estimate Delay Times                                #
 #####################################################################################
 """
-    estimate_delay(s, method::String; kwargs...) -> τ
+    estimate_delay(s, method::String [, τs = 1:2:100]; kwargs...) -> τ
 
 Estimate an optimal delay to be used in [`reconstruct`](@ref) or [`embed`](@ref).
-Return the exponential decay time `τ` rounded to an integer.
-
 The `method` can be one of the following:
 
-* `"ac_zero"` : find first delay at which the auto-correlation function becomes 0.
-* `"ac_min"` : return delay of first minimum of the auto-correlation function.
-* `"mi_zero", "mi_min"` : Same as above, but instead of using the autocorrelation function
-  of `s`, they use the mutual information of `s` with itself (shifted for varius `τs`).
-  Keywords `τs, nbins, binwidth` are propagated into [`mutualinformation`](@ref).
-  `τs` defaults to `1:2:100`.
+* `"ac_zero"` : first delay at which the auto-correlation function becomes <0.
+* `"ac_min"` : delay of first minimum of the auto-correlation function.
+* `"mi_min"` : delay of first minimum of mutual information of `s` with itself
+  (shifted for various `τs`).
+  Keywords `nbins, binwidth` are propagated into [`mutualinformation`](@ref).
+
+Both the mutual information and correlation function are computed _only_ for
+delays `τs`. This means that the `min` methods can never return the first value
+of `τs`! Start `τs` from `0` if you want to check for first value.
+
+Another way to estimate the delay time (not supported here) is to fit an
+exponential decay to the correlation function (if it does not oscillate) and
+use as `τ` the decay time.
 """
-function estimate_delay(x::AbstractVector, method::String; τs = 1:2:100, kwargs...)
-    method ∈ ("ac_zero", "ac_min", "ac_zero", "ac_min") ||
+function estimate_delay(x::AbstractVector, method::String,
+    τs = 1:2:min(100, length(x)); kwargs...)
+
+    method ∈ ("ac_zero", "ac_min", "mi_min") ||
         throw(ArgumentError("Unknown method"))
 
     if method=="ac_zero"
-        c = autocor(x, 0:length(x)÷10; demean=true)
+        c = autocor(x, τs; demean=true)
         i = 1
         # Find 0 crossing:
         while c[i] > 0
             i += 1
-            i == length(c) && break
+            if i == length(c)
+                @warn "Did not cross 0 value, returning last `τ`."
+                return τs[end]
+            end
         end
-        return i
-
+        return τs[i]
     elseif method=="ac_min"
-        c = autocor(x, 0:length(x)÷10, demean=true)
-        i = 1
-        # Find min crossing:
-        while c[i+1] < c[i]
-            i+= 1
-            i == length(c)-1 && break
-        end
-        return i
-    elseif method == "mi_zero"
-        c = mutualinformation(s, τs; kwargs...)
-        i = 1
-        # Find 0 crossing:
-        while c[i] > 0
-            i += 1
-            i == length(c) && break
-        end
-        return i
+        c = autocor(x, τs, demean=true)
+        return mincrossing(c, τs)
     elseif method=="mi_min"
-        c = mutualinformation(s, τs; kwargs...)
-        i = 1
-        # Find min crossing:
-        while c[i+1] < c[i]
-            i+= 1
-            i == length(c)-1 && break
-        end
-        return i
+        c = mutualinformation(x, τs; kwargs...)
+        return mincrossing(c, τs)
     # elseif method=="exp_decay"
     #     c = autocor(x, demean=true)
     #     # Find exponential fit:
     #     τ = exponential_decay(c)
     #     return round(Int,τ)
     end
+end
+
+function mincrossing(c, τs)
+    i = 1
+    while c[i+1] < c[i]
+        i+= 1
+        if i == length(c)-1
+            @warn "Did not encounter a minimum, returning last `τ`."
+            return τs[end]
+        end
+    end
+    return τs[i]
 end
 
 
@@ -124,15 +124,17 @@ end
 #     return decay
 # end
 
-## Average Mutual Information
-
+#####################################################################################
+#                               Estimate Delay Times                                #
+#####################################################################################
+export mutualinformation
 """
     mutualinformation(s, τs[; nbins, binwidth])
 
 Calculate the mutual information between the time series `s` and its images
 delayed by `τ` points for `τ` ∈ `τs`.
 
-## Description:
+## Description
 
 The joint space of `s` and its `τ`-delayed image (`sτ`) is partitioned as a
 rectangular grid, and the mutual information is computed from the joint and
@@ -158,12 +160,12 @@ For performance and stability reasons, the automatic partition method implemente
 in this function is only used to divide the axes of the grid, using the marginal
 frequencies of `s`.
 
-## References:
+## References
 [1]: Fraser A.M. & Swinney H.L. "Independent coordinates for strange attractors
 from mutual information" *Phys. Rev. A 33*(2), 1986, 1134:1140.
 """
 function mutualinformation(s::AbstractVector{T}, τs::AbstractVector{Int}; kwargs...) where {T}
-    n = length(x)
+    n = length(s)
     nτ = n-maximum(τs)
     perm = sortperm(s[1:nτ])
     # Choose partition method
