@@ -19,46 +19,6 @@ end
 
 test_value = (val, vmin, vmax) -> @test vmin <= val <= vmax
 
-@testset "Estimate Delay" begin
-
-    ds = Systems.henon()
-    data = trajectory(ds,1000;dt=1)
-    x = data[:,1]
-    @test DelayEmbeddings.estimate_delay(x,"first_zero") <= 2
-    @test DelayEmbeddings.estimate_delay(x,"first_min")  <= 2
-    # @test DelayEmbeddings.estimate_delay(x,"exp_decay")  <= 2
-    # @test 3 <= DelayEmbeddings.estimate_delay(x,"mutual_inf"; k=1) <= 10
-    # @test 3 <= DelayEmbeddings.estimate_delay(x,"mutual_inf"; k=10) <= 10
-
-    ds = Systems.roessler(ones(3))
-    dt = 0.01
-    data = trajectory(ds,200,dt=dt)
-    x = data[:,1]
-    @test 1.3 <= DelayEmbeddings.estimate_delay(x,"first_zero")*dt <= 1.7
-    @test 2.6 <= DelayEmbeddings.estimate_delay(x,"first_min")*dt  <= 3.4
-
-    dt = 0.1
-    data = trajectory(ds,2000,dt=dt)
-    x = data[:,1]
-    @test 1.3 <= DelayEmbeddings.estimate_delay(x,"first_zero")*dt <= 1.7
-    @test 2.6 <= DelayEmbeddings.estimate_delay(x,"first_min")*dt  <= 3.4
-    # @test 1.3 <= DelayEmbeddings.estimate_delay(x,"mutual_inf")*dt <= 1.8
-    # @test 1.3 <= DelayEmbeddings.estimate_delay(x,"mutual_inf"; maxtau=150, k = 2)*dt <= 1.7
-
-    # ds = Systems.lorenz()
-    # dt = 0.05
-    # data = trajectory(ds,1000;dt=dt)
-    # x = data[500:end,1]
-    # # @test 0.1 <= DelayEmbeddings.estimate_delay(x,"mutual_inf")*dt <= 0.4
-    # @test 0.1 <= DelayEmbeddings.estimate_delay(x,"exp_decay")*dt  <= 0.4
-    #
-    dt = 0.1
-    data = trajectory(ds,2000;dt=dt)
-    x = data[:,1]
-    # @test 0.1 <= DelayEmbeddings.estimate_delay(x,"exp_decay")*dt  <= 0.4
-end
-
-
 @testset "Estimate Dimension" begin
     s = sin.(0:0.1:1000)
     τ = 15
