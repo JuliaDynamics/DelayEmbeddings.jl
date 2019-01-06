@@ -1,4 +1,4 @@
-using ChaosTools, DelayEmbeddings
+using DelayEmbeddings, ChaosTools
 using Test
 
 println("\nTesting R-param. estimation...")
@@ -74,10 +74,12 @@ end
     s_roessler = data[:,1]
     Ds = 1:5
     E1s = DelayEmbeddings.estimate_dimension(s_roessler, τ, Ds)
-    E2s = DelayEmbeddings.stochastic_indicator(s_roessler, τ, Ds)
     @test saturation_point(Ds,E1s; threshold=0.1) ∈ [2, 3]
+    E2s = DelayEmbeddings.stochastic_indicator(s_roessler, τ, Ds)
     @test minimum(E2s) < 0.3
 
+    E1s = DelayEmbeddings.estimate_dimension(s_roessler, τ, Ds;metric = Chebyshev())
+    @test saturation_point(Ds,E1s; threshold=0.1) ∈ [2, 3]
 
     ds = Systems.lorenz();τ=5; dt=0.01
     data = trajectory(ds,500;dt=dt)
@@ -121,6 +123,8 @@ end
     τ = 15
     Ds = 1:5
     ffnn_ratio = DelayEmbeddings.estimate_dimension(s_roessler, τ, Ds, "f1nn")
+    @test saturation_point(Ds,(1 .- ffnn_ratio); threshold=0.1) ∈ [2, 3]
+    ffnn_ratio = DelayEmbeddings.estimate_dimension(s_roessler, τ, Ds, "f1nn";metric=Chebyshev())
     @test saturation_point(Ds,(1 .- ffnn_ratio); threshold=0.1) ∈ [2, 3]
 
     τ = 15

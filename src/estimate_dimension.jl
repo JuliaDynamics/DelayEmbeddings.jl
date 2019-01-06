@@ -1,20 +1,11 @@
-using NearestNeighbors, Statistics
+using NearestNeighbors, Statistics, Distances
 
 export estimate_dimension, stochastic_indicator
+export Euclidean, Chebyshev, Cityblock
+
 #####################################################################################
 #                                Estimate Dimension                                 #
 #####################################################################################
-
-# Function to increase the distance (p-norm) between two points `(i,j)` of
-# the embedded time `s`series, by adding one temporal neighbor
-function _increase_distance(δ::T, s::AbstractVector, i::Int, j::Int, γ::Int, τ::Int, p) where {T}
-    if p==Inf
-        return T( max(δ, abs(s[i+γ*τ+τ] - s[j+γ*τ+τ])) )
-    else
-        return T( (δ^p + abs(s[i+γ*τ+τ] - s[j+γ*τ+τ])^p )^(1/p) )
-    end
-end
-
 """
     estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn"; kwargs...)
 
@@ -40,6 +31,12 @@ The quantity that is calculated depends on the algorithm defined by the string `
     when the dimension increases. This number drops down to zero near the
     optimal value of `γ` (see [`f1nn`](@ref)).
 
+`"afnn"` and `"f1nn"` also support the `metric` keyword, which can be any of
+`Cityblock(), Euclidean(), Chebyshev()`. This metric is used both
+for computing the nearest neighbors (`KDTree`s) as well as the distances necessary for
+Cao's method (eqs. (2, 3) of [1]). Defaults to `Euclidean()` (note that [1] used
+`Chebyshev`).
+
 Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
 neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
 
@@ -52,19 +49,21 @@ neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref
 
 [3] : Anna Krakovská *et al.*, [J. Complex Sys. 932750 (2015)](https://doi.org/10.1155/2015/932750)
 """
-function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn"; kwargs...)
+function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn";
+    metric = Euclidean(), kwargs...)
+
     if method == "afnn"
-        return afnn(s, τ, γs)
+        return afnn(s, τ, γs, metric)
     elseif method == "fnn"
         return fnn(s, τ, γs; kwargs...)
     elseif method == "f1nn"
-        return f1nn(s, τ, γs)
+        return f1nn(s, τ, γs, metric)
     end
 end
 
 
 """
-    afnn(s::AbstractVector, τ:Int, γs = 1:5, p = Inf)
+    afnn(s::AbstractVector, τ:Int, γs = 1:5, metric=Euclidean())
 
 Compute the parameter E₁ of Cao's "averaged false nearest neighbors" method for
 determining the minimum embedding dimension of the time series `s`, with
@@ -92,12 +91,12 @@ See also: [`estimate_dimension`](@ref), [`fnn`](@ref), [`f1nn`](@ref).
 
 [1] : Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
 """
-function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, p=Inf) where {T}
+function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Euclidean()) where {T}
     E1s = zeros(length(γs))
     aafter = 0.0
-    aprev = _average_a(s, γs[1], τ, p)
+    aprev = _average_a(s, γs[1], τ, metric)
     for (i, γ) ∈ enumerate(γs)
-        aafter = _average_a(s, γ+1, τ, p)
+        aafter = _average_a(s, γ+1, τ, metric)
         E1s[i] = aafter/aprev
         aprev = aafter
     end
@@ -105,26 +104,154 @@ function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, p=Inf) where {T}
 end
 # then use function `saturation_point(γs, E1s)` from ChaosTools
 
-function _average_a(s::AbstractVector{T},γ,τ,p) where {T}
+function _average_a(s::AbstractVector{T},γ,τ,metric) where {T}
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
     Rγ = reconstruct(s[1:end-τ],γ,τ)
-    tree2 = KDTree(Rγ)
+    tree2 = KDTree(Rγ, metric)
     nind = (x = knn(tree2, Rγ.data, 2)[1]; [ind[1] for ind in x])
-    e=0.
-    for (i,j) ∈ enumerate(nind)
-        δ = norm(Rγ[i]-Rγ[j], p)
+    e = 0.0
+    @inbounds for (i,j) ∈ enumerate(nind)
+        δ = evaluate(metric, Rγ[i], Rγ[j])
         #If Rγ[i] and Rγ[j] are still identical, choose the next nearest neighbor
-        if δ == 0.
+        if δ == 0.0
             j = knn(tree2, Rγ[i], 3, true)[1][end]
-            δ = norm(Rγ[i]-Rγ[j], p)
+            δ = evaluate(metric, Rγ[i], Rγ[j])
         end
-        e += _increase_distance(δ,s,i,j,γ,τ,p)/δ
+        e += _increase_distance(δ,s,i,j,γ,τ,metric)/δ
     end
     return e / (length(Rγ)-1)
 end
 
-function dimension_indicator(s,γ,τ,p=Inf) #this is E1, equation (3) of Cao
-    return _average_a(s,γ+1,τ,p)/_average_a(s,γ,τ,p)
+# Function to increase the distance (p-norm) between two points `(i,j)` of
+# the embedded time `s`series, by adding one temporal neighbor
+_increase_distance(δ, s, i::Int, j::Int, γ::Int, τ::Int, ::Chebyshev) =
+    max(δ, abs(s[i+γ*τ+τ] - s[j+γ*τ+τ]))
+_increase_distance(δ, s, i::Int, j::Int, γ::Int, τ::Int, ::Euclidean) =
+    sqrt(δ*δ + abs2(s[i+γ*τ+τ] - s[j+γ*τ+τ]) )
+_increase_distance(δ, s, i::Int, j::Int, γ::Int, τ::Int, ::Cityblock) =
+    δ + abs(s[i+γ*τ+τ] - s[j+γ*τ+τ])
+
+"""
+    fnn(s::AbstractVector, τ:Int, γs = 1:5; rtol=10.0, atol=2.0)
+
+Calculate the number of "false nearest neighbors" (FNN) of the datasets created
+from `s` with a sequence of `τ`-delayed temporal neighbors.
+
+## Description
+Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ`,
+the "false nearest neighbors" (FNN) are the pairs of points that are nearest to
+each other at dimension `γ`, but are separated at dimension `γ+1`. Kennel's
+criteria for detecting FNN are based on a threshold for the relative increment
+of the distance between the nearest neighbors (`rtol`, eq. 4 in [1]), and
+another threshold for the ratio between the increased distance and the
+"size of the attractor" (`atol`, eq. 5 in [1]). These thresholds are given
+as keyword arguments.
+
+The returned value is a vector with the number of FNN for each `γ ∈ γs`. The
+optimal value for `γ` is found at the point where the number of FNN approaches
+zero.
+
+Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
+neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
+
+See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`f1nn`](@ref).
+
+## References
+
+[1] : M. Kennel *et al.*, "Determining embedding dimension for phase-space
+reconstruction using a geometrical construction", *Phys. Review A 45*(6), 3403-3411
+(1992).
+"""
+function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10.0, atol=2.0)
+    rtol2 = rtol^2
+    Ra = std(s, corrected=false)
+    nfnn = zeros(length(γs))
+    @inbounds for (k, γ) ∈ enumerate(γs)
+        y = reconstruct(s[1:end-τ],γ,τ)
+        tree = KDTree(y)
+        nind = (x = knn(tree, y.data, 2)[1]; [ind[1] for ind in x])
+        for (i,j) ∈ enumerate(nind)
+            δ = norm(y[i]-y[j], 2)
+            # If y[i] and y[j] are still identical, choose the next nearest neighbor
+            # as in Cao's algorithm (not suggested by Kennel, but still advisable)
+            if δ == 0.0
+                j = knn(tree, y[i], 3, true)[1][end]
+                δ = norm(y[i]-y[j])
+            end
+            δ1 = _increase_distance(δ,s,i,j,γ,τ,Euclidean())
+            cond_1 = ((δ1/δ)^2 - 1 > rtol2) # equation (4) of Kennel
+            cond_2 = (δ1/Ra > atol)         # equation (5) of Kennel
+            if cond_1 | cond_2
+                nfnn[k] += 1
+            end
+        end
+    end
+    return nfnn
+end
+
+"""
+    f1nn(s::AbstractVector, τ:Int, γs = 1:5, metric = Euclidean())
+
+Calculate the ratio of "false first nearest neighbors" (FFNN) of the datasets created
+from `s` with a sequence of `τ`-delayed temporal neighbors.
+
+## Description
+Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ`,
+the "first nearest neighbors" (FFNN) are the pairs of points that are nearest to
+each other at dimension `γ` that cease to be nearest neighbors at dimension
+`γ+1` [1].
+
+The returned value is a vector with the ratio between the number of FFNN and
+the number of points in the dataset for each `γ ∈ γs`. The optimal value for `γ`
+is found at the point where this ratio approaches zero.
+
+Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
+neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
+
+See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`fnn`](@ref).
+
+## References
+
+[1] : Anna Krakovská *et al.*, "Use of false nearest neighbours for selecting
+variables and embedding parameters for state space reconstruction", *J Complex
+Sys* 932750 (2015), DOI: 10.1155/2015/932750
+"""
+function f1nn(s::AbstractVector, τ::Int, γs = 1:5, metric = Euclidean())
+    f1nn_ratio = zeros(length(γs))
+    γ_prev = 0 # to recall what γ has been analyzed before
+    Rγ = reconstruct(s[1:end-τ],γs[1],τ) # this is for the first iteration
+    for (i, γ) ∈ enumerate(γs)
+        if i>1 && γ!=γ_prev+1
+            # Re-calculate the series with γ delayed dims if γ does not follow
+            # the dimension of the previous iteration
+            Rγ = reconstruct(s[1:end-τ],γ,τ)
+        end
+        (nf1nn, Rγ) = _compare_first_nn(s,γ,τ,Rγ,metric)
+        f1nn_ratio[i] = nf1nn/length(Rγ)
+        # Trim Rγ for the next iteration
+        Rγ = Rγ[1:end-τ,:]
+        γ_prev = γ
+    end
+    return f1nn_ratio
+end
+
+function _compare_first_nn(s, γ::Int, τ::Int, Rγ::Dataset{D,T}, metric) where {D,T}
+    # This function compares the first nearest neighbors of `s`
+    # embedded with Dimensions `γ` and `γ+1` (the former given as input)
+    tree = KDTree(Rγ,metric)
+    Rγ1 = reconstruct(s,γ+1,τ)
+    tree1 = KDTree(Rγ1,metric)
+    nf1nn = 0
+    # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k`
+    nind = (x = knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
+    @inbounds for  (i,j) ∈ enumerate(nind)
+        k = knn(tree1, Rγ1.data[i], 2, true)[1][end]
+        if j != k
+            nf1nn += 1
+        end
+    end
+    # `Rγ1` is returned to re-use it if necessary
+    return (nf1nn, Rγ1)
 end
 
 
@@ -173,127 +300,4 @@ function stochastic_indicator(s::AbstractVector{T},τ, γs=1:4) where T # E2, eq
         push!(E2s, Es1/Es2)
     end
     return E2s
-end
-
-"""
-    fnn(s::AbstractVector, τ:Int, γs = 1:5; rtol=10., atol=2.)
-
-Calculate the number of "false nearest neighbors" (FNN) of the datasets created
-from `s` with a sequence of `τ`-delayed temporal neighbors.
-
-## Description
-Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ`,
-the "false nearest neighbors" (FNN) are the pairs of points that are nearest to
-each other at dimension `γ`, but are separated at dimension `γ+1`. Kennel's
-criteria for detecting FNN are based on a threshold for the relative increment
-of the distance between the nearest neighbors (`rtol`, eq. 4 in [1]), and
-another threshold for the ratio between the increased distance and the
-"size of the attractor" (`atol`, eq. 5 in [1]). These thresholds are given
-as keyword arguments.
-
-The returned value is a vector with the number of FNN for each `γ ∈ γs`. The
-optimal value for `γ` is found at the point where the number of FNN approaches
-zero.
-
-Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
-neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
-
-See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`f1nn`](@ref).
-
-## References
-
-[1] : M. Kennel *et al.*, "Determining embedding dimension for phase-space
-reconstruction using a geometrical construction", *Phys. Review A 45*(6), 3403-3411
-(1992).
-"""
-function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10., atol=2.)
-    rtol2 = rtol^2
-    Ra = std(s, corrected=false)
-    nfnn = zeros(length(γs))
-    for (k, γ) ∈ enumerate(γs)
-        y = reconstruct(s[1:end-τ],γ,τ)
-        tree = KDTree(y)
-        nind = (x = knn(tree, y.data, 2)[1]; [ind[1] for ind in x])
-        for (i,j) ∈ enumerate(nind)
-            δ = norm(y[i]-y[j], 2)
-            # If y[i] and y[j] are still identical, choose the next nearest neighbor
-            # as in Cao's algorithm (not suggested by Kennel, but still advisable)
-            if δ == 0.
-                j = knn(tree, y[i], 3, true)[1][end]
-                δ = norm(y[i]-y[j], 2)
-            end
-            δ1 = _increase_distance(δ,s,i,j,γ,τ,2)
-            cond_1 = ((δ1/δ)^2 - 1 > rtol2) # equation (4) of Kennel
-            cond_2 = (δ1/Ra > atol)         # equation (5) of Kennel
-            if cond_1 | cond_2
-                nfnn[k] += 1
-            end
-        end
-    end
-    return nfnn
-end
-
-"""
-    f1nn(s::AbstractVector, τ:Int, γs = 1:5)
-
-Calculate the ratio of "false first nearest neighbors" (FFNN) of the datasets created
-from `s` with a sequence of `τ`-delayed temporal neighbors.
-
-## Description
-Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ`,
-the "first nearest neighbors" (FFNN) are the pairs of points that are nearest to
-each other at dimension `γ` that cease to be nearest neighbors at dimension
-`γ+1` [1].
-
-The returned value is a vector with the ratio between the number of FFNN and
-the number of points in the dataset for each `γ ∈ γs`. The optimal value for `γ`
-is found at the point where this ratio approaches zero.
-
-Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
-neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
-
-See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`fnn`](@ref).
-
-## References
-
-[1] : Anna Krakovská *et al.*, "Use of false nearest neighbours for selecting
-variables and embedding parameters for state space reconstruction", *J Complex
-Sys* 932750 (2015), DOI: 10.1155/2015/932750
-"""
-function f1nn(s::AbstractVector, τ::Int, γs = 1:5)
-    f1nn_ratio = zeros(length(γs))
-    γ_prev = 0 # to recall what γ has been analyzed before
-    Rγ = reconstruct(s[1:end-τ],γs[1],τ) # this is for the first iteration
-    for (i, γ) ∈ enumerate(γs)
-        if i>1 && γ!=γ_prev+1
-            # Re-calculate the series with γ delayed dims if γ does not follow
-            # the dimension of the previous iteration
-            Rγ = reconstruct(s[1:end-τ],γ,τ)
-        end
-        (nf1nn, Rγ) = _compare_first_nn(s,γ,τ,Rγ)
-        f1nn_ratio[i] = nf1nn/length(Rγ)
-        # Trim Rγ for the next iteration
-        Rγ = Rγ[1:end-τ,:]
-        γ_prev = γ
-    end
-    return f1nn_ratio
-end
-
-function _compare_first_nn(s::AbstractVector{T},γ::Int,τ::Int,Rγ::Dataset{D,T}) where {D} where {T}
-    # This function compares the first nearest neighbors of `s`
-    # embedded with Dimensions `γ` and `γ+1` (the former given as input)
-    tree = KDTree(Rγ)
-    Rγ1 = reconstruct(s,γ+1,τ)
-    tree1 = KDTree(Rγ1)
-    nf1nn = 0
-    # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k`
-    nind = (x = knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
-    for  (i,j) ∈ enumerate(nind)
-        k = knn(tree1, Rγ1.data[i], 2, true)[1][end]
-        if j != k
-            nf1nn += 1
-        end
-    end
-    # `Rγ1` is returned to re-use it if necessary
-    return (nf1nn, Rγ1)
 end
