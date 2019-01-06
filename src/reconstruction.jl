@@ -209,3 +209,6 @@ end
     end
     return Dataset{X, T}(data)
 end
+
+reconstruct(s::AbstractMatrix, args...) = reconstruct(Dataset(s), args...)
+
