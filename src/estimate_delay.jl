@@ -23,6 +23,9 @@ The `method` can be one of the following:
 Both the mutual information and correlation function (`autocor`) are computed _only_
 for delays `τs`. This means that the `min` methods can never return the first value
 of `τs`!
+
+The method `mi_min` is significantly more accurate than the others and also returns
+good results for most timeseries. It is however the slowest method (but still quite fast!).
 """
 function estimate_delay(x::AbstractVector, method::String,
     τs = 1:2:min(100, length(x)); kwargs...)
