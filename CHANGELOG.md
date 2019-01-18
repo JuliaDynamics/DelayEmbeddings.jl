@@ -1,3 +1,6 @@
+# v1.0.0
+Nothing changed from the previous version. This is just the official 1.0 release in accordance with SymVer. :)
+
 # v0.3.0
 
 - Added a new and superior method to compute mutual information, based on the algorithm of Fraser

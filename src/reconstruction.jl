@@ -22,7 +22,7 @@ embedding(s, n)
 will create the `n`-th reconstructed vector of the embedded space, which has `γ`
 temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-*Be very careful when choosing `n`, because `@inbounds` is used internally.*
+**Be very careful when choosing `n`, because `@inbounds` is used internally.**
 """
 struct DelayEmbedding{γ} <: AbstractEmbedding
     delays::SVector{γ, Int}
@@ -140,7 +140,7 @@ embed(s, D, τ) = reconstruct(s, D-1, τ)
     MTDelayEmbedding(γ, τ, B) -> `embedding`
 Return a delay coordinates embedding structure to be used as a functor,
 given multiple timeseries (`B` in total), either as a [`Dataset`](@ref) or a
-`SizedArray` (see [`reconstruct`](@ref)), and some index.
+`SizedArray`), and some index.
 Calling
 ```julia
 embedding(s, n)
@@ -148,7 +148,7 @@ embedding(s, n)
 will create the `n`-th reconstructed vector of the embedded space, which has `γ`
 temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-*Be very careful when choosing `n`, because `@inbounds` is used internally.*
+**Be very careful when choosing `n`, because `@inbounds` is used internally.**
 """
 struct MTDelayEmbedding{γ, B, X} <: AbstractEmbedding
     delays::SMatrix{γ, B, Int, X} # X = γ*B = total dimension number
@@ -211,4 +211,3 @@ end
 end
 
 reconstruct(s::AbstractMatrix, args...) = reconstruct(Dataset(s), args...)
-
