@@ -41,4 +41,13 @@ testval = (val, vmin, vmax) -> @test vmin ≤ val ≤ vmax
     data = trajectory(ds,5000;dt=dt,diffeq...)
     x = data[500:end,1]
     @test 0 < estimate_delay(x,"exp_extrema", 0:2:200)  < 200
+
+    # Issue #18
+    ds = Systems.gissinger(ones(3)) # 3D continuous chaotic system, also shown in orbit diagrams tutorial
+    dt = 0.05
+    data = trajectory(ds, 1000.0, dt = dt)
+    s = data[:, 1]
+
+    τ = estimate_delay(s, "mi_min", 0:1:400) # this was the erroring line
+    @test τ > 0
 end
