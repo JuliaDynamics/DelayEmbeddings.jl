@@ -266,7 +266,7 @@ function _frequencies!(f::AbstractVector{T}, edges::AbstractVector,
         end
         # when `s[i]` goes after the upper limit of the current bin,
         # move to the next bin and repeat until `s[i]` is found
-        while s[i] > edges[b+1]
+        while s[i] > edges[b+1] && b < nbins
             b += 1
         end
         f[b] += 1 # add point to the current bin
