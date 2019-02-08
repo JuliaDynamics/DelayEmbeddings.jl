@@ -77,9 +77,6 @@ This quantity is a ratio of the averaged distances between the nearest neighbors
 of the reconstructed time series, which quantifies the increment of those
 distances when the number of temporal neighbors changes from `γ` to `γ+1`.
 
-Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
-neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
-
 Return the vector of all computed `E₁`s. To estimate a good value for `γ` from this,
 find `γ` for which the value `E₁` saturates at some value around 1.
 
@@ -151,9 +148,6 @@ The returned value is a vector with the number of FNN for each `γ ∈ γs`. The
 optimal value for `γ` is found at the point where the number of FNN approaches
 zero.
 
-Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
-neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
-
 See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`f1nn`](@ref).
 
 ## References
@@ -204,9 +198,6 @@ each other at dimension `γ` that cease to be nearest neighbors at dimension
 The returned value is a vector with the ratio between the number of FFNN and
 the number of points in the dataset for each `γ ∈ γs`. The optimal value for `γ`
 is found at the point where this ratio approaches zero.
-
-Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
-neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
 
 See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`fnn`](@ref).
 
