@@ -27,7 +27,7 @@ testval = (val, vmin, vmax) -> @test vmin ≤ val ≤ vmax
     x = data[:,1]
     @test 1.3 ≤ estimate_delay(x,"ac_zero", 1:2:500)*dt ≤ 1.7
     @test 2.6 ≤ estimate_delay(x,"ac_min", 1:2:500)*dt  ≤ 3.4
-    @test 1.15 ≤ estimate_delay(x,"mi_min", 1:2:500)*dt ≤ 1.6
+    @test 1.0 ≤ estimate_delay(x,"mi_min", 1:2:500)*dt ≤ 1.6
 
     dt = 0.1
     data = trajectory(ds,2000.0;dt=dt,diffeq...)
