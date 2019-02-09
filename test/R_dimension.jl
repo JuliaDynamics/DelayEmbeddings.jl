@@ -1,4 +1,4 @@
-using DelayEmbeddings, ChaosTools
+using DelayEmbeddings, ChaosTools, OrdinaryDiffEq
 using Test
 
 println("\nTesting R-param. estimation...")
@@ -30,7 +30,7 @@ test_value = (val, vmin, vmax) -> @test vmin <= val <= vmax
     # @test minimum(E2s) < 0.1 # THIS TEST FAILS
 
     ds = Systems.roessler();τ=15; dt=0.1
-    data = trajectory(ds,1000;dt=dt)
+    data = trajectory(ds,1000;dt=dt,diffeq...)
     s_roessler = data[:,1]
     Ds = 1:5
     E1s = DelayEmbeddings.estimate_dimension(s_roessler, τ, Ds)
@@ -42,7 +42,7 @@ test_value = (val, vmin, vmax) -> @test vmin <= val <= vmax
     @test saturation_point(Ds,E1s; threshold=0.1) ∈ [2, 3]
 
     ds = Systems.lorenz();τ=5; dt=0.01
-    data = trajectory(ds,500;dt=dt)
+    data = trajectory(ds,500;dt=dt,diffeq...)
     s_lorenz = data[:,1]
     Ds = 1:5
     E1s = DelayEmbeddings.estimate_dimension(s_lorenz, τ, Ds)

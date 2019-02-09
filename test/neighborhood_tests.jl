@@ -41,7 +41,7 @@ println("\nTesting neighborhoods...")
         end
 
         ds = Systems.lorenz()
-        data = trajectory(ds, 200, dt = 0.001)
+        data = trajectory(ds, 200, dt = 0.001, alg = Vern9())
         tree = KDTree(data)
 
         point1 = data[10000]
