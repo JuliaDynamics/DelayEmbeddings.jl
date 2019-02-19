@@ -203,8 +203,8 @@ function matstring(d::AbstractDataset{D, T}) where {D, T}
     return tos
 end
 
-Base.show(io::IO, d::AbstractDataset) = println(io, matstring(d))
-
+Base.show(io::IO, ::MIME"text/plain", d::AbstractDataset) = print(io, matstring(d))
+Base.show(io::IO, d::AbstractDataset) = print(io, summary(d))
 
 #####################################################################################
 #                                 Minima and Maxima                                 #
