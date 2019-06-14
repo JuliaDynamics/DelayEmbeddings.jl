@@ -1,4 +1,4 @@
-# v1.0.4
+# v1.1.0
 - Added a recipe to plot `Datasets` as `Matrices` in `Plots.jl`
 
 # v1.0.0
