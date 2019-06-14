@@ -1,5 +1,8 @@
+# v1.0.4
+- Added a recipe to plot `Datasets` as `Matrices` in `Plots.jl`
+
 # v1.0.0
-Nothing changed from the previous version. This is just the official 1.0 release in accordance with SymVer. :)
+Nothing changed from the previous version. This is just the official 1.0 release in accordance with SemVer. :)
 
 # v0.3.0
 
