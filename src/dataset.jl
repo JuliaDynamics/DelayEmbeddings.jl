@@ -1,6 +1,8 @@
 using StaticArrays, LinearAlgebra
 using Base.Iterators: flatten
 
+import RecipesBase
+
 export Dataset, AbstractDataset, minima, maxima
 export minmaxima, columns
 
@@ -205,6 +207,17 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", d::AbstractDataset) = print(io, matstring(d))
 Base.show(io::IO, d::AbstractDataset) = print(io, summary(d))
+
+#####################################################################################
+#                                      Plotting                                     #
+#####################################################################################
+
+# Support the plotting of Datasets-as-Matrices
+RecipesBase.@recipe function f(::Type{AbstractDataset}, val::AbstractDataset)
+
+    return Matrix(val)
+
+end
 
 #####################################################################################
 #                                 Minima and Maxima                                 #
