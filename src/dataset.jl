@@ -209,15 +209,12 @@ Base.show(io::IO, ::MIME"text/plain", d::AbstractDataset) = print(io, matstring(
 Base.show(io::IO, d::AbstractDataset) = print(io, summary(d))
 
 #####################################################################################
-#                                      Plotting                                     #
+#                                     Plotting                                      #
 #####################################################################################
 
 # Support the plotting of Datasets-as-Matrices
-RecipesBase.@recipe function f(::Type{AbstractDataset}, val::AbstractDataset)
+RecipesBase.@recipe f(::Type{T}, vals::T) where {T<:AbstractDataset} = Matrix(vals)
 
-    return Matrix(val)
-
-end
 
 #####################################################################################
 #                                 Minima and Maxima                                 #
