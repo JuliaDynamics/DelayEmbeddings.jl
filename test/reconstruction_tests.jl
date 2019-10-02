@@ -19,6 +19,22 @@ println("\nTesting reconstruct...")
     	end
     end
 
+    @testset "weighted" begin
+
+    	@testset "D = $(D), τ = $(τ)" for D in [1,2], τ in [2,3]
+
+            w = 0.1
+    		R1 = reconstruct(s, D, τ)
+    		R2 = reconstruct(s, D, τ, w)
+
+            for γ in 0:D
+                @test  (w^γ) * R1[1, γ+1][1] == R2[1, γ+1]
+                @test  (w^γ) * R1[5, γ+1][1] == R2[5, γ+1]
+            end
+    	end
+    end
+
+
     @testset "multi-time" begin
 
         D = 2
