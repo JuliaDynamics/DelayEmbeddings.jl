@@ -1,6 +1,7 @@
 using StaticArrays
 using Base: @_inline_meta
 export reconstruct, DelayEmbedding, AbstractEmbedding, MTDelayEmbedding, embed
+export WeightedDelayEmbedding
 
 #####################################################################################
 #                        Delay Embedding Reconstruction                             #
@@ -48,13 +49,42 @@ end
     end
 end
 
+# Weighted version
+export WeightedDelayEmbedding
 """
-    reconstruct(s, γ, τ)
+    WeightedDelayEmbedding(γ, τ, w) -> `embedding`
+Similar with [`DelayEmbedding`](@ref), but the entries of the
+embedded vector are further weighted with `w^γ`.
+See [`reconstruct`](@ref) for more.
+
+**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+"""
+struct WeightedDelayEmbedding{γ, T<:Real} <: AbstractEmbedding
+    delays::SVector{γ, Int}
+    w::T
+end
+
+@inline WeightedDelayEmbedding(γ, τ, w) = WeightedDelayEmbedding(Val{γ}(), τ, w)
+@inline function WeightedDelayEmbedding(::Val{γ}, τ::Int, w::T) where {γ, T}
+    idxs = [k*τ for k in 1:γ]
+    return WeightedDelayEmbedding{γ, T}(SVector{γ, Int}(idxs...), w)
+end
+
+@generated function (r::WeightedDelayEmbedding{γ, T})(s::AbstractArray{X}, i) where {γ, T, X}
+    gens = [:(r.w^($k) * s[i + r.delays[$k]]) for k=1:γ]
+    quote
+        @_inline_meta
+        @inbounds return SVector{$γ+1,X}(s[i], $(gens...))
+    end
+end
+
+"""
+    reconstruct(s, γ, τ [, w])
 Reconstruct `s` using the delay coordinates embedding with `γ` temporal neighbors
 and delay `τ` and return the result as a [`Dataset`](@ref).
 
-See [`embed`](@ref) for the version that accepts the embedding dimension `D = γ+1`
-directly.
+Use [`embed`](@ref) for the version that accepts the embedding dimension `D = γ+1`
+instead.
 
 ## Description
 ### Single Timeseries
@@ -76,6 +106,12 @@ The case of different delay times allows reconstructing systems with many time s
 see [3].
 
 *Notice* - The dimension of the returned dataset (i.e. embedding dimension) is `γ+1`!
+
+If `w` (a "weight") is provided as an extra argument, then the entries
+of the embedded vector are further weighted with ``w^\\gamma``, like so
+```math
+(s(n), w*s(n+\\tau), w^2*s(n+2\\tau), \\dots,w^\\gamma * s(n+γ\\tau))
+```
 
 ### Multiple Timeseries
 To make a reconstruction out of a multiple timeseries (i.e. trajectory) the number
@@ -112,7 +148,15 @@ function reconstruct(s::AbstractVector{T}, γ, τ) where {T}
     de::DelayEmbedding{γ} = DelayEmbedding(Val{γ}(), τ)
     return reconstruct(s, de)
 end
-@inline function reconstruct(s::AbstractVector{T}, de::DelayEmbedding{γ}) where {T, γ}
+function reconstruct(s::AbstractVector{T}, γ, τ, w) where {T}
+    if γ == 0
+        return Dataset{1, T}(s)
+    end
+    de = WeightedDelayEmbedding(Val{γ}(), τ, w)
+    return reconstruct(s, de)
+end
+@inline function reconstruct(s::AbstractVector{T},
+    de::Union{WeightedDelayEmbedding{γ}, DelayEmbedding{γ}}) where {T, γ}
     L = length(s) - maximum(de.delays)
     data = Vector{SVector{γ+1, T}}(undef, L)
     @inbounds for i in 1:L
