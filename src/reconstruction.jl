@@ -83,8 +83,8 @@ end
 Reconstruct `s` using the delay coordinates embedding with `γ` temporal neighbors
 and delay `τ` and return the result as a [`Dataset`](@ref).
 
-See [`embed`](@ref) for the version that accepts the embedding dimension `D = γ+1`
-directly.
+Use [`embed`](@ref) for the version that accepts the embedding dimension `D = γ+1`
+instead.
 
 ## Description
 ### Single Timeseries
@@ -107,8 +107,8 @@ see [3].
 
 *Notice* - The dimension of the returned dataset (i.e. embedding dimension) is `γ+1`!
 
-If `w` (a "weight") is provided as a final argument, then the ``\\gamma``-th entry
-of the embedded space is further weighted with ``w^\\gamma``, like so
+If `w` (a "weight") is provided as an extra argument, then the entries
+of the embedded vector are further weighted with ``w^\\gamma``, like so
 ```math
 (s(n), w*s(n+\\tau), w^2*s(n+2\\tau), \\dots,w^\\gamma * s(n+γ\\tau))
 ```
