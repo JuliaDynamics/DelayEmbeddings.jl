@@ -39,6 +39,9 @@ abstract type AbstractDataset{D, T} end
 Dataset([d[k] for k in i])
 @inline Base.getindex(d::AbstractDataset, i::Int, j::AbstractRange) =
 [d.data[i][k] for k in j]
+# Indexing with boolean vectors
+Base.getindex(d::AbstractDataset, i::AbstractVector{Bool}, j::Colon) =
+Dataset(d[i])
 
 # this function could be done generated
 function Base.getindex(d::AbstractDataset{D,T}, i::AbstractVector{Int},

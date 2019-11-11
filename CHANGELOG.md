@@ -1,3 +1,5 @@
+# v1.2.1
+* Allow indexing datasets with boolean vectors.
 # v1.2.0
 - New embedding method `WeightedDelayEmbedding`, which does the same as `DelayEmbedding` but further weights the entries of the embedded space by a weight `w^γ` for each `γ`. See the updated docstring of `reconstruct`.
 # v1.1.0
