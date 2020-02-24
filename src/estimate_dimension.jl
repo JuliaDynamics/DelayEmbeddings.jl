@@ -191,7 +191,7 @@ from `s` with a sequence of `τ`-delayed temporal neighbors.
 
 ## Description
 Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ`,
-the "first nearest neighbors" (FFNN) are the pairs of points that are nearest to
+the "false first nearest neighbors" (FFNN) are the pairs of points that are nearest to
 each other at dimension `γ` that cease to be nearest neighbors at dimension
 `γ+1` [1].
 
