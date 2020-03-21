@@ -1,3 +1,5 @@
+# v1.4
+* New generalized embeddings: `genembed`, `GeneralizedEmbedding`.
 # v1.3
 * Allow indexing datasets with boolean vectors.
 # v1.2.0
