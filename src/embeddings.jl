@@ -1,6 +1,6 @@
 using StaticArrays
 using Base: @_inline_meta
-export reconstruct, DelayEmbedding, MTDelayEmbedding, embed
+export reconstruct, DelayEmbedding, MTDelayEmbedding, embed, τrange
 export WeightedDelayEmbedding
 
 #####################################################################################
@@ -24,6 +24,8 @@ temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
 **Be very careful when choosing `n`, because `@inbounds` is used internally.
 It must be that `n ≤ length(s) - maximum(τ)`.**
+
+Convience function [`τrange`](@ref) gives all valid `n` indices.
 """
 struct DelayEmbedding{γ} <: AbstractEmbedding
     delays::SVector{γ, Int}
@@ -59,6 +61,8 @@ See [`reconstruct`](@ref) for more.
 
 **Be very careful when choosing `n`, because `@inbounds` is used internally.
 It must be that `n ≤ length(s) - maximum(τ)`.**
+
+Convience function [`τrange`](@ref) gives all valid `n` indices.
 """
 struct WeightedDelayEmbedding{γ, T<:Real} <: AbstractEmbedding
     delays::SVector{γ, Int}
@@ -85,7 +89,8 @@ Reconstruct `s` using the delay coordinates embedding with `γ` temporal neighbo
 and delay `τ` and return the result as a [`Dataset`](@ref). Optionally use weight `w`.
 
 Use [`embed`](@ref) for the version that accepts the embedding dimension `D = γ+1`
-instead.
+instead. Here `τ` is strictly positive, use [`genembed`](@ref) for a generalized
+version.
 
 ## Description
 ### Single Timeseries
@@ -158,13 +163,19 @@ function reconstruct(s::AbstractVector{T}, γ, τ, w) where {T}
 end
 @inline function reconstruct(s::AbstractVector{T},
     de::Union{WeightedDelayEmbedding{γ}, DelayEmbedding{γ}}) where {T, γ}
-    L = length(s) - maximum(de.delays)
-    data = Vector{SVector{γ+1, T}}(undef, L)
-    @inbounds for i in 1:L
+    r = τrange(s, de)
+    data = Vector{SVector{γ+1, T}}(undef, length(r))
+    @inbounds for i in r
         data[i] = de(s, i)
     end
     return Dataset{γ+1, T}(data)
 end
+
+"""
+    τrange(s, de::AbstractEmbedding)
+Return the range `r` of valid indices `n` to create delay vectors out of `s` using `de`.
+"""
+τrange(s, de::AbstractEmbedding) = 1:(length(s) - maximum(de.delays))
 
 """
     embed(s, D, τ)
@@ -195,6 +206,8 @@ temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
 **Be very careful when choosing `n`, because `@inbounds` is used internally.
 It must be that `n ≤ length(s) - maximum(τ)`.**
+
+Convience function [`τrange`](@ref) gives all valid `n` indices.
 """
 struct MTDelayEmbedding{γ, B, X} <: AbstractEmbedding
     delays::SMatrix{γ, B, Int, X} # X = γ*B = total dimension number
@@ -247,10 +260,10 @@ end
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     de::MTDelayEmbedding{γ, B, F}) where {A, B, T, M, γ, F}
 
-    L = size(s)[1] - maximum(de.delays)
+    r = τrange(s, de)
     X = (γ+1)*B
-    data = Vector{SVector{X, T}}(undef, L)
-    @inbounds for i in 1:L
+    data = Vector{SVector{X, T}}(undef, length(r))
+    @inbounds for i in r
         data[i] = de(s, i)
     end
     return Dataset{X, T}(data)
@@ -261,27 +274,17 @@ reconstruct(s::AbstractMatrix, args...) = reconstruct(Dataset(s), args...)
 #####################################################################################
 # Generalized embedding (arbitrary combination of timeseries and delays)
 #####################################################################################
-export GeneralizedEmbedding
+export GeneralizedEmbedding, genembed
 
 """
-    GeneralizedEmbedding(js, τs) -> `embedding`
+    GeneralizedEmbedding(τs, js) -> `embedding`
 Return a delay coordinates embedding structure to be used as a functor.
 Given a timeseries *or* trajectory (i.e. `Dataset`) `s` and calling
 ```julia
 embedding(s, n)
 ```
-will create the `n`-th delay vector of `s` in the embedded space using the following procedure:
-- `js::NTuple{D, Int}` which denotes which of the timeseries contained in `s`
-  will be used for the entries of the delay vector. `js` can contain duplicate indices.
-- `τs::NTuple{D, Int}` denotes what delay times will be used for each of the entries
-  of the delay vector. It is strongly recommended that `τs[1] = 0`.
-
-For example, imagine input trajectory ``s = [x, y, z]``.
-If `js = (1, 3, 2)` and `τs = (0, 2, 7)` the created delay vector at
-each step ``n`` will be
-```math
-(x(n), z(n+2), y(n+7))
-```
+will create the `n`-th delay vector of `s` in the embedded space using
+`generalized` embedding (see [`genembed`](@ref).
 
 `js` is ignored for timeseries input `s` (since all entries of `js` must be `1` in
 this case).
@@ -289,16 +292,18 @@ this case).
 **Be very careful when choosing `n`, because `@inbounds` is used internally.
 It must be that `minimum(τs) + 1 ≤ n ≤ length(s) - maximum(τs)`.
 In addition please ensure that all entries of `js` are valid dimensions of `s`.**
+
+Convience function [`τrange`](@ref) gives all valid `n` indices.
 """
 struct GeneralizedEmbedding{D} <: AbstractEmbedding
-    js::NTuple{D, Int}
     τs::NTuple{D, Int}
+    js::NTuple{D, Int}
 end
 
 function Base.show(io::IO, g::GeneralizedEmbedding{D}) where {D}
     print(io, "$D-dimensional generalized embedding\n")
-    print(io, "  js: $(g.js)\n")
-    print(io, "  τs: $(g.τs)")
+    print(io, "  τs: $(g.τs)\n")
+    print(io, "  js: $(g.js)")
 end
 
 # timeseries input
@@ -315,6 +320,47 @@ end
     gens = [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
     quote
         @_inline_meta
-        @inbounds return SVector{$D,T}($(gens...))
+        #=@inbounds=# return SVector{$D,T}($(gens...))
     end
 end
+
+τrange(s, ge::GeneralizedEmbedding) =
+max(1, (-minimum(ge.τs) + 1)):min(length(s), length(s) - maximum(ge.τs))
+
+
+"""
+    genembed(s, τs, [js,]) → dataset
+Create a generalized embedding of `s` which can be a timeseries or arbitrary `Dataset`
+and return the result as a new `dataset`.
+
+The generalized works as follows:
+- `js::NTuple{D, Int}` denotes which of the timeseries contained in `s`
+  will be used for the entries of the delay vector. `js` can contain duplicate indices.
+- `τs::NTuple{D, Int}` denotes what delay times will be used for each of the entries
+  of the delay vector. It is strongly recommended that `τs[1] = 0`.
+  `τs` is allowed to have *negative entries* as well for `GeneralizedEmbedding`.
+
+For example, imagine input trajectory ``s = [x, y, z]`` where ``x, y, z`` are timeseries
+(the columns of the `Dataset`).
+If `js = (1, 3, 2)` and `τs = (0, 2, -7)` the created delay vector at
+each step ``n`` will be
+```math
+(x(n), z(n+2), y(n-7))
+```
+
+`js` can be skipped, defaulting to 1 for all dimensions.
+
+See also [`reconstruct`](@ref).
+"""
+function genembed(s, τs::NTuple{D, Int}, js::NTuple{D, Int}) where {D}
+    ge::GeneralizedEmbedding{D} = GeneralizedEmbedding(τs, js)
+    r = τrange(s, ge)
+    T = eltype(s)
+    data = Vector{SVector{D, T}}(undef, length(r))
+    #=@inbounds=# for (i, n) in enumerate(r)
+        data[i] = ge(s, n)
+    end
+    return Dataset{D, T}(data)
+end
+
+genembed(s, τs::NTuple{D, Int}) where {D} = genembed(s, τs, NTuple{D, Int}(ones(D)))
