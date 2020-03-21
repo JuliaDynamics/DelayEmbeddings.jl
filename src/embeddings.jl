@@ -307,7 +307,7 @@ function Base.show(io::IO, g::GeneralizedEmbedding{D}) where {D}
 end
 
 # timeseries input
-@generated function (g::GeneralizedEmbedding{D})(s::AbstractArray{T}, i) where {D, T}
+@generated function (g::GeneralizedEmbedding{D})(s::AbstractArray{T}, i::Int) where {D, T}
     gens = [:(s[i + g.τs[$k]]) for k=1:D]
     quote
         @_inline_meta
@@ -316,7 +316,7 @@ end
 end
 
 # dataset input
-@generated function (g::GeneralizedEmbedding{D})(s::Dataset{D, T}, i) where {D, T}
+@generated function (g::GeneralizedEmbedding{D})(s::Dataset{X, T}, i::Int) where {D, X, T}
     gens = [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
     quote
         @_inline_meta
@@ -334,11 +334,11 @@ Create a generalized embedding of `s` which can be a timeseries or arbitrary `Da
 and return the result as a new `dataset`.
 
 The generalized embedding works as follows:
-- `js::NTuple{D, Int}` denotes which of the timeseries contained in `s`
-  will be used for the entries of the delay vector. `js` can contain duplicate indices.
 - `τs::NTuple{D, Int}` denotes what delay times will be used for each of the entries
   of the delay vector. It is strongly recommended that `τs[1] = 0`.
-  `τs` is allowed to have *negative entries* as well for `GeneralizedEmbedding`.
+  `τs` is allowed to have *negative entries* as well.
+- `js::NTuple{D, Int}` denotes which of the timeseries contained in `s`
+  will be used for the entries of the delay vector. `js` can contain duplicate indices.
 
 For example, imagine input trajectory ``s = [x, y, z]`` where ``x, y, z`` are timeseries
 (the columns of the `Dataset`).
@@ -350,7 +350,7 @@ each step ``n`` will be
 
 `js` can be skipped, defaulting to index 1 (first timeseries) for all delay entries.
 
-See also [`reconstruct`](@ref).
+See also [`reconstruct`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
 """
 function genembed(s, τs::NTuple{D, Int}, js::NTuple{D, Int}) where {D}
     ge::GeneralizedEmbedding{D} = GeneralizedEmbedding(τs, js)
