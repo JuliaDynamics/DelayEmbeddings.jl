@@ -1,29 +1,29 @@
 using StaticArrays
 using Base: @_inline_meta
-export reconstruct, DelayEmbedding, AbstractEmbedding, MTDelayEmbedding, embed
+export reconstruct, DelayEmbedding, MTDelayEmbedding, embed
 export WeightedDelayEmbedding
 
 #####################################################################################
-#                        Delay Embedding Reconstruction                             #
+# Univariate Delay Coordinates
 #####################################################################################
 """
     AbstractEmbedding
-Super-type of embedding methods. Use `subtypes(AbstractEmbedding)` for available
-methods.
+Super-type of embedding methods.
 """
-abstract type AbstractEmbedding <: Function end
+abstract type AbstractEmbedding end
 
 """
-    DelayEmbedding(γ, τ) -> `embedding`
+    DelayEmbedding(γ, τ) → `embedding`
 Return a delay coordinates embedding structure to be used as a functor,
 given a timeseries and some index. Calling
 ```julia
 embedding(s, n)
 ```
-will create the `n`-th reconstructed vector of the embedded space, which has `γ`
+will create the `n`-th delay vector of the embedded space, which has `γ`
 temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+**Be very careful when choosing `n`, because `@inbounds` is used internally.
+It must be that `n ≤ length(s) - maximum(τ)`.**
 """
 struct DelayEmbedding{γ} <: AbstractEmbedding
     delays::SVector{γ, Int}
@@ -52,12 +52,13 @@ end
 # Weighted version
 export WeightedDelayEmbedding
 """
-    WeightedDelayEmbedding(γ, τ, w) -> `embedding`
+    WeightedDelayEmbedding(γ, τ, w) → `embedding`
 Similar with [`DelayEmbedding`](@ref), but the entries of the
 embedded vector are further weighted with `w^γ`.
 See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+**Be very careful when choosing `n`, because `@inbounds` is used internally.
+It must be that `n ≤ length(s) - maximum(τ)`.**
 """
 struct WeightedDelayEmbedding{γ, T<:Real} <: AbstractEmbedding
     delays::SVector{γ, Int}
@@ -81,7 +82,7 @@ end
 """
     reconstruct(s, γ, τ [, w])
 Reconstruct `s` using the delay coordinates embedding with `γ` temporal neighbors
-and delay `τ` and return the result as a [`Dataset`](@ref).
+and delay `τ` and return the result as a [`Dataset`](@ref). Optionally use weight `w`.
 
 Use [`embed`](@ref) for the version that accepts the embedding dimension `D = γ+1`
 instead.
@@ -178,21 +179,22 @@ embed(s, D, τ) = reconstruct(s, D-1, τ)
 
 
 #####################################################################################
-#                              MultiDimensional R                                   #
+# Multiple timeseries
 #####################################################################################
 """
     MTDelayEmbedding(γ, τ, B) -> `embedding`
 Return a delay coordinates embedding structure to be used as a functor,
 given multiple timeseries (`B` in total), either as a [`Dataset`](@ref) or a
-`SizedArray`), and some index.
+`SizedArray`, and some index.
 Calling
 ```julia
 embedding(s, n)
 ```
-will create the `n`-th reconstructed vector of the embedded space, which has `γ`
+will create the `n`-th delay vector of the embedded space, which has `γ`
 temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+**Be very careful when choosing `n`, because `@inbounds` is used internally.
+It must be that `n ≤ length(s) - maximum(τ)`.**
 """
 struct MTDelayEmbedding{γ, B, X} <: AbstractEmbedding
     delays::SMatrix{γ, B, Int, X} # X = γ*B = total dimension number
@@ -255,3 +257,55 @@ end
 end
 
 reconstruct(s::AbstractMatrix, args...) = reconstruct(Dataset(s), args...)
+
+#####################################################################################
+# Generalized embedding (arbitrary combination of timeseries and delays)
+#####################################################################################
+export GeneralizedEmbedding
+
+"""
+    GeneralizedEmbedding(js, τs) -> `embedding`
+Return a delay coordinates embedding structure to be used as a functor.
+Given a timeseries *or* trajectory (i.e. `Dataset`) `s` and calling
+```julia
+embedding(s, n)
+```
+will create the `n`-th delay vector of `s` in the embedded space using the following procedure:
+- `js::NTuple{D, Int}` which denotes which of the timeseries contained in `s`
+  will be used for the entries of the delay vector. `js` can contain duplicate indices.
+- `τs::NTuple{D, Int}` denotes what delay times will be used for each of the entries
+  of the delay vector. It is strongly recommended that `τs[1] = 0`.
+
+For example, imagine input trajectory ``s = [x, y, z]``.
+If `js = (1, 3, 2)` and `τs = (0, 2, 7)` the created delay vector at
+each step ``n`` will be
+```math
+(x(n), z(n+2), y(n+7))
+```
+
+`js` is ignored for timeseries input `s` (since all entries of `js` must be `1` in
+this case).
+
+**Be very careful when choosing `n`, because `@inbounds` is used internally.
+It must be that `minimum(τs) + 1 ≤ n ≤ length(s) - maximum(τs)`.
+In addition please ensure that all entries of `js` are valid dimensions of `s`.**
+"""
+struct GeneralizedEmbedding{D} <: AbstractEmbedding
+    js::NTuple{D, Int}
+    τs::NTuple{D, Int}
+end
+
+function Base.show(io::IO, g::GeneralizedEmbedding{D}) where {D}
+    print(io, "$D-dimensional generalized embedding\n")
+    print(io, "  js: $(g.js)\n")
+    print(io, "  τs: $(g.τs)")
+end
+
+# timeseries input
+@generated function (g::GeneralizedEmbedding{D})(s::AbstractArray{T}, i) where {D, T}
+    gens = [:(s[i + g.τs[$k]]) for k=1:D]
+    quote
+        @_inline_meta
+        @inbounds return SVector{$D,T}($(gens...))
+    end
+end

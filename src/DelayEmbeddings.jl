@@ -5,7 +5,7 @@ Basic package used in the ecosystem of DynamicalSystems.jl.
 module DelayEmbeddings
 
 include("dataset.jl")
-include("reconstruction.jl")
+include("embeddings.jl")
 include("various.jl")
 include("neighborhoods.jl")
 
