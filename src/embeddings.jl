@@ -309,3 +309,12 @@ end
         @inbounds return SVector{$D,T}($(gens...))
     end
 end
+
+# dataset input
+@generated function (g::GeneralizedEmbedding{D})(s::Dataset{D, T}, i) where {D, T}
+    gens = [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
+    quote
+        @_inline_meta
+        @inbounds return SVector{$D,T}($(gens...))
+    end
+end
