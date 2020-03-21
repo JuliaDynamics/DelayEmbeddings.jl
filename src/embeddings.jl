@@ -329,11 +329,11 @@ max(1, (-minimum(ge.τs) + 1)):min(length(s), length(s) - maximum(ge.τs))
 
 
 """
-    genembed(s, τs, [js,]) → dataset
+    genembed(s, τs, js = ones(...)) → dataset
 Create a generalized embedding of `s` which can be a timeseries or arbitrary `Dataset`
 and return the result as a new `dataset`.
 
-The generalized works as follows:
+The generalized embedding works as follows:
 - `js::NTuple{D, Int}` denotes which of the timeseries contained in `s`
   will be used for the entries of the delay vector. `js` can contain duplicate indices.
 - `τs::NTuple{D, Int}` denotes what delay times will be used for each of the entries
@@ -348,7 +348,7 @@ each step ``n`` will be
 (x(n), z(n+2), y(n-7))
 ```
 
-`js` can be skipped, defaulting to 1 for all dimensions.
+`js` can be skipped, defaulting to index 1 (first timeseries) for all delay entries.
 
 See also [`reconstruct`](@ref).
 """
