@@ -109,8 +109,8 @@ println("\nTesting generalized embedding...")
         em = genembed(x, τs, js)
         @test em == genembed(x, τs)
         @test em[1:3, 3] == x[1:3]
-        @test em[1:3, 1] == x[8:10]
-        @test em[1:3, 2] == x[10:12]
+        @test em[1:3, 1] == x[1+7:3+7]
+        @test em[1:3, 2] == x[1+7+2:3+7+2]
     end
     @testset "multivariate" begin
         s = Dataset(rand(20, 3))

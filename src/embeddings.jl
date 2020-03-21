@@ -320,7 +320,7 @@ end
     gens = [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
     quote
         @_inline_meta
-        #=@inbounds=# return SVector{$D,T}($(gens...))
+        @inbounds return SVector{$D,T}($(gens...))
     end
 end
 
@@ -357,7 +357,7 @@ function genembed(s, τs::NTuple{D, Int}, js::NTuple{D, Int}) where {D}
     r = τrange(s, ge)
     T = eltype(s)
     data = Vector{SVector{D, T}}(undef, length(r))
-    #=@inbounds=# for (i, n) in enumerate(r)
+    @inbounds for (i, n) in enumerate(r)
         data[i] = ge(s, n)
     end
     return Dataset{D, T}(data)
