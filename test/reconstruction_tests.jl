@@ -97,3 +97,28 @@ println("\nTesting reconstruct...")
 
     end
 end
+
+println("\nTesting generalized embedding...")
+@testset "genembed" begin
+    τs = (0, 2, -7)
+    js = (1, 3, 2)
+    ge = GeneralizedEmbedding(τs, js)
+    @testset "univariate" begin
+        x = rand(20)
+        τr = τrange(x, ge)
+        em = genembed(x, τs, js)
+        @test em == genembed(x, τs)
+        @test em[1:3, 3] == x[1:3]
+        @test em[1:3, 1] == x[8:10]
+        @test em[1:3, 2] == x[10:12]
+    end
+    @testset "multivariate" begin
+        s = Dataset(rand(20, 3))
+        τr = τrange(s, ge)
+        em = genembed(s, τs, js)
+        x, y, z = columns(s)
+        @test em[1:3, 1] == x[1+7:3+7]
+        @test em[1:3, 3] == y[1:3]
+        @test em[1:3, 2] == z[1+7+2:3+7+2]
+    end
+end
