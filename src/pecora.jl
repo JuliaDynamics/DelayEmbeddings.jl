@@ -115,7 +115,7 @@ The returned result is a *matrix* with size `T`x`J`.
 ## Keyword arguments
 * `T=1:50` calculate `ε★` for all delay times in `T`.
 * `J=1:dimension(s)` calculate `ε★` for all timeseries indices in `J`.
-  This is always just 1 for
+  If input `s` is a timeseries, this is always just 1.
 * `N=100` over how many fiducial points v to average ε★ to produce `⟨ε★⟩`
 * `K = 7` the amount of nearest neighbors in the δ-ball (read algorithm description).
 
@@ -124,7 +124,7 @@ Notice that the full algorithm related with `ε★` is too large to discuss here
 written in detail in the source code of `continuity_statistic`.
 """
 function continuity_statistic(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D));
-    T = 1:50, J=1:maxdimspan(s), N = 100, metric = Euclidean(), K = 7) where {D}
+    T = 1:50, J=maxdimspan(s), N = 100, metric = Euclidean(), K = 7) where {D}
 
     vspace = genembed(s, τs, js)
     vtree = KDTree(vspace.data, metric)
@@ -147,9 +147,9 @@ function continuity_statistic(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D
     return all_ε★
 end
 
-DelayEmbeddings.columns(s::AbstractVector) = (s, )
-maxdimspan(s) = 1:dimension(s)
+maxdimspan(s) = 1:size(s)[2]
 maxdimspan(s::AbstractVector) = 1
+columns(s::AbstractVector) = (s, )
 
 function continuity_statistic_per_timeseries(x::AbstractVector, ns, allNNidxs, T, N, K)
     k = K
