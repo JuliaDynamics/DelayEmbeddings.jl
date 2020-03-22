@@ -234,6 +234,7 @@ end
 @generated function (r::MTDelayEmbedding{γ, B, X})(
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     i) where {γ, A, B, T, M, X}
+    typeof(s) <: SizedArray && @warn "Using SizedArrays is deprecated. Use Dataset instead."
     gensprev = [:(s[i, $d]) for d=1:B]
     gens = [:(s[i + r.delays[$k, $d], $d]) for k=1:γ for d=1:B]
     quote
