@@ -1,8 +1,8 @@
-using DelayEmbeddings, OrdinaryDiffEq
+using DelayEmbeddings
 
 ti = time()
 
-const diffeq = (alg = Vern9(), atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
+const diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
 
 include("dataset_tests.jl")
 include("reconstruction_tests.jl")
