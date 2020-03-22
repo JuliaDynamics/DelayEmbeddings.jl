@@ -118,13 +118,14 @@ The returned result is a *matrix* with size `T`x`J`.
   If input `s` is a timeseries, this is always just 1.
 * `N=100` over how many fiducial points v to average ε★ to produce `⟨ε★⟩`
 * `K = 7` the amount of nearest neighbors in the δ-ball (read algorithm description).
+  If given a vector, the result is averaged over all `k ∈ K`.
 
 ## Description
 Notice that the full algorithm related with `ε★` is too large to discuss here, and is
 written in detail in the source code of `continuity_statistic`.
 """
 function continuity_statistic(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D));
-    T = 1:50, J=maxdimspan(s), N = 100, metric = Euclidean(), K = 7) where {D}
+    T = 1:50, J=maxdimspan(s), N = 100, metric = Euclidean(), K = 13) where {D}
 
     vspace = genembed(s, τs, js)
     vtree = KDTree(vspace.data, metric)
@@ -152,16 +153,15 @@ maxdimspan(s::AbstractVector) = 1
 columns(s::AbstractVector) = (s, )
 
 function continuity_statistic_per_timeseries(x::AbstractVector, ns, allNNidxs, T, N, K)
-    k = K
     avrg_ε★ = zeros(size(T))
     c = 0
     for (i, n) in enumerate(ns) # Loop over fiducial points
-        NNidxs = view(allNNidxs[i], 2:k+1) # indices of k nearest neighbors to v
+        NNidxs = view(allNNidxs[i], 2:maximum(K)+1) # indices of k nearest neighbors to v
         for (i, τ) in enumerate(T)
             # Check if any of the indices of the neighbors falls out of temporal range
             any(j -> (j+τ > length(x)) | (j+τ < 1), NNidxs) && continue
             # If not, calculate minimum ε
-            avrg_ε★[i] += ε★(x, n, τ, NNidxs, k)
+            avrg_ε★[i] += ε★(x, n, τ, NNidxs, K)
             c += 1
         end
     end
@@ -171,13 +171,14 @@ function continuity_statistic_per_timeseries(x::AbstractVector, ns, allNNidxs, T
     return avrg_ε★
 end
 
-function ε★(x, n, τ, NNidxs, k)
-    l = δ_to_ε_amount[k]
+function ε★(x, n, τ, NNidxs, K)
     a = x[n+τ] # fiducial point in ε-space
     @inbounds dis = [abs(a - x[i+τ]) for i in NNidxs]
     sortedds = sort!(dis; alg = QuickSort)
-    # return l-th minimum distance
-    # TODO: If we want to average over different k (different δ-neighborhoods)
-    # we just average over different [l] in the following line:
-    return sortedds[l]
+    ε = 0.0
+    for k in K
+        l = δ_to_ε_amount[k]
+        ε += sortedds[l]
+    end
+    return ε/length(K)
 end
