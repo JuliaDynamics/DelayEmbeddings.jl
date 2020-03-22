@@ -22,7 +22,7 @@ embedding(s, n)
 will create the `n`-th delay vector of the embedded space, which has `γ`
 temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `#=@inbounds=#` is used internally.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.
 It must be that `n ≤ length(s) - maximum(τ)`.**
 
 Convience function [`τrange`](@ref) gives all valid `n` indices.
@@ -47,7 +47,7 @@ end
     gens = [:(s[i + r.delays[$k]]) for k=1:γ]
     quote
         @_inline_meta
-        #=@inbounds=# return SVector{$γ+1,T}(s[i], $(gens...))
+        @inbounds return SVector{$γ+1,T}(s[i], $(gens...))
     end
 end
 
@@ -59,7 +59,7 @@ Similar with [`DelayEmbedding`](@ref), but the entries of the
 embedded vector are further weighted with `w^γ`.
 See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `#=@inbounds=#` is used internally.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.
 It must be that `n ≤ length(s) - maximum(τ)`.**
 
 Convience function [`τrange`](@ref) gives all valid `n` indices.
@@ -79,7 +79,7 @@ end
     gens = [:(r.w^($k) * s[i + r.delays[$k]]) for k=1:γ]
     quote
         @_inline_meta
-        #=@inbounds=# return SVector{$γ+1,X}(s[i], $(gens...))
+        @inbounds return SVector{$γ+1,X}(s[i], $(gens...))
     end
 end
 
@@ -161,7 +161,7 @@ end
     de::Union{WeightedDelayEmbedding{γ}, DelayEmbedding{γ}}) where {T, γ}
     r = τrange(s, de)
     data = Vector{SVector{γ+1, T}}(undef, length(r))
-    #=@inbounds=# for i in r
+    @inbounds for i in r
         data[i] = de(s, i)
     end
     return Dataset{γ+1, T}(data)
@@ -200,7 +200,7 @@ embedding(s, n)
 where `s` is a `Dataset` will create the `n`-th delay vector of the embedded space,
 which has `γ` temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `#=@inbounds=#` is used internally.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.
 It must be that `n ≤ length(s) - maximum(τ)`.**
 
 Convience function [`τrange`](@ref) gives all valid `n` indices.
@@ -239,7 +239,7 @@ end
     gens = [:(s[i + r.delays[$k, $d], $d]) for k=1:γ for d=1:B]
     quote
         @_inline_meta
-        #=@inbounds=# return SVector{$(γ+1)*$B,T}($(gensprev...), $(gens...))
+        @inbounds return SVector{$(γ+1)*$B,T}($(gensprev...), $(gens...))
     end
 end
 
@@ -262,7 +262,7 @@ end
     r = τrange(s, de)
     X = (γ+1)*B
     data = Vector{SVector{X, T}}(undef, length(r))
-    #=@inbounds=# for i in r
+    @inbounds for i in r
         data[i] = de(s, i)
     end
     return Dataset{X, T}(data)
@@ -288,7 +288,7 @@ will create the `n`-th delay vector of `s` in the embedded space using
 `js` is ignored for timeseries input `s` (since all entries of `js` must be `1` in
 this case).
 
-**Be very careful when choosing `n`, because `#=@inbounds=#` is used internally.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.
 It must be that `minimum(τs) + 1 ≤ n ≤ length(s) - maximum(τs)`.
 In addition please ensure that all entries of `js` are valid dimensions of `s`.**
 
@@ -310,7 +310,7 @@ end
     gens = [:(s[i + g.τs[$k]]) for k=1:D]
     quote
         @_inline_meta
-        #=@inbounds=# return SVector{$D,T}($(gens...))
+        @inbounds return SVector{$D,T}($(gens...))
     end
 end
 
@@ -319,7 +319,7 @@ end
     gens = [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
     quote
         @_inline_meta
-        #=@inbounds=# return SVector{$D,T}($(gens...))
+        @inbounds return SVector{$D,T}($(gens...))
     end
 end
 
@@ -356,7 +356,7 @@ function genembed(s, τs::NTuple{D, Int}, js::NTuple{D, Int}) where {D}
     r = τrange(s, ge)
     T = eltype(s)
     data = Vector{SVector{D, T}}(undef, length(r))
-    #=@inbounds=# for (i, n) in enumerate(r)
+    @inbounds for (i, n) in enumerate(r)
         data[i] = ge(s, n)
     end
     return Dataset{D, T}(data)
