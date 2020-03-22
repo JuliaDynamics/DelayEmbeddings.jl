@@ -1,5 +1,3 @@
-using Distances
-
 #=
 # Description of the algorithm and definition of used symbols
 
@@ -83,6 +81,9 @@ for fnding points within ε, do y = sort!(x) and optimized count starting from i
 of x and going up and down
 =#
 
+using Distances
+export continuity_statistic
+
 """
 Table 1 of Pecora (2007), i.e. the necessary amount of points for given δ points
 that *must* be mapped into the ε set to reject the null hypothesis for p=0.5
@@ -122,8 +123,8 @@ The returned result is a *matrix* with size `T`x`J`.
 Notice that the full algorithm related with `ε★` is too large to discuss here, and is
 written in detail in the source code of `continuity_statistic`.
 """
-function continuity_statistic(s, τs, js; T = 1:50, j=1:dimspan(s),
-    N = 100, metric = Euclidean(), K = 7)
+function continuity_statistic(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D));
+    T = 1:50, J=1:maxdimspan(s), N = 100, metric = Euclidean(), K = 7) where {D}
 
     vspace = genembed(s, τs, js)
     vtree = KDTree(vspace.data, metric)
@@ -137,11 +138,11 @@ function continuity_statistic(s, τs, js; T = 1:50, j=1:dimspan(s),
     # We also do not need the distances of the points, only their indices
     # We do however sort distances, so that 2:k+1 are the actual neighbors
     # TODO: Improve this to have a theiler window exclusion
-    allNNidxs, = NearestNeighbors.knn(vtree, vs, k+1, true)
+    allNNidxs, = NearestNeighbors.knn(vtree, vs, maximum(K)+1, true)
     # Loop over potential timeseries to use in new embedding
     for i in 1:length(J)
         x = allts[J[i]]
-        all_ε★[:, i] .= continuity_statistic_per_timeseries(x, allNNidxs, T, N, K, r)
+        all_ε★[:, i] .= continuity_statistic_per_timeseries(x, ns, allNNidxs, T, N, K)
     end
     return all_ε★
 end
@@ -150,10 +151,8 @@ DelayEmbeddings.columns(s::AbstractVector) = (s, )
 maxdimspan(s) = 1:dimension(s)
 maxdimspan(s::AbstractVector) = 1
 
-# TODO: Allow K to be a vector of k, but also write an optimized routine to find
-# quickly ε★ by successively reducing nearest neighbors (no reason to re-do the NN
-# search, use maximum(K) and successively reduce).
-function continuity_statistic_per_timeseries(x::AbstractVector, allNNidxs, T, N, K, r)
+function continuity_statistic_per_timeseries(x::AbstractVector, ns, allNNidxs, T, N, K)
+    k = K
     avrg_ε★ = zeros(size(T))
     c = 0
     for (i, n) in enumerate(ns) # Loop over fiducial points
@@ -175,9 +174,10 @@ end
 function ε★(x, n, τ, NNidxs, k)
     l = δ_to_ε_amount[k]
     a = x[n+τ] # fiducial point in ε-space
-    # TODO: This can probably be optimized to not create intermediate vectors
-    # and not sort the array...
     @inbounds dis = [abs(a - x[i+τ]) for i in NNidxs]
+    sortedds = sort!(dis; alg = QuickSort)
     # return l-th minimum distance
-    return sort!(dis; alg = QuickSort)[l]
+    # TODO: If we want to average over different k (different δ-neighborhoods)
+    # we just average over different [l] in the following line:
+    return sortedds[l]
 end

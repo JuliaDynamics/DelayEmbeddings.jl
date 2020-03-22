@@ -11,5 +11,6 @@ include("neighborhoods.jl")
 
 include("estimate_delay.jl")
 include("estimate_dimension.jl")
+include("pecora.jl")
 
 end
