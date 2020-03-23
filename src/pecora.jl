@@ -15,7 +15,7 @@ same) and each entry is also defined with respect to an arbitrary delay.
 
 Define a radius δ around v in ℝᵈ space (d-dimensional embedding). k points are inside
 the δ-ball (with respect to some metric) around v. For simplicity, the time index of
-v is t0. The other poinds inside the δ_ball have indices ti (with several i).
+v is t0. The other poinds inside the δ_ball have indices i (with several i).
 
 We want to check if we can add an additional dimension to the embedding, using the j-th
 timeseries. We check with continuity statistic of Pecora et al.
@@ -118,7 +118,8 @@ The returned result is a *matrix* with size `T`x`J`.
   If input `s` is a timeseries, this is always just 1.
 * `N=100`: over how many fiducial points v to average ε★ to produce `⟨ε★⟩`
 * `K = 7`: the amount of nearest neighbors in the δ-ball (read algorithm description).
-  If given a vector, the result is averaged over all `k ∈ K`.
+  If given a vector, the result is averaged over all `k ∈ K`. Giving a single
+  `K` is much more performant.
 * `metric = Euclidean()`: metrix with which to find nearest neigbhors in the input
   embedding (ℝᵈ space, `d = length(τs)`).
 * `w=1`: Theiler window (neighbors in time with index `w` close to the point, that
@@ -193,9 +194,9 @@ end
 function ε★(x, n, τ, NNidxs, K::AbstractVector)
     a = x[n+τ] # fiducial point in ε-space
     @inbounds dis = [abs(a - x[i+τ]) for i in NNidxs]
-    sortedds = sort!(dis; alg = QuickSort)
     ε = zeros(length(K))
     for (i, k) in enumerate(K)
+        sortedds = sort!(dis[1:k]; alg = QuickSort)
         l = δ_to_ε_amount[k]
         ε[i] = sortedds[l]
     end
