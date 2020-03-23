@@ -121,6 +121,9 @@ The returned result is a *matrix* with size `T`x`J`.
   If given a vector, the result is averaged over all `k ∈ K`.
 * `metric = Euclidean()`: metrix with which to find nearest neigbhors in the input
   embedding (ℝᵈ space, `d = length(τs)`).
+* `w=1`: Theiler window (neighbors in time with index `w` close to the point, that
+  are excluded from being true neighbors). `w=0` means to exclude only the
+  point itself, and no temporal neighbors.
 
 ## Description
 Notice that the full algorithm related with `⟨ε★⟩` is too large to discuss here, and is
@@ -129,7 +132,7 @@ written in detail in the source code of `continuity_statistic`.
 [^Pecora2007]: Pecora, L. M., Moniz, L., Nichols, J., & Carroll, T. L. (2007). [A unified approach to attractor reconstruction. Chaos 17(1)](https://doi.org/10.1063/1.2430294).
 """
 function continuity_statistic(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D));
-    T = 1:50, J=maxdimspan(s), N = 100, metric = Euclidean(), K = 13) where {D}
+    T = 1:50, J=maxdimspan(s), N = 100, metric = Euclidean(), K = 13, w = 1) where {D}
 
     vspace = genembed(s, τs, js)
     vtree = KDTree(vspace.data, metric)
@@ -138,12 +141,7 @@ function continuity_statistic(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D
     # indices of random fiducial points (with valid time range w.r.t. T)
     ns = rand(max(1, (-minimum(T) + 1)):min(length(s), length(s) - maximum(T)), N)
     vs = vspace[ns]
-    # Find all neighbors in one go (more performant).
-    # Use `k+1` because it also fines the given points as neighbors as well.
-    # We also do not need the distances of the points, only their indices
-    # We do however sort distances, so that 2:k+1 are the actual neighbors
-    # TODO: Improve this to have a theiler window exclusion
-    allNNidxs, = NearestNeighbors.knn(vtree, vs, maximum(K)+1, true)
+    allNNidxs = find_all_neighbors(vtree, vs, ns, K, w)
     # Loop over potential timeseries to use in new embedding
     for i in 1:length(J)
         x = allts[J[i]]
@@ -152,15 +150,32 @@ function continuity_statistic(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D
     return all_ε★
 end
 
+"""
+    all_neighbors(vtree, vs, ns, K, w)
+Return the `maximum(K)`-th nearest neighbors for all input points `vs`, with indices `ns` in
+original data, while respecting the theiler window `w`.
+"""
+function find_all_neighbors(vtree, vs, ns, K, w)
+    k, sortres, N = maximum(K), true, length(vs)
+    dists = [Vector{eltype(vs[1])}(undef, k) for _ in 1:N]
+    idxs = [Vector{Int}(undef, k) for _ in 1:N]
+    for i in 1:N
+        # The skip predicate also skips the point itself for w ≥ 0
+        skip = j -> ns[i] - w ≤ j ≤ ns[i] + w
+        NearestNeighbors.knn_point!(vtree, vs[i], sortres, dists[i], idxs[i], skip)
+    end
+    return idxs
+end
+
+
 maxdimspan(s) = 1:size(s)[2]
 maxdimspan(s::AbstractVector) = 1
 columns(s::AbstractVector) = (s, )
 
 function continuity_statistic_per_timeseries(x::AbstractVector, ns, allNNidxs, T, N, K)
-    avrg_ε★ = zeros(size(T))
-    c = 0
+    avrg_ε★, c = zeros(size(T)), 0
     for (i, n) in enumerate(ns) # Loop over fiducial points
-        NNidxs = view(allNNidxs[i], 2:maximum(K)+1) # indices of k nearest neighbors to v
+        NNidxs = allNNidxs[i] # indices of k nearest neighbors to v
         for (i, τ) in enumerate(T)
             # Check if any of the indices of the neighbors falls out of temporal range
             any(j -> (j+τ > length(x)) | (j+τ < 1), NNidxs) && continue
