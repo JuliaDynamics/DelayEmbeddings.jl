@@ -1,5 +1,6 @@
 # v1.4
 * New generalized embeddings: `genembed`, `GeneralizedEmbedding`.
+* Using `SizedArrays` in multidimensional embeddings is deprecated and will be removed in later versions.
 # v1.3
 * Allow indexing datasets with boolean vectors.
 # v1.2.0

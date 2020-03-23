@@ -1,6 +1,6 @@
 using Test, StaticArrays, DelayEmbeddings
 
-println("\nTesting reconstruct...")
+println("\nTesting delay embeddings...")
 
 @testset "reconstruct" begin
 
@@ -62,7 +62,7 @@ println("\nTesting reconstruct...")
 
             τ = 3
             si = Matrix(data[:,1:B])
-            sizedsi = Size(N,B)(si)
+            sizedsi = SizedMatrix{N,B}(si)
             R = reconstruct(sizedsi, D, τ)
             tr = Dataset(si)
             R2 = reconstruct(tr, D, τ)
@@ -81,7 +81,7 @@ println("\nTesting reconstruct...")
 
         taus = [2 3; 4 6; 6 8]
         data2 = data[:, 1:2]
-        data3 = Size(N, 2)(Matrix(data2))
+        data3 = SizedMatrix{N, 2}(Matrix(data2))
         R1 = reconstruct(data2, 3, taus)
         R2 = reconstruct(data3, 3, taus)
 

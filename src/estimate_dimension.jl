@@ -18,15 +18,15 @@ for each `γ ∈ γs` based on the "nearest neighbors" in the embedded time seri
 
 The quantity that is calculated depends on the algorithm defined by the string `method`:
 
-* `"afnn"` (default) is Cao's "Averaged False Nearest Neighbors" method [1], which
+* `"afnn"` (default) is Cao's "Averaged False Nearest Neighbors" method[^Cao1997], which
     gives a ratio of distances between nearest neighbors. This ratio saturates
     around `1.0` near the optimal value of `γ` (see [`afnn`](@ref)).
-* `"fnn"` is Kennel's "False Nearest Neighbors" method [2], which gives the
+* `"fnn"` is Kennel's "False Nearest Neighbors" method[^Kennel1992], which gives the
     number of points that cease to be "nearest neighbors" when the dimension
     increases. This number drops down to zero near the optimal value of `γ`.
     This method accepts the keyword arguments `rtol` and `atol`, which stand
     for the "tolerances" required by Kennel's algorithm (see [`fnn`](@ref)).
-* `"f1nn"` is Krakovská's "False First Nearest Neighbors" method [3], which
+* `"f1nn"` is Krakovská's "False First Nearest Neighbors" method[^Krakovská2015], which
     gives the ratio of pairs of points that cease to be "nearest neighbors"
     when the dimension increases. This number drops down to zero near the
     optimal value of `γ` (see [`f1nn`](@ref)).
@@ -40,14 +40,11 @@ Cao's method (eqs. (2, 3) of [1]). Defaults to `Euclidean()` (note that [1] used
 Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
 neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
 
-## References
+[^Cao1997]: Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
 
-[1] : Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
+[^Kennel1992]: M. Kennel *et al.*, [Phys. Review A **45**(6), (1992)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.45.3403).
 
-[2] : M. Kennel *et al.*, [Phys. Review A **45**(6), 3403-3411](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.45.3403)
-(1992).
-
-[3] : Anna Krakovská *et al.*, [J. Complex Sys. 932750 (2015)](https://doi.org/10.1155/2015/932750)
+[^Krakovská2015]: Anna Krakovská *et al.*, [J. Complex Sys. 932750 (2015)](https://doi.org/10.1155/2015/932750)
 """
 function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn";
     metric = Euclidean(), kwargs...)
@@ -67,7 +64,7 @@ end
 
 Compute the parameter E₁ of Cao's "averaged false nearest neighbors" method for
 determining the minimum embedding dimension of the time series `s`, with
-a sequence of `τ`-delayed temporal neighbors [1].
+a sequence of `τ`-delayed temporal neighbors.
 
 ## Description
 Given the scalar timeseries `s` and the embedding delay `τ` compute the
@@ -83,10 +80,6 @@ find `γ` for which the value `E₁` saturates at some value around 1.
 *Note: This method does not work for datasets with perfectly periodic signals.*
 
 See also: [`estimate_dimension`](@ref), [`fnn`](@ref), [`f1nn`](@ref).
-
-## References
-
-[1] : Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
 """
 function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Euclidean()) where {T}
     E1s = zeros(length(γs))
@@ -139,9 +132,9 @@ Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ
 the "false nearest neighbors" (FNN) are the pairs of points that are nearest to
 each other at dimension `γ`, but are separated at dimension `γ+1`. Kennel's
 criteria for detecting FNN are based on a threshold for the relative increment
-of the distance between the nearest neighbors (`rtol`, eq. 4 in [1]), and
+of the distance between the nearest neighbors (`rtol`, eq. 4 in[^Kennel1992]), and
 another threshold for the ratio between the increased distance and the
-"size of the attractor" (`atol`, eq. 5 in [1]). These thresholds are given
+"size of the attractor" (`atol`, eq. 5 in[^Kennel1992]). These thresholds are given
 as keyword arguments.
 
 The returned value is a vector with the number of FNN for each `γ ∈ γs`. The
@@ -149,12 +142,6 @@ optimal value for `γ` is found at the point where the number of FNN approaches
 zero.
 
 See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`f1nn`](@ref).
-
-## References
-
-[1] : M. Kennel *et al.*, "Determining embedding dimension for phase-space
-reconstruction using a geometrical construction", *Phys. Review A 45*(6), 3403-3411
-(1992).
 """
 function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10.0, atol=2.0)
     rtol2 = rtol^2
@@ -193,19 +180,13 @@ from `s` with a sequence of `τ`-delayed temporal neighbors.
 Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ`,
 the "false first nearest neighbors" (FFNN) are the pairs of points that are nearest to
 each other at dimension `γ` that cease to be nearest neighbors at dimension
-`γ+1` [1].
+`γ+1`.
 
 The returned value is a vector with the ratio between the number of FFNN and
 the number of points in the dataset for each `γ ∈ γs`. The optimal value for `γ`
 is found at the point where this ratio approaches zero.
 
 See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`fnn`](@ref).
-
-## References
-
-[1] : Anna Krakovská *et al.*, "Use of false nearest neighbours for selecting
-variables and embedding parameters for state space reconstruction", *J Complex
-Sys* 932750 (2015), DOI: 10.1155/2015/932750
 """
 function f1nn(s::AbstractVector, τ::Int, γs = 1:5, metric = Euclidean())
     f1nn_ratio = zeros(length(γs))
@@ -254,15 +235,11 @@ neighbors.
 
 ## Description
 Given the scalar timeseries `s` and the embedding delay `τ` compute the
-values of `E₂` for each `γ ∈ γs`, according to Cao's Method (eq. 5 of [1]).
+values of `E₂` for each `γ ∈ γs`, according to Cao's Method (eq. 5 of [^Cao1997]).
 
 Use this function to confirm that the
 input signal is not random and validate the results of [`estimate_dimension`](@ref).
 In the case of random signals, it should be `E₂ ≈ 1 ∀ γ`.
-
-## References
-
-[1] : Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
 """
 function stochastic_indicator(s::AbstractVector{T},τ, γs=1:4) where T # E2, equation (5)
     #This function tries to tell the difference between deterministic

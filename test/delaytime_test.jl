@@ -1,6 +1,5 @@
-using ChaosTools, DelayEmbeddings
-using Test, OrdinaryDiffEq
 using DelayEmbeddings: localextrema, exponential_decay_fit
+using DynamicalSystemsBase, Test
 
 println("\nTesting delay estimation...")
 
