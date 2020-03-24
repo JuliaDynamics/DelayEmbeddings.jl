@@ -2,7 +2,7 @@ using Test, StaticArrays, DelayEmbeddings
 
 println("\nTesting delay embeddings...")
 
-@testset "reconstruct" begin
+@testset "embedding" begin
 
     data = Dataset(rand(10001,3))
     s = data[:, 1]; N = length(s)
