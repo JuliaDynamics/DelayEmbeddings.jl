@@ -84,6 +84,8 @@ of x and going up and down
 using Distances, Statistics
 export continuity_statistic
 
+# TODO: Generalize the table for more α values
+
 """
 Table 1 of Pecora (2007), i.e. the necessary amount of points for given δ points
 that *must* be mapped into the ε set to reject the null hypothesis for p=0.5
