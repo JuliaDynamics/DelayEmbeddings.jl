@@ -1,14 +1,14 @@
-using DelayEmbeddings, OrdinaryDiffEq
+using DelayEmbeddings
 
 ti = time()
 
-const diffeq = (alg = Vern9(), atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
+const diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
 
 include("dataset_tests.jl")
-include("reconstruction_tests.jl")
-include("R_delay.jl")
-include("R_dimension.jl")
+include("embedding_tests.jl")
+include("delaytime_test.jl")
+include("delaycount_test.jl")
 
 ti = time() - ti
 println("\nTest took total time of:")
-println(round(ti, digits=3), " seconds or ", round(ti/60, digits=3), " minutes")
+println(round(ti, sigdigits=3), " seconds or ", round(ti/60, sigdigits=3), " minutes")

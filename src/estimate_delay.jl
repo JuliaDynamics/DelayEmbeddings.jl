@@ -160,7 +160,7 @@ export mutualinformation
 
 Calculate the mutual information between the time series `s` and its images
 delayed by `τ` points for `τ` ∈ `τs`, using an _improvement_ of the method
-outlined by Fraser & Swinney in [1].
+outlined by Fraser & Swinney in[^Fraser1986].
 
 ## Description
 
@@ -188,9 +188,7 @@ For performance and stability reasons, the automatic partition method implemente
 in this function is only used to divide the axes of the grid, using the marginal
 frequencies of `s`.
 
-## References
-[1]: Fraser A.M. & Swinney H.L. "Independent coordinates for strange attractors
-from mutual information" *Phys. Rev. A 33*(2), 1986, 1134:1140.
+[^Fraser1986]: Fraser A.M. & Swinney H.L. "Independent coordinates for strange attractors from mutual information" *Phys. Rev. A 33*(2), 1986, 1134:1140.
 """
 function mutualinformation(s::AbstractVector{T}, τs::AbstractVector{Int};
     kwargs...) where {T}

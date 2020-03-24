@@ -1,8 +1,8 @@
 using Test, StaticArrays, DelayEmbeddings
 
-println("\nTesting reconstruct...")
+println("\nTesting delay embeddings...")
 
-@testset "reconstruct" begin
+@testset "embedding" begin
 
     data = Dataset(rand(10001,3))
     s = data[:, 1]; N = length(s)
@@ -62,7 +62,7 @@ println("\nTesting reconstruct...")
 
             τ = 3
             si = Matrix(data[:,1:B])
-            sizedsi = Size(N,B)(si)
+            sizedsi = SizedMatrix{N,B}(si)
             R = reconstruct(sizedsi, D, τ)
             tr = Dataset(si)
             R2 = reconstruct(tr, D, τ)
@@ -81,7 +81,7 @@ println("\nTesting reconstruct...")
 
         taus = [2 3; 4 6; 6 8]
         data2 = data[:, 1:2]
-        data3 = Size(N, 2)(Matrix(data2))
+        data3 = SizedMatrix{N, 2}(Matrix(data2))
         R1 = reconstruct(data2, 3, taus)
         R2 = reconstruct(data3, 3, taus)
 
@@ -95,5 +95,30 @@ println("\nTesting reconstruct...")
         @test_throws ArgumentError reconstruct(data2, 5, taus)
         @test_throws ArgumentError reconstruct(data2, 4, taus)
 
+    end
+end
+
+println("\nTesting generalized embedding...")
+@testset "genembed" begin
+    τs = (0, 2, -7)
+    js = (1, 3, 2)
+    ge = GeneralizedEmbedding(τs, js)
+    @testset "univariate" begin
+        x = rand(20)
+        τr = τrange(x, ge)
+        em = genembed(x, τs, js)
+        @test em == genembed(x, τs)
+        @test em[1:3, 3] == x[1:3]
+        @test em[1:3, 1] == x[1+7:3+7]
+        @test em[1:3, 2] == x[1+7+2:3+7+2]
+    end
+    @testset "multivariate" begin
+        s = Dataset(rand(20, 3))
+        τr = τrange(s, ge)
+        em = genembed(s, τs, js)
+        x, y, z = columns(s)
+        @test em[1:3, 1] == x[1+7:3+7]
+        @test em[1:3, 3] == y[1:3]
+        @test em[1:3, 2] == z[1+7+2:3+7+2]
     end
 end
