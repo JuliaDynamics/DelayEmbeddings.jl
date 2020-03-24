@@ -28,12 +28,11 @@ Ds = 1:5
     @test minimum(E2s) < 0.3
 
     E1s = DelayEmbeddings.estimate_dimension(s_roessler, τ, Ds;metric = Chebyshev())
-    @test saturation_point(Ds,E1s; threshold=0.1) ∈ [2, 3]
+    @test E1s[2] > 0.8
 
     Ds = 1:5
     E1s = DelayEmbeddings.estimate_dimension(s_lorenz, τ, Ds)
-    E2s = DelayEmbeddings.stochastic_indicator(s_lorenz, τ, Ds)
-    @test saturation_point(Ds,E1s; threshold=0.1) ∈ [2, 3]
+    @test E1s[2] > 0.8
 
     #Test against random signal
     E2s = DelayEmbeddings.stochastic_indicator(rand(10000), 1, 1:5)
