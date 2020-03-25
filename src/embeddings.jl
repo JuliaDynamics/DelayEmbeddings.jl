@@ -22,10 +22,8 @@ embedding(s, n)
 will create the `n`-th delay vector of the embedded space, which has `γ`
 temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `@inbounds` is used internally.
-It must be that `n ≤ length(s) - maximum(τ)`.**
-
-Convience function [`τrange`](@ref) gives all valid `n` indices.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+Use [`τrange`](@ref)!
 """
 struct DelayEmbedding{γ} <: AbstractEmbedding
     delays::SVector{γ, Int}
@@ -51,18 +49,12 @@ end
     end
 end
 
-# Weighted version
 export WeightedDelayEmbedding
 """
     WeightedDelayEmbedding(γ, τ, w) → `embedding`
 Similar with [`DelayEmbedding`](@ref), but the entries of the
 embedded vector are further weighted with `w^γ`.
 See [`reconstruct`](@ref) for more.
-
-**Be very careful when choosing `n`, because `@inbounds` is used internally.
-It must be that `n ≤ length(s) - maximum(τ)`.**
-
-Convience function [`τrange`](@ref) gives all valid `n` indices.
 """
 struct WeightedDelayEmbedding{γ, T<:Real} <: AbstractEmbedding
     delays::SVector{γ, Int}
@@ -200,10 +192,8 @@ embedding(s, n)
 where `s` is a `Dataset` will create the `n`-th delay vector of the embedded space,
 which has `γ` temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `@inbounds` is used internally.
-It must be that `n ≤ length(s) - maximum(τ)`.**
-
-Convience function [`τrange`](@ref) gives all valid `n` indices.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+Use [`τrange`](@ref)!
 """
 struct MTDelayEmbedding{γ, B, X} <: AbstractEmbedding
     delays::SMatrix{γ, B, Int, X} # X = γ*B = total dimension number
@@ -288,11 +278,8 @@ will create the `n`-th delay vector of `s` in the embedded space using
 `js` is ignored for timeseries input `s` (since all entries of `js` must be `1` in
 this case).
 
-**Be very careful when choosing `n`, because `@inbounds` is used internally.
-It must be that `minimum(τs) + 1 ≤ n ≤ length(s) - maximum(τs)`.
-In addition please ensure that all entries of `js` are valid dimensions of `s`.**
-
-Convience function [`τrange`](@ref) gives all valid `n` indices.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+Use [`τrange`](@ref)!
 """
 struct GeneralizedEmbedding{D} <: AbstractEmbedding
     τs::NTuple{D, Int}
