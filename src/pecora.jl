@@ -192,25 +192,27 @@ written in detail in the source code of `pecora`.
 [^Pecora2007]: Pecora, L. M., Moniz, L., Nichols, J., & Carroll, T. L. (2007). [A unified approach to attractor reconstruction. Chaos 17(1)](https://doi.org/10.1063/1.2430294).
 """
 function pecora(
-        s, τs::NTuple{D, Int}, js::NTuple{D, Int};
+        s, τs::NTuple{D, Int}, js::NTuple{D, Int} = Tuple(ones(Int, D));
         T = 1:50, J=maxdimspan(s), N = 100, K = 13, w = 1,
         db = 250, undersampling = true,
         metric = Chebyshev()
         ) where {D}
 
     undersampling && metric ≠ Chebyshev() && error("Chebyshev metric required for undersampling")
+    length(js) == 1 && (undersampling = false)
     vspace = genembed(s, τs, js)
     vtree = KDTree(vspace.data, metric)
     all_ε★ = zeros(length(T), length(J))
     all_Γ = copy(all_ε★)
     allts = columns(s)
     # indices of random fiducial points (with valid time range w.r.t. T)
-    ns = rand(max(1, (-minimum(T) + 1)):min(length(s), length(s) - maximum(T)), N)
+    L = length(vspace)
+    ns = rand(max(1, (-minimum(T) + 1)):min(L, L - maximum(T)), N)
     vs = vspace[ns]
     allNNidxs, allNNdist = all_neighbors(vtree, vs, ns, K, w)
     # prepare things for undersampling statistic
     if undersampling
-        ρs = histograms(s, unique([js..., J...]))
+        ρs = histograms(s, unique([js..., J...]), db)
         uidxs = [n[1] for n in allNNidxs]
         udist = [d[1] for d in allNNdist]
     end
@@ -219,6 +221,7 @@ function pecora(
         x = allts[J[i]]
         all_ε★[:, i] .= continuity_per_timeseries(x, ns, allNNidxs, T, K)
         if undersampling
+            println("Started undersampling for $(J[i]) timeseries")
             all_Γ[:, i] .= undersampling_per_timeseries(
                 x, vspace, ns, uidxs, udist, [js..., J[i]], T, ρs
             )
@@ -293,15 +296,20 @@ end
 function undersampling_per_timeseries(x, vspace, ns, uidxs, udist, JS, T, ρs)
     avrg_Γ = zeros(size(T))
     for (ι, τ) in enumerate(T) # loop over delay times
-        ni, d0 = udist[i], udist[i] # distances in vspace
+        println("τ = $τ")
+        c = 0
         τr = max(1, (-τ + 1)):min(length(vspace), length(vspace) - τ) # valid time range
         for (i, n0) in enumerate(ns) # Loop over fiducial points
+            ni, d0 = uidxs[i], udist[i] # distances in vspace
+            # Check if the neighbor + τ falls out of temporal range
+            (ni+τ > length(x)) | (ni+τ < 1) && continue
             nℓ = true_neighbor_index(ni, n0, vspace, d0, x, τ, τr)
             q = (vspace[n0]..., x[n0+τ])
             qNN = (vspace[nℓ]..., x[nℓ+τ])
             avrg_Γ[ι] += Γ(q, qNN, JS, ρs)
+            c += 1
         end
-        avrg_Γ[ι] /= length(ns)
+        avrg_Γ[ι] /= c
     end
     return avrg_Γ
 end
@@ -311,7 +319,7 @@ function Γ(q, qNN, JS, ρs)
     for i in 1:length(q)
         ξᵢ = abs(q[i] - qNN[i])
         ρᵢ = ρs[JS[i]]
-        Γᵢ = integral_σ(ρ, ξᵢ)
+        Γᵢ = integral_σ(ρᵢ, ξᵢ)
         Γmax = Γᵢ > Γmax ? Γᵢ : Γmax
     end
     return Γmax
@@ -361,13 +369,13 @@ function difference_distribution(ρ::Histogram, ζ)
     vmin = max(1, searchsortedfirst(e, ζ-maximum(e)))
     vmax = min(length(e)-1, searchsortedfirst(e, ζ-minimum(e)))
     valid = vmin:vmax # all indices where (ζ-emax, ζ-emin) ∈ e
-    @show e, valid, ζ
+    # @show e, valid, ζ
     for i in 1:length(valid)
         # x = e[valid[i]]
         # ζmx = e[valid[end]-i+1] # ζ - x
         # @show (valid[i], valid[end]-i, x, ζmx, ζ-x)
         # we know the bin of x and ζ-x
-        ∫ +=  (ρ.weights[valid[i]] * ρ.weights[valid[end]-i+1])*dx
+        ∫ += (ρ.weights[valid[i]] * ρ.weights[valid[end]-i+1])*dx
     end
     return ∫ # I don't need trapezoid rule, histogram is PDF normalized
 end

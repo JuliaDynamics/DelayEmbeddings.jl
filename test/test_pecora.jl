@@ -7,72 +7,62 @@ data = readdlm("data-lorenz.txt")
 s = data[:, 2] # input timeseries = first entry of lorenz
 metric = Chebyshev()
 figure()
-title("metric = $metric")
+ax1 = subplot(211)
 ylabel("⟨ε★⟩")
+ax2 = subplot(212)
 xlabel("τ (index units)")
-τs = (0, )
-@time es,  = pecora(s, τs; T = 1:200, N = 1000, metric = metric)
-plot(es, label = "τs = $(τs)")
+ylabel("⟨Γ⟩")
 
 optimal_τ = estimate_delay(s, "mi_min")
-axvline(optimal_τ, color = "k", ls = "dashed", label = "mut. inf. optimal τ = $(optimal_τ)")
-legend()
+
+Tmax = 100
+
+τs = (0,)
+@time es, Γs = pecora(s, τs; T = 1:Tmax, N = 1000, metric = metric)
+ax1.plot(es, label = "τs = $(τs)")
+ax2.plot(Γs)
 
 τs = (0, 6,)
-@time es, = pecora(s, τs; T = 1:200, N = 1000, metric = metric)
-plot(es, label = "τs = $(τs)")
-legend()
+@time es, Γs = pecora(s, τs; T = 1:Tmax, N = 1000, metric = metric)
+ax1.plot(es, label = "τs = $(τs)")
+ax2.plot(Γs)
 
 τs = (0, 6, 34)
-@time es, = pecora(s, τs; T = 1:200, N = 1000, metric = metric)
-plot(es, label = "τs = $(τs)")
-legend()
+@time es, Γs = pecora(s, τs; T = 1:Tmax, N = 1000, metric = metric)
+ax1.plot(es, label = "τs = $(τs)")
+ax2.plot(Γs)
 
-τs = (0, 32, 89, 53)
-@time es, = pecora(s, τs; T = 1:200, N = 1000, metric = metric)
-plot(es, label = "τs = $(τs)")
-legend()
+ax1.legend()
+ax1.set_title("lorenz text data")
 
 # %% Trajectory case
+using Statistics
 lo = Systems.lorenz()
 s = trajectory(lo, 1280; dt = 0.02, Ttr = 10.0)
 
 x, y, z = columns(s)
 #
-# x = (x .- mean(x)) ./ std(x)
-# y = (y .- mean(y)) ./ std(y)
-# z = (z .- mean(z)) ./ std(z)
+x = (x .- mean(x)) ./ std(x)
+y = (y .- mean(y)) ./ std(y)
+z = (z .- mean(z)) ./ std(z)
 
 s = Dataset(x, y, z)
 
-metric = Chebyshev()
-figure()
-title("metric = $metric")
-ylabel("⟨ε★⟩")
-xlabel("τ (index units)")
-τs = (0, )
-js = (1, )
-
-@time es, = pecora(s, τs, js; T = 1:200, N = 1000, metric = metric)
-
-for i in 1:3
-    plot(es[:, i], label = "τs = $(τs), js = $(js), J = $(i)")
-end
-legend()
-
 js = (1, 2)
-τs = (0, 3)
-@time es, = pecora(s, τs, js; T = 1:200, N = 1000, metric = metric)
+τs = (0, 5)
+@time es, Γs = pecora(s, τs, js; T = 1:100, N = 1000)
 
+figure()
+subplot(211)
 for i in 1:3
     plot(es[:, i], label = "τs = $(τs), js = $(js), J = $(i)")
 end
+ylabel("⟨ε★⟩")
+title("lorenz system, multiple timeseries")
 legend()
-
-τs = (0, 0, 21)
-js = (1, 3, 3)
-@time es, = pecora(s, τs, js; T = 1:200, N = 1000, metric = metric)
+subplot(212)
 for i in 1:3
-    plot(es[:, i], label = "τs = $(τs), js = $(js), J = $(i)")
+    plot(Γs[:, i], label = "τs = $(τs), js = $(js), J = $(i)")
 end
-legend()
+ylabel("⟨Γ⟩")
+xlabel("τ (index units)")
