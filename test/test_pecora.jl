@@ -1,15 +1,17 @@
 using DelayEmbeddings, PyPlot, DynamicalSystemsBase, DelimitedFiles
+using Distances
 
 # %% Timeseries case
 desktop!()
 data = readdlm("data-lorenz.txt")
 s = data[:, 2] # input timeseries = first entry of lorenz
-
+metric = Chebyshev()
 figure()
+title("metric = $metric")
 ylabel("⟨ε★⟩")
 xlabel("τ (index units)")
 τs = (0, )
-@time es = continuity_statistic(s, τs; T = 1:200, N = 1000)
+@time es,  = pecora(s, τs; T = 1:200, N = 1000, metric = metric)
 plot(es, label = "τs = $(τs)")
 
 optimal_τ = estimate_delay(s, "mi_min")
@@ -17,17 +19,17 @@ axvline(optimal_τ, color = "k", ls = "dashed", label = "mut. inf. optimal τ = 
 legend()
 
 τs = (0, 6,)
-@time es = continuity_statistic(s, τs; T = 1:200, N = 1000)
+@time es, = pecora(s, τs; T = 1:200, N = 1000, metric = metric)
 plot(es, label = "τs = $(τs)")
 legend()
 
 τs = (0, 6, 34)
-@time es = continuity_statistic(s, τs; T = 1:200, N = 1000)
+@time es, = pecora(s, τs; T = 1:200, N = 1000, metric = metric)
 plot(es, label = "τs = $(τs)")
 legend()
 
 τs = (0, 32, 89, 53)
-@time es = continuity_statistic(s, τs; T = 1:200, N = 1000)
+@time es, = pecora(s, τs; T = 1:200, N = 1000, metric = metric)
 plot(es, label = "τs = $(τs)")
 legend()
 
@@ -43,13 +45,15 @@ x, y, z = columns(s)
 
 s = Dataset(x, y, z)
 
+metric = Chebyshev()
 figure()
+title("metric = $metric")
 ylabel("⟨ε★⟩")
 xlabel("τ (index units)")
 τs = (0, )
 js = (1, )
 
-@time es = continuity_statistic(s, τs, js; T = 1:200, N = 1000)
+@time es, = pecora(s, τs, js; T = 1:200, N = 1000, metric = metric)
 
 for i in 1:3
     plot(es[:, i], label = "τs = $(τs), js = $(js), J = $(i)")
@@ -58,7 +62,7 @@ legend()
 
 js = (1, 2)
 τs = (0, 3)
-@time es = continuity_statistic(s, τs, js; T = 1:200, N = 1000)
+@time es, = pecora(s, τs, js; T = 1:200, N = 1000, metric = metric)
 
 for i in 1:3
     plot(es[:, i], label = "τs = $(τs), js = $(js), J = $(i)")
@@ -67,7 +71,7 @@ legend()
 
 τs = (0, 0, 21)
 js = (1, 3, 3)
-@time es = continuity_statistic(s, τs, js; T = 1:200, N = 1000)
+@time es, = pecora(s, τs, js; T = 1:200, N = 1000, metric = metric)
 for i in 1:3
     plot(es[:, i], label = "τs = $(τs), js = $(js), J = $(i)")
 end
