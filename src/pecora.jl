@@ -9,11 +9,11 @@ On s one performs a d-dimensional embedding, that uses a combination of d timese
 I.e. input is `s, τs, js`, with `js, τs` being tuples.
 
 ## 1. Core loop given a specific input embedding
-Let v be a d-dimensional embedding, whose each entry is an arbitrary choice out of
+We have a d-dimensional embedding, whose each entry is an arbitrary choice out of
 the available timeseries (if we have multiple input timeseries, otherwise they are all the
 same) and each entry is also defined with respect to an arbitrary delay.
 
-Define a radius δ around v in ℝᵈ space (d-dimensional embedding). k points are inside
+Define a radius δ around point v in ℝᵈ space (d-dimensional embedding). k points are inside
 the δ-ball (with respect to some metric) around v. For simplicity, the time index of
 v is t0. The other poinds inside the δ_ball have indices i (with several i).
 
@@ -166,34 +166,32 @@ between the components of the existing embedding and one additional timeseries.
 The returned results are *matrices* with size `T`x`J`.
 
 ## Keyword arguments
-* `T=-50:50`: calculate `ε★` for all delay times in `T`.
-* `J=1:dimension(s)`: calculate `ε★` for all timeseries indices in `J`.
+* `T = maximum(τs) .+ 1:50`: calculate for all delay times in `T`.
+* `J = 1:dimension(s)`: calculate for all timeseries indices in `J`.
   If input `s` is a timeseries, this is always just 1.
-* `N=100`: over how many fiducial points v to average ε★ to produce `⟨ε★⟩`
+* `N = 100`: over how many fiducial points v to average ε★ to produce `⟨ε★⟩`
 * `K = 7`: the amount of nearest neighbors in the δ-ball (read algorithm description).
   If given a vector, the result is averaged over all `k ∈ K`. Giving a single
   `K` is much more performant.
 * `metric = Euclidean()`: metrix with which to find nearest neigbhors in the input
   embedding (ℝᵈ space, `d = length(τs)`).
-* `w=1`: Theiler window (neighbors in time with index `w` close to the point, that
+* `w = 1`: Theiler window (neighbors in time with index `w` close to the point, that
   are excluded from being true neighbors). `w=0` means to exclude only the
   point itself, and no temporal neighbors.
 * `undersampling = false` : whether to calculate the undersampling statistic or not
   (if not, zeros are returned for `⟨Γ⟩`).
-* `β = 0.05` : Confidence level for `⟨Γ⟩`. Computation of `⟨ε★⟩` stops once `⟨Γ⟩ > β` (
-  and the remaining entries of `⟨ε★⟩` obtain the value 0)
 * `db::Int = 100`: Amount of bins used into calculating the histograms of
   each timeseries (for the undersampling statistic).
 
 ## Description
 Notice that the full algorithm is too large to discuss here, and is
-written in detail in the source code of `pecora`.
+written in detail (several pages!) in the source code of `pecora`.
 
 [^Pecora2007]: Pecora, L. M., Moniz, L., Nichols, J., & Carroll, T. L. (2007). [A unified approach to attractor reconstruction. Chaos 17(1)](https://doi.org/10.1063/1.2430294).
 """
 function pecora(
         s, τs::NTuple{D, Int}, js::NTuple{D, Int} = Tuple(ones(Int, D));
-        T = 1:50, J=maxdimspan(s), N = 100, K = 13, w = 1,
+        T = maximum(τs) .+ 1:50, J=maxdimspan(s), N = 100, K = 13, w = 1,
         db = 250, undersampling = true,
         metric = Chebyshev()
         ) where {D}
