@@ -1,7 +1,7 @@
 using StaticArrays
 using Base: @_inline_meta
 export reconstruct, DelayEmbedding, MTDelayEmbedding, embed, τrange
-export WeightedDelayEmbedding
+export WeightedDelayEmbedding, AbstractEmbedding
 
 #####################################################################################
 # Univariate Delay Coordinates
