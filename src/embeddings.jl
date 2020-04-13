@@ -286,7 +286,7 @@ struct GeneralizedEmbedding{D} <: AbstractEmbedding
     js::NTuple{D, Int}
 end
 GeneralizedEmbedding(τs::NTuple{D, Int}) where {D} =
-GeneralizedEmbedding{D}(τs, tuple(ones(Int, length(τs))...))
+GeneralizedEmbedding{D}(τs, NTuple{D, Int}(ones(D)))
 
 function Base.show(io::IO, g::GeneralizedEmbedding{D}) where {D}
     print(io, "$D-dimensional generalized embedding\n")
@@ -340,11 +340,12 @@ each step ``n`` will be
 
 See also [`reconstruct`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
 """
-function genembed(s, τs::NTuple{D, Int}, js::NTuple{D, Int} = tuple(ones(Int, length(τs))...)) where {D}
+function genembed(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D))) where {D}
     ge::GeneralizedEmbedding{D} = GeneralizedEmbedding(τs, js)
     return genembed(s, ge)
 end
-function genembed(s, ge::GeneralizedEmbedding{D) where {D}
+
+function genembed(s, ge::GeneralizedEmbedding{D}) where {D}
     r = τrange(s, ge)
     T = eltype(s)
     data = Vector{SVector{D, T}}(undef, length(r))
@@ -353,5 +354,3 @@ function genembed(s, ge::GeneralizedEmbedding{D) where {D}
     end
     return Dataset{D, T}(data)
 end
-
-genembed(s, τs::NTuple{D, Int}) where {D} = genembed(s, τs, NTuple{D, Int}(ones(D)))
