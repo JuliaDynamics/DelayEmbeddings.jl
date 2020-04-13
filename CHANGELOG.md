@@ -1,3 +1,7 @@
+# v1.4.3
+* `js` of `genembed` defaults to ones.
+* low level version of `getembed` takes in an embedding.
+
 # v1.4
 * New generalized embeddings: `genembed`, `GeneralizedEmbedding` that can do any combination possible from a dataset.
 * Using `SizedArrays` in multidimensional embeddings is deprecated and will be removed in later versions.

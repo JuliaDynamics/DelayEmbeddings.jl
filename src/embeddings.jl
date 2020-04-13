@@ -266,17 +266,17 @@ reconstruct(s::AbstractMatrix, args...) = reconstruct(Dataset(s), args...)
 export GeneralizedEmbedding, genembed
 
 """
-    GeneralizedEmbedding(τs, js) -> `embedding`
+    GeneralizedEmbedding(τs [, js]) -> `embedding`
 Return a delay coordinates embedding structure to be used as a functor.
 Given a timeseries *or* trajectory (i.e. `Dataset`) `s` and calling
 ```julia
 embedding(s, n)
 ```
-will create the `n`-th delay vector of `s` in the embedded space using
-`generalized` embedding (see [`genembed`](@ref).
+will create the delay vector of the `n`-th point of `s` in the embedded space using
+generalized embedding (see [`genembed`](@ref)).
 
 `js` is ignored for timeseries input `s` (since all entries of `js` must be `1` in
-this case).
+this case) and in addition `js` defaults to `(1, ..., 1)` for all `τ`.
 
 **Be very careful when choosing `n`, because `@inbounds` is used internally.**
 Use [`τrange`](@ref)!
@@ -285,6 +285,8 @@ struct GeneralizedEmbedding{D} <: AbstractEmbedding
     τs::NTuple{D, Int}
     js::NTuple{D, Int}
 end
+GeneralizedEmbedding(τs::NTuple{D, Int}) where {D} =
+GeneralizedEmbedding{D}(τs, tuple(ones(Int, length(τs))...))
 
 function Base.show(io::IO, g::GeneralizedEmbedding{D}) where {D}
     print(io, "$D-dimensional generalized embedding\n")
@@ -338,8 +340,11 @@ each step ``n`` will be
 
 See also [`reconstruct`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
 """
-function genembed(s, τs::NTuple{D, Int}, js::NTuple{D, Int}) where {D}
+function genembed(s, τs::NTuple{D, Int}, js::NTuple{D, Int} = tuple(ones(Int, length(τs))...)) where {D}
     ge::GeneralizedEmbedding{D} = GeneralizedEmbedding(τs, js)
+    return genembed(s, ge)
+end
+function genembed(s, ge::GeneralizedEmbedding{D) where {D}
     r = τrange(s, ge)
     T = eltype(s)
     data = Vector{SVector{D, T}}(undef, length(r))
