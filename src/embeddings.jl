@@ -1,7 +1,7 @@
 using StaticArrays
 using Base: @_inline_meta
 export reconstruct, DelayEmbedding, MTDelayEmbedding, embed, τrange
-export WeightedDelayEmbedding
+export WeightedDelayEmbedding, AbstractEmbedding
 
 #####################################################################################
 # Univariate Delay Coordinates
@@ -22,10 +22,8 @@ embedding(s, n)
 will create the `n`-th delay vector of the embedded space, which has `γ`
 temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `@inbounds` is used internally.
-It must be that `n ≤ length(s) - maximum(τ)`.**
-
-Convience function [`τrange`](@ref) gives all valid `n` indices.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+Use [`τrange`](@ref)!
 """
 struct DelayEmbedding{γ} <: AbstractEmbedding
     delays::SVector{γ, Int}
@@ -51,18 +49,12 @@ end
     end
 end
 
-# Weighted version
 export WeightedDelayEmbedding
 """
     WeightedDelayEmbedding(γ, τ, w) → `embedding`
 Similar with [`DelayEmbedding`](@ref), but the entries of the
 embedded vector are further weighted with `w^γ`.
 See [`reconstruct`](@ref) for more.
-
-**Be very careful when choosing `n`, because `@inbounds` is used internally.
-It must be that `n ≤ length(s) - maximum(τ)`.**
-
-Convience function [`τrange`](@ref) gives all valid `n` indices.
 """
 struct WeightedDelayEmbedding{γ, T<:Real} <: AbstractEmbedding
     delays::SVector{γ, Int}
@@ -200,10 +192,8 @@ embedding(s, n)
 where `s` is a `Dataset` will create the `n`-th delay vector of the embedded space,
 which has `γ` temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
 
-**Be very careful when choosing `n`, because `@inbounds` is used internally.
-It must be that `n ≤ length(s) - maximum(τ)`.**
-
-Convience function [`τrange`](@ref) gives all valid `n` indices.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+Use [`τrange`](@ref)!
 """
 struct MTDelayEmbedding{γ, B, X} <: AbstractEmbedding
     delays::SMatrix{γ, B, Int, X} # X = γ*B = total dimension number
@@ -276,28 +266,27 @@ reconstruct(s::AbstractMatrix, args...) = reconstruct(Dataset(s), args...)
 export GeneralizedEmbedding, genembed
 
 """
-    GeneralizedEmbedding(τs, js) -> `embedding`
+    GeneralizedEmbedding(τs [, js]) -> `embedding`
 Return a delay coordinates embedding structure to be used as a functor.
 Given a timeseries *or* trajectory (i.e. `Dataset`) `s` and calling
 ```julia
 embedding(s, n)
 ```
-will create the `n`-th delay vector of `s` in the embedded space using
-`generalized` embedding (see [`genembed`](@ref).
+will create the delay vector of the `n`-th point of `s` in the embedded space using
+generalized embedding (see [`genembed`](@ref)).
 
 `js` is ignored for timeseries input `s` (since all entries of `js` must be `1` in
-this case).
+this case) and in addition `js` defaults to `(1, ..., 1)` for all `τ`.
 
-**Be very careful when choosing `n`, because `@inbounds` is used internally.
-It must be that `minimum(τs) + 1 ≤ n ≤ length(s) - maximum(τs)`.
-In addition please ensure that all entries of `js` are valid dimensions of `s`.**
-
-Convience function [`τrange`](@ref) gives all valid `n` indices.
+**Be very careful when choosing `n`, because `@inbounds` is used internally.**
+Use [`τrange`](@ref)!
 """
 struct GeneralizedEmbedding{D} <: AbstractEmbedding
     τs::NTuple{D, Int}
     js::NTuple{D, Int}
 end
+GeneralizedEmbedding(τs::NTuple{D, Int}) where {D} =
+GeneralizedEmbedding{D}(τs, NTuple{D, Int}(ones(D)))
 
 function Base.show(io::IO, g::GeneralizedEmbedding{D}) where {D}
     print(io, "$D-dimensional generalized embedding\n")
@@ -351,8 +340,12 @@ each step ``n`` will be
 
 See also [`reconstruct`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
 """
-function genembed(s, τs::NTuple{D, Int}, js::NTuple{D, Int}) where {D}
+function genembed(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D))) where {D}
     ge::GeneralizedEmbedding{D} = GeneralizedEmbedding(τs, js)
+    return genembed(s, ge)
+end
+
+function genembed(s, ge::GeneralizedEmbedding{D}) where {D}
     r = τrange(s, ge)
     T = eltype(s)
     data = Vector{SVector{D, T}}(undef, length(r))
@@ -361,5 +354,3 @@ function genembed(s, τs::NTuple{D, Int}, js::NTuple{D, Int}) where {D}
     end
     return Dataset{D, T}(data)
 end
-
-genembed(s, τs::NTuple{D, Int}) where {D} = genembed(s, τs, NTuple{D, Int}(ones(D)))
