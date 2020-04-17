@@ -1,3 +1,5 @@
+# v1.5
+* Unified approach to delay embeddings by Pecora et al implemented.
 # v1.4.3
 * `js` of `genembed` defaults to ones.
 * low level version of `getembed` takes in an embedding.

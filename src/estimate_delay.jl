@@ -274,7 +274,7 @@ end
 ### Functions for creating histograms ###
 
 # For type stability, all must return the same type of tuple
-Histogram{T} = Tuple{Vector{<:Integer}, Vector{T}} where {T}
+MIHistogram{T} = Tuple{Vector{<:Integer}, Vector{T}} where {T}
 
 """
     _equalbins(s[; nbins, binwidth])
@@ -283,7 +283,7 @@ Create a histogram of the sorted series `s` with bins of the same width.
 Either the number of bins (`nbins`) or their width (`binwidth`) must be
 given as keyword argument (**but not both**).
 """
-function _equalbins(s::AbstractVector{T}; kwargs...)::Histogram{T} where {T}
+function _equalbins(s::AbstractVector{T}; kwargs...)::MIHistogram{T} where {T}
     # only one of `nbins` or `binwidth` can be passed
     if length(kwargs) > 1
         throw(ArgumentError("the keyword argument can only be either `nbins` "*
@@ -315,7 +315,7 @@ partition is divided into two further sub-pantitions, etc.,
 until the distribution of the points in the highest level
 subpartition is homogeneous.
 """
-function _bisect(s::AbstractVector{T})::Histogram{T} where {T}
+function _bisect(s::AbstractVector{T})::MIHistogram{T} where {T}
     # set up the vectors to return
     bins = Int[]
     edges = T[minimum(s)]
