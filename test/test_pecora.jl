@@ -1,7 +1,10 @@
 using DelayEmbeddings, PyPlot, DynamicalSystemsBase, DelimitedFiles
 using Distances
+using Random
+UNDERSAMPLING = false
 
 # %% Timeseries case
+Random.seed!(414515)
 desktop!()
 data = readdlm("data-lorenz.txt")
 s = data[:, 2] # input timeseries = first entry of lorenz
@@ -18,17 +21,17 @@ optimal_τ = estimate_delay(s, "mi_min")
 Tmax = 100
 
 τs = (0,)
-@time es, Γs = pecora(s, τs; T = 1:Tmax, N = 1000, metric = metric)
+@time es, Γs = pecora(s, τs; T = 1:Tmax, N = 100, metric = metric, undersampling = UNDERSAMPLING)
 ax1.plot(es, label = "τs = $(τs)")
 ax2.plot(Γs)
 
 τs = (0, 6,)
-@time es, Γs = pecora(s, τs; T = 1:Tmax, N = 1000, metric = metric)
+@time es, Γs = pecora(s, τs; T = 1:Tmax, N = 100, metric = metric, undersampling = UNDERSAMPLING)
 ax1.plot(es, label = "τs = $(τs)")
 ax2.plot(Γs)
 
 τs = (0, 6, 34)
-@time es, Γs = pecora(s, τs; T = 1:Tmax, N = 1000, metric = metric)
+@time es, Γs = pecora(s, τs; T = 1:Tmax, N = 100, metric = metric, undersampling = UNDERSAMPLING)
 ax1.plot(es, label = "τs = $(τs)")
 ax2.plot(Γs)
 
@@ -39,13 +42,7 @@ ax1.set_title("lorenz text data")
 using Statistics
 lo = Systems.lorenz()
 s = trajectory(lo, 1280; dt = 0.02, Ttr = 10.0)
-
 x, y, z = columns(s)
-#
-x = (x .- mean(x)) ./ std(x)
-y = (y .- mean(y)) ./ std(y)
-z = (z .- mean(z)) ./ std(z)
-
 s = Dataset(x, y, z)
 
 js = (1, 2)

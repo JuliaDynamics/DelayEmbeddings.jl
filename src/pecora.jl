@@ -159,9 +159,10 @@ const δ_to_ε_amount = Dict(
 """
     pecora(s, τs, js; kwargs...) → ⟨ε★⟩, ⟨Γ⟩
 Compute the (average) continuity statistic `⟨ε★⟩` and undersampling statistic `⟨Γ⟩`
-according to Pecora et al.[^Pecoral2007], for a given input
-`s` (timeseries or `Dataset`) and input embedding defined by `(τs, js)`,
-see [`genembed`](@ref). The continuity statistic represents functional independence
+according to Pecora et al.[^Pecoral2007] (A unified approach to attractor reconstruction),
+for a given input
+`s` (timeseries or `Dataset`) and input generalized embedding defined by `(τs, js)`,
+according to [`genembed`](@ref). The continuity statistic represents functional independence
 between the components of the existing embedding and one additional timeseries.
 The returned results are *matrices* with size `T`x`J`.
 
@@ -169,17 +170,17 @@ The returned results are *matrices* with size `T`x`J`.
 * `T = maximum(τs) .+ 1:50`: calculate for all delay times in `T`.
 * `J = 1:dimension(s)`: calculate for all timeseries indices in `J`.
   If input `s` is a timeseries, this is always just 1.
-* `N = 100`: over how many fiducial points v to average ε★ to produce `⟨ε★⟩`
+* `N = 100`: over how many fiducial points v to average ε★ to produce `⟨ε★⟩, ⟨Γ⟩`
 * `K = 7`: the amount of nearest neighbors in the δ-ball (read algorithm description).
-  If given a vector, the result is averaged over all `k ∈ K`. Giving a single
-  `K` is much more performant.
-* `metric = Euclidean()`: metrix with which to find nearest neigbhors in the input
+  If given a vector, minimum result over all `k ∈ K` is returned.
+* `metric = Chebyshev()`: metrix with which to find nearest neigbhors in the input
   embedding (ℝᵈ space, `d = length(τs)`).
 * `w = 1`: Theiler window (neighbors in time with index `w` close to the point, that
   are excluded from being true neighbors). `w=0` means to exclude only the
   point itself, and no temporal neighbors.
 * `undersampling = false` : whether to calculate the undersampling statistic or not
-  (if not, zeros are returned for `⟨Γ⟩`).
+  (if not, zeros are returned for `⟨Γ⟩`). Calculating `⟨Γ⟩` is thousands of times
+  slower than `⟨ε★⟩`.
 * `db::Int = 100`: Amount of bins used into calculating the histograms of
   each timeseries (for the undersampling statistic).
 
@@ -191,13 +192,15 @@ written in detail (several pages!) in the source code of `pecora`.
 """
 function pecora(
         s, τs::NTuple{D, Int}, js::NTuple{D, Int} = Tuple(ones(Int, D));
-        T = maximum(τs) .+ 1:50, J=maxdimspan(s), N = 100, K = 13, w = 1,
-        db = 250, undersampling = true,
-        metric = Chebyshev()
+        T = maximum(τs) .+ 1:50, J=maxdimspan(s), N = 100, K = 13, w::Int = 1,
+        db = 250, undersampling = false, metric = Chebyshev()
         ) where {D}
 
+
+    if undersampling
+        error("Undersampling statistic is not yet accurate for production use.")
+    end
     undersampling && metric ≠ Chebyshev() && error("Chebyshev metric required for undersampling")
-    length(js) == 1 && (undersampling = false)
     vspace = genembed(s, τs, js)
     vtree = KDTree(vspace.data, metric)
     all_ε★ = zeros(length(T), length(J))
@@ -210,6 +213,7 @@ function pecora(
     allNNidxs, allNNdist = all_neighbors(vtree, vs, ns, K, w)
     # prepare things for undersampling statistic
     if undersampling
+        # TODO: Allow `db` to be vector
         ρs = histograms(s, unique([js..., J...]), db)
         uidxs = [n[1] for n in allNNidxs]
         udist = [d[1] for d in allNNdist]
@@ -217,6 +221,7 @@ function pecora(
     # Loop over potential timeseries to use in new embedding
     for i in 1:length(J)
         x = allts[J[i]]
+        x = (x .- mean(x)) ./ std(x) # so that different timeseries can be compared
         all_ε★[:, i] .= continuity_per_timeseries(x, ns, allNNidxs, T, K)
         if undersampling
             println("Started undersampling for $(J[i]) timeseries")
@@ -250,20 +255,21 @@ maxdimspan(s::AbstractVector) = 1
 columns(s::AbstractVector) = (s, )
 
 function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, T, K)
-    avrg_ε★, c = zeros(size(T)), 0
-    for (i, n) in enumerate(ns) # Loop over fiducial points
-        NNidxs = allNNidxs[i] # indices of k nearest neighbors to v
-        for (ι, τ) in enumerate(T)
+    avrg_ε★ = zeros(size(T))
+    for (ι, τ) in enumerate(T) # Loop over the different delays
+        c = 0
+        for (i, n) in enumerate(ns) # Loop over fiducial points
+            NNidxs = allNNidxs[i] # indices of k nearest neighbors to v
             # Check if any of the indices of the neighbors falls out of temporal range
             any(j -> (j+τ > length(x)) | (j+τ < 1), NNidxs) && continue
             # If not, calculate minimum ε
             avrg_ε★[ι] += ε★(x, n, τ, NNidxs, K)
             c += 1
         end
+        c == 0 && error("Encountered astronomically small chance of all neighbors having "*
+                        "invalid temporal range... Run the function again or decrease `w`.")
+        avrg_ε★[ι] /= c
     end
-    c == 0 && error("Encountered astronomically small chance of all neighbors having "*
-                    "invalid temporal range... Run the function again or decrease `w`.")
-    avrg_ε★ ./= c
     return avrg_ε★
 end
 
@@ -276,8 +282,7 @@ function ε★(x, n, τ, NNidxs, K::AbstractVector)
         l = δ_to_ε_amount[k]
         ε[i] = sortedds[l]
     end
-    # TODO: Check whether this should be minimum or mean or maximum
-    return mean(ε)
+    return minimum(ε)
 end
 
 function ε★(x, n, τ, NNidxs, K::Int)
