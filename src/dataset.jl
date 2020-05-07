@@ -24,6 +24,7 @@ abstract type AbstractDataset{D, T} end
 @inline Base.lastindex(d::AbstractDataset) = length(d)
 @inline Base.lastindex(d::AbstractDataset, k) = size(d)[k]
 @inline Base.firstindex(d::AbstractDataset) = 1
+@inline Base.setindex!(d::AbstractDataset, v, i::Int) = (d.data[i] = v)
 
 # 2D indexing exactly like if the dataset was a matrix
 # with each column a dynamic variable
