@@ -14,12 +14,12 @@ abstract type AbstractDataset{D, T} end
 @inline Base.size(d::AbstractDataset, i) = size(d)[i]
 @inline Base.IteratorSize(d::AbstractDataset) = Base.HasLength()
 
-# Itereting interface:
+# Iteration interface:
 @inline Base.eachindex(D::AbstractDataset) = Base.OneTo(length(D.data))
 @inline Base.iterate(d::AbstractDataset, state = 1) = iterate(d.data, state)
 @inline Base.eltype(::Type{<:AbstractDataset{D, T}}) where {D, T} = SVector{D, T}
 
-# 1D indexing  over the container elements:
+# 1D indexing over the container elements:
 @inline Base.getindex(d::AbstractDataset, i) = d.data[i]
 @inline Base.lastindex(d::AbstractDataset) = length(d)
 @inline Base.lastindex(d::AbstractDataset, k) = size(d)[k]
@@ -89,6 +89,7 @@ Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
 @inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T
 import Base: ==
 ==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
+Base.eachcol(ds::AbstractDataset) = (ds[:, i] for i in 1:size(ds, 2))
 
 """
     Dataset{D, T} <: AbstractDataset{D,T}
@@ -294,3 +295,5 @@ function svd(d::AbstractDataset)
     F = svd(Matrix(d))
     return F[:U], F[:S], F[:Vt]
 end
+
+Base.eachrow(ds::Dataset) = ds.data
