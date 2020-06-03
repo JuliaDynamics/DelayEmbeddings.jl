@@ -1,3 +1,5 @@
+# v1.6
+* Implemented efficient `eachcol` and `eachrow` iterators on Datasets
 # v1.5
 * Unified approach to delay embeddings by Pecora et al implemented.
 # v1.4.3
