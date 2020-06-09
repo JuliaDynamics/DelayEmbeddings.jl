@@ -183,6 +183,7 @@ Base.Matrix(d::AbstractDataset{D,T}) where {D, T} = Matrix{T}(d)
 
 function Dataset(mat::AbstractMatrix{T}) where {T}
     N, D = size(mat)
+    D > N && @warn "You are attempting to make a Dataset of a matrix with more columns than rows."
     Dataset{D,T}(reshape(reinterpret(SVector{D,T}, vec(transpose(mat))), (N,)))
 end
 
