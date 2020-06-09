@@ -6,10 +6,7 @@ export WeightedDelayEmbedding, AbstractEmbedding
 #####################################################################################
 # Univariate Delay Coordinates
 #####################################################################################
-"""
-    AbstractEmbedding
-Super-type of embedding methods.
-"""
+"Super-type of embedding methods."
 abstract type AbstractEmbedding end
 
 """
@@ -288,6 +285,13 @@ end
 GeneralizedEmbedding(τs::NTuple{D, Int}) where {D} =
 GeneralizedEmbedding{D}(τs, NTuple{D, Int}(ones(D)))
 
+function GeneralizedEmbedding(τs::AbstractVector, js::AbstractVector = ones(length(τs)))
+    D = length(τs)
+    a = NTuple{D, Int}(τs)
+    b = NTuple{D, Int}(js)
+    return GeneralizedEmbedding{D}(a, b)
+end
+
 function Base.show(io::IO, g::GeneralizedEmbedding{D}) where {D}
     print(io, "$D-dimensional generalized embedding\n")
     print(io, "  τs: $(g.τs)\n")
@@ -318,18 +322,19 @@ max(1, (-minimum(ge.τs) + 1)):min(length(s), length(s) - maximum(ge.τs))
 
 """
     genembed(s, τs, js = ones(...)) → dataset
-Create a generalized embedding of `s` which can be a timeseries or arbitrary `Dataset`
+Create a generalized embedding of `s` which can be a timeseries or arbitrary `Dataset`,
 and return the result as a new `dataset`.
 
 The generalized embedding works as follows:
-- `τs::NTuple{D, Int}` denotes what delay times will be used for each of the entries
-  of the delay vector. It is strongly recommended that `τs[1] = 0`.
+- `τs` denotes what delay times will be used for each of the entries
+  of the delay vector. It is recommended that `τs[1] = 0`.
   `τs` is allowed to have *negative entries* as well.
-- `js::NTuple{D, Int}` denotes which of the timeseries contained in `s`
+- `js` denotes which of the timeseries contained in `s`
   will be used for the entries of the delay vector. `js` can contain duplicate indices.
 
-For example, imagine input trajectory ``s = [x, y, z]`` where ``x, y, z`` are timeseries
-(the columns of the `Dataset`).
+`τs, js` are tuples (or vectors) of length `D`, which also coincides with the embedding
+dimension. For example, imagine input trajectory ``s = [x, y, z]`` where ``x, y, z`` are
+timeseries (the columns of the `Dataset`).
 If `js = (1, 3, 2)` and `τs = (0, 2, -7)` the created delay vector at
 each step ``n`` will be
 ```math
@@ -340,7 +345,8 @@ each step ``n`` will be
 
 See also [`reconstruct`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
 """
-function genembed(s, τs::NTuple{D, Int}, js = NTuple{D, Int}(ones(D))) where {D}
+function genembed(s, τs, js = ones(length(τs)))
+    D = length(τs)
     ge::GeneralizedEmbedding{D} = GeneralizedEmbedding(τs, js)
     return genembed(s, ge)
 end
