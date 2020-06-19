@@ -4,6 +4,7 @@ println("\nTesting Dataset...")
 
 @testset "Dataset" begin
   data = Dataset(rand(1001,3))
+  xs = columns(data)
   @testset "Methods & Indexing" begin
     a = data[:, 1]
     b = data[:, 2]
@@ -27,6 +28,9 @@ println("\nTesting Dataset...")
     @test mama == ma
     for i in 1:3
       @test mi[i] < ma[i]
+      a,b = extrema(xs[i])
+      @test a == mi[i]
+      @test b == ma[i]
     end
   end
 
@@ -38,4 +42,13 @@ println("\nTesting Dataset...")
     @test Matrix(Dataset(m)) == m
   end
 
+  @testset "regularize" begin
+    r = regularize(data)
+    rs = columns(r)
+    for x in rs
+      m, s = mean(x), std(x)
+      @test abs(m) < 1e-8
+      @test abs(s - 1) < 1e-8
+    end
+  end
 end
