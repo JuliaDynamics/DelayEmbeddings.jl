@@ -90,7 +90,7 @@ Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
 import Base: ==
 ==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
 Base.eachcol(ds::AbstractDataset) = (ds[:, i] for i in 1:size(ds, 2))
-Base.eachrow(ds::Dataset) = ds.data
+Base.eachrow(ds::AbstractDataset) = ds.data
 
 """
     Dataset{D, T} <: AbstractDataset{D,T}
