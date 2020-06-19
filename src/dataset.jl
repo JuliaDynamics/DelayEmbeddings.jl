@@ -4,7 +4,7 @@ using Base.Iterators: flatten
 import RecipesBase
 
 export Dataset, AbstractDataset, minima, maxima
-export minmaxima, columns
+export minmaxima, columns, regularize
 
 abstract type AbstractDataset{D, T} end
 
@@ -90,6 +90,7 @@ Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
 import Base: ==
 ==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
 Base.eachcol(ds::AbstractDataset) = (ds[:, i] for i in 1:size(ds, 2))
+Base.eachrow(ds::Dataset) = ds.data
 
 """
     Dataset{D, T} <: AbstractDataset{D,T}
@@ -97,9 +98,8 @@ A dedicated interface for datasets.
 It contains *equally-sized datapoints* of length `D`, represented by `SVector{D, T}`.
 
 When indexed with 1 index, a `dataset` is like a vector of datapoints.
-
 When indexed with 2 indices it behaves like a matrix that has each of the columns be the
-timeseries of each of the dynamic variables.
+timeseries of each of the variables.
 
 ## Description of indexing
 In the following let `i, j` be integers,  `typeof(data) <: AbstractDataset`
@@ -111,11 +111,11 @@ and `v1, v2` be `<: AbstractVector{Int}` (`v1, v2` could also be ranges).
   these points
 * `data[:, j]` gives the `j`th variable timeseries, as `Vector`
 * `data[v1, v2]` returns a `Dataset` with the appropriate entries (first indices
-  being "time"/point index, while second being dynamic variables)
+  being "time"/point index, while second being variables)
 * `data[i, j]` value of the `j`th variable, at the `i`th timepoint
 
 Use `Matrix(dataset)` or `Dataset(matrix)` to convert. It is assumed
-that each *column* of the `matrix` is one dynamic variable.
+that each *column* of the `matrix` is one variable.
 If you have various timeseries vectors `x, y, z, ...` pass them like
 `Dataset(x, y, z, ...)`. You can use `columns(dataset)` to obtain the reverse,
 i.e. all columns of the dataset in a tuple.
@@ -297,4 +297,23 @@ function svd(d::AbstractDataset)
     return F[:U], F[:S], F[:Vt]
 end
 
-Base.eachrow(ds::Dataset) = ds.data
+#####################################################################################
+#                                regularize                                         #
+#####################################################################################
+using Statistics
+
+"""
+    regularize(d::Dataset) → r
+Create a regularized version of the input dataset where each timeseries (column)
+is transformed to have mean 0 and standard deviation 1.
+"""
+regularize(d::Dataset) = Dataset(regularized_timeseries(d)[1]...)
+function regularized_timeseries(d::Dataset)
+    xs = columns(d)
+    means = mean.(xs)
+    stds = std.(xs)
+    for i in 1:length(xs)
+        xs[i] .= (xs[i] .- means[i]) ./ stds[i]
+    end
+    return xs, means, stds
+end

@@ -1,3 +1,5 @@
+# v1.7.0
+* New function `regularize`, useful in doing dataset-related operations (e.g. finding fractal dimension)
 # v1.6.1
 * `genembed` and co. now allow input arguments as vectors.
 # v1.6
