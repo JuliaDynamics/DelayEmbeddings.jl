@@ -12,12 +12,12 @@ lo = Systems.lorenz()
 
 tr = trajectory(lo, 100; dt = 0.1, Ttr = 10)
 
-writedlm("lorenz_trajectory.csv", tr)
+#writedlm("lorenz_trajectory.csv", tr)
 x = tr[:, 1]
 
 
 @time begin
-L, sigma, alpha, E_avrg, epsilon_avrg = uzal_cost(tr; Tw = 40, K= 3, w = 1, SampleSize = 1.0,
+L = uzal_cost(tr; Tw = 40, K= 3, w = 1, SampleSize = 1.0,
     metric = Euclidean())
 end
 
