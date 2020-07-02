@@ -4,8 +4,10 @@ using StatsBase
 using DelimitedFiles
 using Revise
 using Random
-using Plots
+#using Plots
+using PyPlot
 
+pygui(true)
 
 ## Simple Check on Lorenz System
 lo = Systems.lorenz()
@@ -55,14 +57,28 @@ for K = 1:k_max
 end
 end
 
-# plot results
-plot(tw_max,L[1,:], linewidth = 2, label = "k=1")
-plot!(tw_max,L[2,:], linewidth = 2,label = "k=2")
-plot!(tw_max,L[3,:], linewidth = 2,label = "k=3")
-plot!(tw_max,L[4,:], linewidth = 2,label = "k=4")
-plot!(xticks = 0:10:100)
-plot!(title = "Roessler System as in Fig. 7(b) in the Uzal Paper")
+# # plot results using Plots
+# plot(tw_max,L[1,:], linewidth = 2, label = "k=1")
+# plot!(tw_max,L[2,:], linewidth = 2,label = "k=2")
+# plot!(tw_max,L[3,:], linewidth = 2,label = "k=3")
+# plot!(tw_max,L[4,:], linewidth = 2,label = "k=4")
+# plot!(xticks = 0:10:100)
+# plot!(title = "Roessler System as in Fig. 7(b) in the Uzal Paper")
 
+# plot results using PyPlot
+labels = ["k=1", "k=2", "k=3", "k=4"]
+figure()
+plot(tw_max,L[1,:], linewidth = 2)
+plot(tw_max,L[2,:], linewidth = 2)
+plot(tw_max,L[3,:], linewidth = 2)
+plot(tw_max,L[4,:], linewidth = 2)
+xlabel(L"$t_w$")
+ylabel(L"$L_k$")
+legend(labels)
+xticks(0:10:100)
+#yscale("symlog")
+title("Roessler System as in Fig. 7(b) in the Uzal Paper")
+grid()
 
 ## Test Roessler example as in Fig. 7 in the paper with internal data
 
@@ -77,7 +93,7 @@ w  = 12
 # Time horizon
 Tw = 80
 # sample size
-SampleSize = .1
+SampleSize = .5
 # metric
 metric = Euclidean()
 # embedding dimension
@@ -102,13 +118,28 @@ for K = 1:k_max
 end
 end
 
-# plot results
-plot(tw_max,L[1,:], linewidth = 2, label = "k=1")
-plot!(tw_max,L[2,:], linewidth = 2,label = "k=2")
-plot!(tw_max,L[3,:], linewidth = 2,label = "k=3")
-plot!(tw_max,L[4,:], linewidth = 2,label = "k=4")
-plot!(xticks = 0:10:100)
-plot!(title = "Roessler System as in Fig. 7(b) in the Uzal Paper")
+# # plot results using Plots
+# plot(tw_max,L[1,:], linewidth = 2, label = "k=1")
+# plot!(tw_max,L[2,:], linewidth = 2,label = "k=2")
+# plot!(tw_max,L[3,:], linewidth = 2,label = "k=3")
+# plot!(tw_max,L[4,:], linewidth = 2,label = "k=4")
+# plot!(xticks = 0:10:100)
+# plot!(title = "Roessler System as in Fig. 7(b) in the Uzal Paper")
+
+# plot results using PyPlot
+labels = ["k=1", "k=2", "k=3", "k=4"]
+figure()
+plot(tw_max,L[1,:], linewidth = 2)
+plot(tw_max,L[2,:], linewidth = 2)
+plot(tw_max,L[3,:], linewidth = 2)
+plot(tw_max,L[4,:], linewidth = 2)
+xlabel(L"$t_w$")
+ylabel(L"$L_k$")
+legend(labels)
+xticks(0:10:100)
+#yscale("symlog")
+title("Roessler System as in Fig. 7(b) in the Uzal Paper")
+grid()
 
 ## Test Lorenz example as in Fig. 7 in the paper with internal data
 
@@ -148,10 +179,24 @@ for K = 1:k_max
 end
 end
 
-# plot results
-plot(tw_max,L[1,:], linewidth = 2, label = "k=1")
-plot!(tw_max,L[2,:], linewidth = 2, label = "k=2")
-plot!(tw_max,L[3,:], linewidth = 2, label = "k=3")
-plot!(tw_max,L[4,:], linewidth = 2, label = "k=4")
-plot!(xticks = 0:10:100)
-plot!(title = "Lorenz System as in Fig. 7(a) in the Uzal Paper")
+# # plot results
+# plot(tw_max,L[1,:], linewidth = 2, label = "k=1")
+# plot!(tw_max,L[2,:], linewidth = 2, label = "k=2")
+# plot!(tw_max,L[3,:], linewidth = 2, label = "k=3")
+# plot!(tw_max,L[4,:], linewidth = 2, label = "k=4")
+# plot!(xticks = 0:10:100)
+# plot!(title = "Lorenz System as in Fig. 7(a) in the Uzal Paper")
+
+labels = ["k=1", "k=2", "k=3", "k=4"]
+figure()
+plot(tw_max,L[1,:], linewidth = 2)
+plot(tw_max,L[2,:], linewidth = 2)
+plot(tw_max,L[3,:], linewidth = 2)
+plot(tw_max,L[4,:], linewidth = 2)
+xlabel(L"$t_w$")
+ylabel(L"$L_k$")
+legend(labels)
+xticks(0:10:100)
+#yscale("symlog")
+title("Lorenz System as in Fig. 7(a) in the Uzal Paper")
+grid()
