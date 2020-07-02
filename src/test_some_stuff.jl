@@ -56,3 +56,10 @@ AA = tr[idx]
 BB = hcat(AA...)
 
 neighborhood[2:K+1,:] = hcat(tr[idx]...)
+
+
+##
+using CSV
+using DelimitedFiles
+
+ts = readdlm("roess_ts.txt")

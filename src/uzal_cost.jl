@@ -66,7 +66,8 @@ function uzal_cost(Y; Tw::Int = 40, K::Int = 3, w::Int = 1, SampleSize::Float64 
         # construct neighborhood for this fiducial point
         neighborhood = zeros(K+1,size(Y,2))
         neighborhood[1,:] = v  # the fiducial point is included in the neighborhood
-        neighborhood[2:K+1,:] = hcat(Y[NNidxs]...)
+        neighborhood[2:K+1,:] = vcat(transpose(Y[NNidxs])...)
+
 
         # estimate size of the neighborhood
         pd = pairwise(metric,neighborhood, dims = 1)
@@ -81,9 +82,12 @@ function uzal_cost(Y; Tw::Int = 40, K::Int = 3, w::Int = 1, SampleSize::Float64 
         # Average E²[T] over all prediction horizons
         E²_avrg[i] = mean(E²)                   # Eq. 15
 
-        # compute the noise amplification σ²
-        σ²[i] = E²_avrg[i] / ϵ²[i]              # Eq. 17
+        # # compute the noise amplification σ²
+        # σ²[i] = E²_avrg[i] / ϵ²[i]              # Eq. 17
     end
+
+    # compute the noise amplification σ²
+    σ² = E²_avrg ./ ϵ²                          # Eq. 17
 
     # compute the averaged value of the noise amplification
     σ²_avrg = mean(σ²)                          # Eq. 18
@@ -109,10 +113,10 @@ function comp_Ek2(Y, ns::Int, NNidxs, T::Int, K::Int, metric)
     # determine neighborhood `T` time steps ahead
     ϵ_ball = zeros(K+1, size(Y,2)) # preallocation
     ϵ_ball[1,:] = Y[ns+T]
-    ϵ_ball[2:K+1,:] = hcat(Y[NNidxs.+T]...)
+    ϵ_ball[2:K+1,:] = vcat(transpose(Y[NNidxs.+T])...)
 
     # compute center of mass
-    u_k = sum(ϵ_ball,dims=1) ./ (K+1)   # Eq. 14
+    u_k = sum(ϵ_ball,dims=1) ./ (K+1) # Eq. 14
 
     E²_sum = 0
     for j = 1:K+1
@@ -122,19 +126,19 @@ function comp_Ek2(Y, ns::Int, NNidxs, T::Int, K::Int, metric)
     return E²
 end
 
-"""
-    all_neighbors(vtree, vs, ns, K, w)
-Returns the `maximum(K)`-th nearest neighbors for all input points `vs`, with
-indices `ns` in original data, while respecting the theiler window `w`.
-"""
-function all_neighbors(vtree, vs, ns, K, w)
-    k, sortres, N = maximum(K), true, length(vs)
-    dists = [Vector{eltype(vs[1])}(undef, k) for _ in 1:N]
-    idxs = [Vector{Int}(undef, k) for _ in 1:N]
-    for i in 1:N
-        # The skip predicate also skips the point itself for w ≥ 0
-        skip = j -> ns[i] - w ≤ j ≤ ns[i] + w
-        NearestNeighbors.knn_point!(vtree, vs[i], sortres, dists[i], idxs[i], skip)
-    end
-    return idxs, dists
-end
+# """
+#     all_neighbors(vtree, vs, ns, K, w)
+# Returns the `maximum(K)`-th nearest neighbors for all input points `vs`, with
+# indices `ns` in original data, while respecting the theiler window `w`.
+# """
+# function all_neighbors(vtree, vs, ns, K, w)
+#     k, sortres, N = maximum(K), true, length(vs)
+#     dists = [Vector{eltype(vs[1])}(undef, k) for _ in 1:N]
+#     idxs = [Vector{Int}(undef, k) for _ in 1:N]
+#     for i in 1:N
+#         # The skip predicate also skips the point itself for w ≥ 0
+#         skip = j -> ns[i] - w ≤ j ≤ ns[i] + w
+#         NearestNeighbors.knn_point!(vtree, vs[i], sortres, dists[i], idxs[i], skip)
+#     end
+#     return idxs, dists
+# end
