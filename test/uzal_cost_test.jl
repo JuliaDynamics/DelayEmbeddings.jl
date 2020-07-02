@@ -71,7 +71,6 @@ ro = Systems.roessler([1.0, 1.0, 1.0], a=0.15, b = 0.2, c=10)
 tr = trajectory(ro, 1250; dt = 0.125, Ttr = 10)
 
 x = tr[:, 1]
-writedlm("roessler_trajectory_jul.csv", x)
 
 # theiler window
 w  = 12
@@ -118,7 +117,6 @@ lo = Systems.lorenz([1.0, 1.0, 50.0])
 tr = trajectory(lo, 100; dt = 0.01, Ttr = 10)
 
 x = tr[:, 1]
-writedlm("lorenz_trajectory_jul.csv", x)
 
 # theiler window
 w  = 12
