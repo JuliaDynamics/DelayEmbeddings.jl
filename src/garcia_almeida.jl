@@ -82,7 +82,7 @@ function garcia_embedding_cycle(Y::AbstractDataset, s::AbstractArray; τ_max::In
 
     # preallocation of output
     N_stat = zeros(τ_max+1)
-    NN_distances = fill(Int[], 1, τ_max+1)
+    NN_distances = [AbstractArray[] for i=1, j=1:τ_max+1]
 
     for (i,τ) in enumerate(0:τ_max)
         # build temporary embedding matrix Y_temp
@@ -90,27 +90,11 @@ function garcia_embedding_cycle(Y::AbstractDataset, s::AbstractArray; τ_max::In
         NN = length(Y_temp)     # length of the temporary phase space vector
         N = NN-T               # accepted length w.r.t. the time horizon `T
 
-
-#########
-        # for each point of the trajectory, find the nearest neighbor
-
-        # first compute all pairwise distances, since we need those also for the
-        # d_E2 statistic
-        # D = pairwise(Euclidean(),Matrix(Y_temp),Matrix(Y_temp), dims = 1)
-        # sort distance matrix
-        # idxs = mapslices(sortperm, D, dims=2)
-        # idxs = CartesianIndex.(transpose(hcat([i*ones(Int,size(D,2))
-        #         for i=1:size(D,1)]...)), mapslices(sortperm, D, dims=2))
-        # DD = sort(D,dims=2)         # sorted distance matrix
-        # # determine nearest neighbor
-        # d_E1 = D[idxs][:,2]
-
-#########
-
         vtree = KDTree(Y_temp[1:N], metric) # tree for input data
+        # nearest neighbors (d_E1)
         allNNidxs, d_E1 = all_neighbors(vtree, Y_temp[1:N], 1:N, 1, w)
-
-        #NN_distances[i] = d_E1
+        # save d_E1-statistic
+        push!(NN_distances[i],hcat(d_E1...))
 
         # for each point, consider its next iterate and compute the distance to
         # its former(!) nearest neighbour iterate
@@ -156,8 +140,5 @@ function embed2(Y,s,τ::Int)
     Y_new[:,NN+1] = s[1+τ:N]
 
     return Dataset(Y_new)
-
-end
-
 
 end
