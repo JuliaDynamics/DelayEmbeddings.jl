@@ -1,21 +1,17 @@
 using Neighborhood
-using NearestNeighbors
 using StatsBase
 using Distances
-
-knn = Neighborhood.knn
 
 export uzal_cost
 
 
 """
     uzal_cost(Y; kwargs...) → L
-Compute the L-statistic `L` according to Uzal et al.[^Uzal2011]
-(Optimal reconstruction of dynamical systems: A noise amplification approach),
+Compute the L-statistic `L` according to Uzal et al.[^Uzal2011],
 for a phase space trajectory `Y` (timeseries or `Dataset`). The L-statistic is
 based on theoretical arguments on noise amplification, the complexity of the
 reconstructed attractor and a direct measure of local stretch which constitutes
-an irrelevance measure. The returned result is a scalar.
+an irrelevance measure.
 
 ## Keyword arguments
 
@@ -38,8 +34,6 @@ tbd.
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-
-
 function uzal_cost(Y; Tw::Int = 40, K::Int = 3, w::Int = 1, SampleSize::Float64 = .5,
     metric = Euclidean())
 
@@ -119,5 +113,4 @@ function comp_Ek2(Y, ns::Int, NNidxs, T::Int, K::Int, metric)
         E²_sum += (evaluate(metric,ϵ_ball[j,:],u_k))^2
     end
     E² = E²_sum / (K+1)         # Eq. 13
-
 end

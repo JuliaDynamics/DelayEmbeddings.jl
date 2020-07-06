@@ -17,11 +17,10 @@ tr = trajectory(lo, 100; dt = 0.1, Ttr = 10)
 #writedlm("lorenz_trajectory.csv", tr)
 x = tr[:, 1]
 
-
-@time begin
-L = uzal_cost(tr; Tw = 40, K= 3, w = 1, SampleSize = 1.0,
-    metric = Euclidean())
-end
+@time L = uzal_cost(tr;
+    Tw = 40, K= 3, w = 1, SampleSize = 1.0,
+    metric = Euclidean()
+)
 
 ## Test Roessler example as in Fig. 7 in the paper
 
