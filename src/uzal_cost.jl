@@ -8,14 +8,15 @@ export uzal_cost
 """
     uzal_cost(Y; kwargs...) → L
 Compute the L-statistic `L` according to Uzal et al.[^Uzal2011],
-for a phase space trajectory `Y` (timeseries or `Dataset`). The L-statistic is
+for a phase space trajectory `Y` (`Dataset`). To convert an `Array` into Dataset
+format, simply use `Dataset(Array)`. The L-statistic is
 based on theoretical arguments on noise amplification, the complexity of the
 reconstructed attractor and a direct measure of local stretch which constitutes
 an irrelevance measure.
 
 ## Keyword arguments
 
-* `SampleSize = .5`: Number of considered fiducial points v as a fraction of
+* `samplesize = .5`: Number of considered fiducial points v as a fraction of
   input phase space trajectory `Y`'s length, in order to average the conditional
   variances and neighborhood sizes (read algorithm description) to produce `L`.
 * `K = 3`: the amount of nearest neighbors considered, in order to compute σ_k^2
@@ -30,16 +31,38 @@ an irrelevance measure.
   and averaged over (read algorithm description).
 
 ## Description
-tbd.
+The `L`-statistic based on theoretical arguments on noise amplification, the
+complexity of the reconstructed attractor and a direct measure of local stretch
+which constitutes an irrelevance measure. Technically, it is the logarithm of
+the product of `σ`-statistic and a normalization statistic `α`:
+
+L = log10(σ*α)
+
+The `σ`-statistic is computed as follows. `σ`=√`σ²` and `σ²`=`E²`/`ϵ²`.
+`E²` approximates the conditional variance at each point in phase space and
+for a time horizon `T`∈`Tw`, using `K` nearest neighbors. For each reference
+point of the phase space trajectory, the neighborhood consists of the reference
+point itself and its `K`+1 nearest neighbors. `E²` measures how strong
+a neighborhood expands during `T` time steps. `E²` is averaged over many time
+horizons `T`=1:`Tw`. Consequently, `ϵ²` is the size of the neighborhood at the
+reference point itself and is defined as the mean pairwise distance of the
+neighborhood. Finally, `σ²` gets averaged over a range of reference points on
+the attractor, which is controlled by `samplesize`. This is just for performance
+reasons and the most accurate result will obviously be gained when setting
+`samplesize=1.0`
+
+The `α`-statistic is a normalization factor, such that `σ`'s from different
+reconstructions can be compared. `α²` is defined as the inverse of the sum of
+the inverse of all `ϵ²`'s for all considered reference points.
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost(Y; Tw::Int = 40, K::Int = 3, w::Int = 1, SampleSize::Float64 = .5,
+function uzal_cost(Y::AbstractDataset; Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Float64 = .5,
     metric = Euclidean())
 
     # select a random phase space vector sample according to input `SampleSize
     NN = length(Y)-Tw;
-    NNN = floor(Int,SampleSize*NN)
+    NNN = floor(Int,samplesize*NN)
     ns = sample(1:NN, NNN; replace=false) # the fiducial point indices
     vs = Y[ns] # the fiducial points in the data set
 
