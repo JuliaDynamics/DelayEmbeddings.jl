@@ -6,18 +6,18 @@ export uzal_cost
 
 
 """
-    uzal_cost(Y; kwargs...) → L
-Compute the L-statistic `L` according to Uzal et al.[^Uzal2011], based on
+    uzal_cost(Y::Dataset; kwargs...) → L
+Compute the L-statistic `L` for input dataset `Y` according to Uzal et al.[^Uzal2011], based on
 theoretical arguments on noise amplification, the complexity of the
 reconstructed attractor and a direct measure of local stretch which constitutes
 an irrelevance measure. It serves as a cost function of a phase space
-trajectory/reconstruction and therefore allows to estimate a "goodness of a
-reconstruction" and also to choose proper embedding parameters, while minimizing
+trajectory/embedding and therefore allows to estimate a "goodness of a
+embedding" and also to choose proper embedding parameters, while minimizing
 `L` over the parameter space.
 
 ## Keyword arguments
 
-* `samplesize = .5`: Number of considered fiducial points v as a fraction of
+* `samplesize = 0.5`: Number of considered fiducial points v as a fraction of
   input phase space trajectory `Y`'s length, in order to average the conditional
   variances and neighborhood sizes (read algorithm description) to produce `L`.
 * `K = 3`: the amount of nearest neighbors considered, in order to compute σ_k^2
