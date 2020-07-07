@@ -7,12 +7,13 @@ export uzal_cost
 
 """
     uzal_cost(Y; kwargs...) → L
-Compute the L-statistic `L` according to Uzal et al.[^Uzal2011],
-for a phase space trajectory `Y` (`Dataset`). To convert an `Array` into Dataset
-format, simply use `Dataset(Array)`. The L-statistic is
-based on theoretical arguments on noise amplification, the complexity of the
+Compute the L-statistic `L` according to Uzal et al.[^Uzal2011], based on
+theoretical arguments on noise amplification, the complexity of the
 reconstructed attractor and a direct measure of local stretch which constitutes
-an irrelevance measure.
+an irrelevance measure. It serves as a cost function of a phase space
+trajectory/reconstruction and therefore allows to estimate a "goodness of a
+reconstruction" and also to choose proper embedding parameters, while minimizing
+`L` over the parameter space.
 
 ## Keyword arguments
 
@@ -57,7 +58,7 @@ the inverse of all `ϵ²`'s for all considered reference points.
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost(Y::AbstractDataset; Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Float64 = .5,
+function uzal_cost(Y::Dataset ; Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Float64 = .5,
     metric = Euclidean())
 
     # select a random phase space vector sample according to input `SampleSize

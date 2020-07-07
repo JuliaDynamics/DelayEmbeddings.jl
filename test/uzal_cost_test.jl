@@ -3,10 +3,12 @@ using DelayEmbeddings
 using StatsBase
 using Test
 using Statistics
+using Random 
 
 println("\nTesting uzal_cost.jl...")
 
 ## Check on random vector
+Random.seed!(1516578735)
 tr = randn(10000)
 tr = Dataset(tr)
 @time L = uzal_cost(tr;
@@ -27,6 +29,7 @@ tr = Dataset(tr)
 @test isnan(L)
 
 ## check on noisy step function (should yield a proper value)
+Random.seed!(1516578735)
 tr = zeros(10000)
 tr[1:5000] = zeros(5000) .+ 0.001 .* randn(5000)
 tr[5001:end] = ones(5000) .+ 0.001 .* randn(5000)
