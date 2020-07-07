@@ -17,7 +17,7 @@ for a phase space trajectory `Y` (timeseries or `Dataset`). ...
 
 ## Keyword arguments
 
-* `SampleSize = .5`: Number of considered fiducial points v as a fraction of
+* `samplesize = .5`: Number of considered fiducial points v as a fraction of
   input phase space trajectory `Y`'s length, in order to average the conditional
   variances and neighborhood sizes (read algorithm description) to produce `L`.
 * `K = 3`: the amount of nearest neighbors considered, in order to compute σ_k^2
@@ -51,9 +51,9 @@ end
 """
     garcia_embedding_cycle(Y,s; kwargs...) → N, d_E1
 Performs one embedding cycle according to the method proposed in [^Garcia2005a]
-for a given input `Y`(phase space trajectory or time series) and `s`
-(timeseries or `Dataset`). Returns the proposed N-Statistic `N` and all nearest
-neighbor distances 'd_E1' for each point of the input phase space
+for a given input `Y`(phase space trajectory or time series in `Dataset`-Format
+and `s` (timeseries as `Array`). Returns the proposed N-Statistic `N` and all
+nearest neighbor distances 'd_E1' for each point of the input phase space
 trajectory `Y`. Note that `Y` is a single time series in case of the first
 embedding cycle.
 
