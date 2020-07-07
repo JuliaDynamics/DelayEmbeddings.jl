@@ -3,7 +3,7 @@ using DelayEmbeddings
 using StatsBase
 using Test
 using Statistics
-using Random 
+using Random
 
 println("\nTesting uzal_cost.jl...")
 
@@ -11,9 +11,10 @@ println("\nTesting uzal_cost.jl...")
 Random.seed!(1516578735)
 tr = randn(10000)
 tr = Dataset(tr)
-@time L = uzal_cost(tr;
+L = uzal_cost(tr;
     Tw = 60, K= 3, w = 1, samplesize = 1.0,
-    metric = Euclidean())
+    metric = Euclidean()
+)
 
 L_max = 2.059
 @test L < L_max
@@ -23,9 +24,10 @@ tr = zeros(10000)
 tr[1:5000] = zeros(5000)
 tr[5001:end] = ones(5000)
 tr = Dataset(tr)
-@time L = uzal_cost(tr;
+L = uzal_cost(tr;
     Tw = 60, K= 3, w = 1, samplesize = 1.0,
-    metric = Euclidean())
+    metric = Euclidean()
+)
 @test isnan(L)
 
 ## check on noisy step function (should yield a proper value)
@@ -34,9 +36,10 @@ tr = zeros(10000)
 tr[1:5000] = zeros(5000) .+ 0.001 .* randn(5000)
 tr[5001:end] = ones(5000) .+ 0.001 .* randn(5000)
 tr = Dataset(tr)
-@time L = uzal_cost(tr;
+L = uzal_cost(tr;
     Tw = 60, K= 3, w = 1, samplesize = 1.0,
-    metric = Euclidean())
+    metric = Euclidean()
+)
 @test L<-3
 
 ## Simple Check on Lorenz System
@@ -45,17 +48,19 @@ lo = Systems.lorenz()
 tr = trajectory(lo, 10; dt = 0.01, Ttr = 10)
 
 # check Euclidean metric
-@time L = uzal_cost(tr;
+L = uzal_cost(tr;
     Tw = 60, K= 3, w = 12, samplesize = 1.0,
-    metric = Euclidean())
+    metric = Euclidean()
+)
 L_max = -2.411
 L_min = -2.412
 @test L_min < L < L_max
 
 # check Maximum metric
-@time L = uzal_cost(tr;
+L = uzal_cost(tr;
     Tw = 60, K= 3, w = 12, samplesize = 1.0,
-    metric = Chebyshev())
+    metric = Chebyshev()
+)
 L_max = -2.475
 L_min = -2.485
 @test L_min < L < L_max
@@ -82,20 +87,18 @@ m = 3
 # maximum neighbours
 k_max = 4
 # number of total trials
-trials = 30
+trials = 5
 
 # preallocation
 L = zeros(k_max,trials)
 tw_max = zeros(trials)
 
-@time begin
 for K = 1:k_max
     for i = 1:trials
         tw_max[i] = i*(m-1)
         Y = embed(x,m,i)
         L[K,i] = uzal_cost(Y; Tw=Tw, K=K, w=w, samplesize=SampleSize, metric=metric)
     end
-end
 end
 
 tau_min = 9
@@ -105,7 +108,7 @@ min1_idx = sortperm(L[1,:])
 min1 = tw_max[min1_idx[1]]
 @test tau_min < min1 < tau_max
 L_min = -2.96
-L_max = -2.92
+L_max = -2.8
 @test L_min < L[1,min1_idx[1]] < L_max
 
 
@@ -113,7 +116,7 @@ min2_idx = sortperm(L[2,:])
 min2 = tw_max[min2_idx[1]]
 @test tau_min < min2 < tau_max
 L_min = -2.64
-L_max = -2.60
+L_max = -2.5
 @test L_min < L[2,min2_idx[1]] < L_max
 
 
@@ -121,7 +124,7 @@ min3_idx = sortperm(L[3,:])
 min3 = tw_max[min3_idx[1]]
 @test tau_min < min3 < tau_max
 L_min = -2.46
-L_max = -2.42
+L_max = -2.3
 @test L_min < L[3,min3_idx[1]] < L_max
 
 
@@ -129,7 +132,7 @@ min4_idx = sortperm(L[4,:])
 min4 = tw_max[min4_idx[1]]
 @test tau_min < min4 < tau_max
 L_min = -2.36
-L_max = -2.32
+L_max = -2.2
 @test L_min < L[4,min4_idx[1]] < L_max
 
 # # plot results using PyPlot
@@ -170,20 +173,18 @@ m = 3
 # maximum neighbours
 k_max = 4
 # number of total trials
-trials = 30
+trials = 5
 
 # preallocation
 L = zeros(k_max,trials)
 tw_max = zeros(trials)
 
-@time begin
 for K = 1:k_max
     for i = 1:trials
         tw_max[i] = i*(m-1)
         Y = embed(x,m,i)
         L[K,i] = uzal_cost(Y; Tw=Tw, K=K, w=w, samplesize=SampleSize, metric=metric)
     end
-end
 end
 
 tau_min = 17
