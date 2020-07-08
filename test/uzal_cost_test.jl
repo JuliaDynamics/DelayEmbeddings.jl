@@ -87,7 +87,7 @@ m = 3
 # maximum neighbours
 k_max = 4
 # number of total trials
-trials = 5
+trials = 8
 
 # preallocation
 L = zeros(k_max,trials)
@@ -147,7 +147,7 @@ L_max = -2.2
 # xlabel(L"$t_w$")
 # ylabel(L"$L_k$")
 # legend(labels)
-# xticks(0:10:60)
+# xticks(0:1:16)
 # #yscale("symlog")
 # title("Roessler System as in Fig. 7(b) in the Uzal Paper")
 # grid()
@@ -173,7 +173,7 @@ m = 3
 # maximum neighbours
 k_max = 4
 # number of total trials
-trials = 5
+trials = 12
 
 # preallocation
 L = zeros(k_max,trials)
@@ -229,7 +229,7 @@ L_max = -1.9
 # xlabel(L"$t_w$")
 # ylabel(L"$L_k$")
 # legend(labels)
-# xticks(0:10:60)
+# xticks(0:2:24)
 # #yscale("symlog")
 # title("Lorenz System as in Fig. 7(a) in the Uzal Paper")
 # grid()
