@@ -53,17 +53,17 @@ The default `w=1` is the case of excluding the `point` itself.
 ## References
 
 `neighborhood` simply interfaces the functions
-`knn` and `inrange` from
+`NearestNeighbors.knn` and `inrange` from
 [NearestNeighbors.jl](https://github.com/KristofferC/NearestNeighbors.jl) by using
 the argument `ntype`.
 """
 function neighborhood(point::AbstractVector, tree,
                       ntype::FixedMassNeighborhood, n::Int, w::Int = 1)
-    idxs, = knn(tree, point, ntype.K, false, i -> abs(i-n) < w)
+    idxs, = NearestNeighbors.knn(tree, point, ntype.K, false, i -> abs(i-n) < w)
     return idxs
 end
 function neighborhood(point::AbstractVector, tree, ntype::FixedMassNeighborhood)
-    idxs, = knn(tree, point, ntype.K, false)
+    idxs, = NearestNeighbors.knn(tree, point, ntype.K, false)
     return idxs
 end
 
