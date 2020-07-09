@@ -94,6 +94,10 @@ this embedding cycle as the value, where `N` has its first local minimum.
 function garcia_embedding_cycle(Y::Dataset, s::Array; τ_max::Int = 50 , r::Int = 10,
     T::Int = 1, w::Int = 1, metric = Euclidean())
 
+    # assert a minimum length of the input time series
+    @assert length(s)>=length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
+
+
     # preallocation of output
     N_stat = zeros(τ_max+1)
     NN_distances = [AbstractArray[] for i=1, j=1:τ_max+1]
@@ -131,6 +135,9 @@ end
 
 function garcia_embedding_cycle(Y::Dataset, s::Dataset; τ_max::Int = 50 , r::Int = 10,
     T::Int = 1, w::Int = 1, metric = Euclidean())
+
+    # assert a minimum length of the input time series
+    @assert length(s)>=length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
 
     # preallocation of output
     N_stat = zeros(τ_max+1)

@@ -20,14 +20,10 @@ Y = Dataset(x)
 
 τ_max = 50
 
-@time begin
 N , NN_distances = garcia_embedding_cycle(Y, x, w=0, T=1, τ_max = τ_max)
-end
 
 T = 17
-@time begin
 N2 , NN_distances2 = garcia_embedding_cycle(Y, x, w=0, T=T, τ_max = τ_max)
-end
 
 # check whether the `d_E1`-statistic is the same
 @test NN_distances[1][1][1:100] == NN_distances2[1][1][1:100]
