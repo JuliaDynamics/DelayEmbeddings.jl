@@ -20,57 +20,51 @@ end
 
 
 """
-    beta_statistic(Y::Dataset; kwargs...) → β
-Compute the L-statistic `L` for input dataset `Y` according to Uzal et al.[^Nichkawde2013], based on
-theoretical arguments on noise amplification, the complexity of the
-reconstructed attractor and a direct measure of local stretch which constitutes
-an irrelevance measure. It serves as a cost function of a phase space
-trajectory/embedding and therefore allows to estimate a "goodness of a
-embedding" and also to choose proper embedding parameters, while minimizing
-`L` over the parameter space.
+    beta_statistic(Y::Dataset, s::Dataset(::Array); kwargs...) → β
+Compute the β-statistic `β` for input phase space trajectory `Y` (of type
+`Dataset`) and a univariate time series 's' (1-dim. `Array` or `Dataset`)
+according to Nichkawde [^Nichkawde2013], based on estimating derivatives on a
+projected manifold. For a range of delay values `τ` (ranging from `0:1:τ_max`)
+`β` gets computed and its maximum over all considered `τ`'s serves as the
+optimal delay considered in this embedding cycle.
 
 ## Keyword arguments
 
-* `samplesize = 0.5`: Number of considered fiducial points v as a fraction of
-  input phase space trajectory `Y`'s length, in order to average the conditional
-  variances and neighborhood sizes (read algorithm description) to produce `L`.
-* `K = 3`: the amount of nearest neighbors considered, in order to compute σ_k^2
-  (read algorithm description).
-  If given a vector, minimum result over all `k ∈ K` is returned.
-* `metric = Euclidean()`: metric used for finding nearest neigbhors in the input
-  phase space trajectory `Y.
+* `τ_max = 50`: Maximum value of considered delay values `τ` (in sampling time
+  units), ranging from `τ=0:1:τ_max`. For each of the `τ`'s the β-statistic gets
+  computed.
 * `w = 1`: Theiler window (neighbors in time with index `w` close to the point,
   that are excluded from being true neighbors). `w=0` means to exclude only the
   point itself, and no temporal neighbors.
-* `Tw = 40`: The time horizon (in sampling units) up to which E_k^2 gets computed
-  and averaged over (read algorithm description).
 
 ## Description
-The `L`-statistic based on theoretical arguments on noise amplification, the
-complexity of the reconstructed attractor and a direct measure of local stretch
-which constitutes an irrelevance measure. Technically, it is the logarithm of
-the product of `σ`-statistic and a normalization statistic `α`:
+The `β`-statistic is based on the geometrical idea of maximal unfolding of the
+reconstructed attractor and is tightly related to the False Nearest Neighbor
+method ([^Kennel1992]). In fact the method eliminates the maximum amount of
+false nearest neighbors in each embedding cycle. The idea is to estimate the
+absolute value of the directional derivative with respect to a possible new
+dimension in the reconstruction process, and with respect to the nearest
+neighbor, for all points of the phase space trajectory:
 
-L = log10(σ*α)
+ϕ'(τ) = Δϕ_d(τ) / Δx_d
 
-The `σ`-statistic is computed as follows. `σ`=√`σ²` and `σ²`=`E²`/`ϵ²`.
-`E²` approximates the conditional variance at each point in phase space and
-for a time horizon `T`∈`Tw`, using `K` nearest neighbors. For each reference
-point of the phase space trajectory, the neighborhood consists of the reference
-point itself and its `K`+1 nearest neighbors. `E²` measures how strong
-a neighborhood expands during `T` time steps. `E²` is averaged over many time
-horizons `T`=1:`Tw`. Consequently, `ϵ²` is the size of the neighborhood at the
-reference point itself and is defined as the mean pairwise distance of the
-neighborhood. Finally, `σ²` gets averaged over a range of reference points on
-the attractor, which is controlled by `samplesize`. This is just for performance
-reasons and the most accurate result will obviously be gained when setting
-`samplesize=1.0`
+Δx_d is simply the Euclidean nearest neighbor distance for a reference point
+with respect to the given Theiler window `w`. Δϕ_d(τ) is the distance of the
+reference point to its nearest neighbor in the one dimensional time series `s`,
+for the specific τ. Δϕ_d(τ) = |s(i+τ)-s(j+τ)|, with i being the index of the
+considered reference point and j the index of its nearest neighbor.
 
-The `α`-statistic is a normalization factor, such that `σ`'s from different
-reconstructions can be compared. `α²` is defined as the inverse of the sum of
-the inverse of all `ϵ²`'s for all considered reference points.
+Finally,
+
+`β` = log β(τ) = ⟨log ϕ'(τ)⟩ ,
+
+with ⟨.⟩ being the mean over all reference points. When one chooses the maximum
+of `β` over all considered τ's, one obtains the optimal delay value for this
+embedding cycle. Note that in the first embedding cycle, the input phase space
+trajectory `Y` can also be just a univariate time series.
 
 [^Nichkawde2013]: Nichkawde, Chetan (2013). [Optimal state-space reconstruction using derivatives on projected manifold. Physical Review E 87, 022905](https://doi.org/10.1103/PhysRevE.87.022905).
+[^Kennel1992]: Kennel, M. B., Brown, R., Abarbanel, H. D. I. (1992). [Determining embedding dimension for phase-space reconstruction using a geometrical construction. Phys. Rev. A 45, 3403] (https://doi.org/10.1103/PhysRevA.45.3403).
 """
 
 function beta_statistic()
