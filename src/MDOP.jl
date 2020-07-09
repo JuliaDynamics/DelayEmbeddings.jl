@@ -67,7 +67,63 @@ trajectory `Y` can also be just a univariate time series.
 [^Kennel1992]: Kennel, M. B., Brown, R., Abarbanel, H. D. I. (1992). [Determining embedding dimension for phase-space reconstruction using a geometrical construction. Phys. Rev. A 45, 3403] (https://doi.org/10.1103/PhysRevA.45.3403).
 """
 
-function beta_statistic()
-    # tbd
+function beta_statistic(Y::Dataset, s::Array; τ_max::Int = 50 , w::Int = 1)
+
+    # assert a minimum length of the input time series
+    @assert length(s)>=length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
+
+    metric = Euclidean()    # consider only Euclidean norm
+    K = 1                   # consider only first nearest neighbor
+    N = length(Y)           # length of the phase space trajectory
+    NN = N - τ_max          # allowed length of the trajectory w.r.t. τ_max
+
+    # tree for input data
+    vtree = KDTree(Y[1:NN], metric)
+    # compute nearest neighbors
+    allNNidxs, Δx = all_neighbors(vtree, Y[1:NN], 1:NN, K, w)   # Eq. 12
+
+    # loop over all phase space points in order to compute Δϕ
+    Δϕ = zeros(NN,τ_max+1)     # preallocation
+    for j = 1:NN
+        # loop over all considered τ's
+        for (i,τ) in enumerate(0:τ_max)
+            Δϕ[j,i] = abs(s[j+τ]-s[allNNidxs[j]+τ]) / Δx[j] # Eq. 14 & 15
+        end
+    end
+
+    # compute final beta statistic
+    β = mean(log10(Δϕ), dims=1)     # Eq. 16
+
+    return β
+
+end
+
+
+function beta_statistic(Y::Dataset, s::Dataset; τ_max::Int = 50 , w::Int = 1)
+    @assert length(s)>=length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
+
+    metric = Euclidean()    # consider only Euclidean norm
+    K = 1                   # consider only first nearest neighbor
+    N = length(Y)           # length of the phase space trajectory
+    NN = N - τ_max          # allowed length of the trajectory w.r.t. τ_max
+
+    # tree for input data
+    vtree = KDTree(Y[1:NN], metric)
+    # compute nearest neighbors
+    allNNidxs, Δx = all_neighbors(vtree, Y[1:NN], 1:NN, K, w)   # Eq. 12
+
+    # loop over all phase space points in order to compute Δϕ
+    Δϕ = zeros(NN,τ_max+1)     # preallocation
+    for j = 1:NN
+        # loop over all considered τ's
+        for (i,τ) in enumerate(0:τ_max)
+            Δϕ[j,i] = abs(s[j+τ]-s[allNNidxs[j]+τ]) / Δx[j] # Eq. 14 & 15
+        end
+    end
+
+    # compute final beta statistic
+    β = mean(log10(Δϕ), dims=1)     # Eq. 16
+
+    return β
 
 end
