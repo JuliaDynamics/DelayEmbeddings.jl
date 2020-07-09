@@ -87,12 +87,12 @@ function beta_statistic(Y::Dataset, s::Array; τ_max::Int = 50 , w::Int = 1)
     for j = 1:NN
         # loop over all considered τ's
         for (i,τ) in enumerate(0:τ_max)
-            Δϕ[j,i] = abs(s[j+τ]-s[allNNidxs[j]+τ]) / Δx[j] # Eq. 14 & 15
+            Δϕ[j,i] = abs(s[j+τ][1]-s[allNNidxs[j][1]+τ][1]) / Δx[j][1] # Eq. 14 & 15
         end
     end
 
     # compute final beta statistic
-    β = mean(log10(Δϕ), dims=1)     # Eq. 16
+    β = mean(log10.(Δϕ), dims=1)     # Eq. 16
 
     return β
 
@@ -117,12 +117,12 @@ function beta_statistic(Y::Dataset, s::Dataset; τ_max::Int = 50 , w::Int = 1)
     for j = 1:NN
         # loop over all considered τ's
         for (i,τ) in enumerate(0:τ_max)
-            Δϕ[j,i] = abs(s[j+τ]-s[allNNidxs[j]+τ]) / Δx[j] # Eq. 14 & 15
+            Δϕ[j,i] = abs(s[j+τ][1]-s[allNNidxs[j][1]+τ][1]) / Δx[j][1] # Eq. 14 & 15
         end
     end
 
     # compute final beta statistic
-    β = mean(log10(Δϕ), dims=1)     # Eq. 16
+    β = mean(log10.(Δϕ), dims=1)     # Eq. 16
 
     return β
 
