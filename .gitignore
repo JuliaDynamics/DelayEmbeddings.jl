@@ -1,6 +1,1 @@
-
-src/testing_stuff.jl
-
-lorenz_trajectory.csv
-
-lorenz_matlab.txt
+Manifest.toml

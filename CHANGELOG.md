@@ -1,3 +1,5 @@
+# v1.8.0
+* New cost function for testing "goodness" of a delay embedding: `uzal_cost` from Uzal et. al.
 # v1.7.0
 * New function `regularize`, useful in doing dataset-related operations (e.g. finding fractal dimension)
 # v1.6.1

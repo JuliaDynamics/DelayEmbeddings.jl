@@ -1,4 +1,5 @@
 using Test, StaticArrays, DelayEmbeddings
+using Statistics
 
 println("\nTesting Dataset...")
 
