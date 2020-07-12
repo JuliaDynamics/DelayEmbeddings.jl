@@ -1,12 +1,13 @@
 name = "DelayEmbeddings"
 uuid = "5732040d-69e3-5649-938a-b6b4f237613f"
 repo = "https://github.com/JuliaDynamics/DelayEmbeddings.jl.git"
-version = "1.7.0"
+version = "1.8.0"
 
 [deps]
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 NearestNeighbors = "b8a86587-4115-5ab1-83bc-aa920d37bbce"
+Neighborhood = "645ca80c-8b79-4109-87ea-e1f58159d116"
 RecipesBase = "3cdcf5f2-1ef4-517c-9805-6587b60abb01"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
@@ -15,6 +16,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 [compat]
 Distances = "0.7, 0.8, 0.9"
 NearestNeighbors = "0.4"
+Neighborhood = "0.1"
 RecipesBase = "0.7, 0.8, 1.0"
 StaticArrays = "0.8, 0.11, 0.12"
 StatsBase = "0.24, 0.32, 0.33"
@@ -23,6 +25,7 @@ julia = "1"
 [extras]
 DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [targets]
-test = ["DynamicalSystemsBase", "Test"]
+test = ["DynamicalSystemsBase", "Test", "Random"]
