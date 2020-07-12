@@ -98,13 +98,13 @@ function _average_a(s::AbstractVector{T},γ,τ,metric) where {T}
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
     Rγ = reconstruct(s[1:end-τ],γ,τ)
     tree2 = KDTree(Rγ, metric)
-    nind = (x = knn(tree2, Rγ.data, 2)[1]; [ind[1] for ind in x])
+    nind = (x = NearestNeighbors.knn(tree2, Rγ.data, 2)[1]; [ind[1] for ind in x])
     e = 0.0
     @inbounds for (i,j) ∈ enumerate(nind)
         δ = evaluate(metric, Rγ[i], Rγ[j])
         #If Rγ[i] and Rγ[j] are still identical, choose the next nearest neighbor
         if δ == 0.0
-            j = knn(tree2, Rγ[i], 3, true)[1][end]
+            j = NearestNeighbors.knn(tree2, Rγ[i], 3, true)[1][end]
             δ = evaluate(metric, Rγ[i], Rγ[j])
         end
         e += _increase_distance(δ,s,i,j,γ,τ,metric)/δ
@@ -150,13 +150,13 @@ function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10.0, atol=2.0)
     @inbounds for (k, γ) ∈ enumerate(γs)
         y = reconstruct(s[1:end-τ],γ,τ)
         tree = KDTree(y)
-        nind = (x = knn(tree, y.data, 2)[1]; [ind[1] for ind in x])
+        nind = (x = NearestNeighbors.knn(tree, y.data, 2)[1]; [ind[1] for ind in x])
         for (i,j) ∈ enumerate(nind)
             δ = norm(y[i]-y[j], 2)
             # If y[i] and y[j] are still identical, choose the next nearest neighbor
             # as in Cao's algorithm (not suggested by Kennel, but still advisable)
             if δ == 0.0
-                j = knn(tree, y[i], 3, true)[1][end]
+                j = NearestNeighbors.knn(tree, y[i], 3, true)[1][end]
                 δ = norm(y[i]-y[j])
             end
             δ1 = _increase_distance(δ,s,i,j,γ,τ,Euclidean())
@@ -215,9 +215,9 @@ function _compare_first_nn(s, γ::Int, τ::Int, Rγ::Dataset{D,T}, metric) where
     tree1 = KDTree(Rγ1,metric)
     nf1nn = 0
     # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k`
-    nind = (x = knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
+    nind = (x = NearestNeighbors.knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
     @inbounds for  (i,j) ∈ enumerate(nind)
-        k = knn(tree1, Rγ1.data[i], 2, true)[1][end]
+        k = NearestNeighbors.knn(tree1, Rγ1.data[i], 2, true)[1][end]
         if j != k
             nf1nn += 1
         end

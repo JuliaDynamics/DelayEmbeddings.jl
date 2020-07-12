@@ -285,7 +285,7 @@ end
 GeneralizedEmbedding(τs::NTuple{D, Int}) where {D} =
 GeneralizedEmbedding{D}(τs, NTuple{D, Int}(ones(D)))
 
-function GeneralizedEmbedding(τs::AbstractVector, js::AbstractVector = ones(length(τs)))
+function GeneralizedEmbedding(τs, js::AbstractVector = ones(length(τs)))
     D = length(τs)
     a = NTuple{D, Int}(τs)
     b = NTuple{D, Int}(js)
