@@ -17,7 +17,7 @@ for a phase space trajectory `Y` (timeseries or `Dataset`). ...
 
 ## Keyword arguments
 
-* `samplesize = .5`: Number of considered fiducial points v as a fraction of
+* `samplesize = 0.5`: Number of considered fiducial points v as a fraction of
   input phase space trajectory `Y`'s length, in order to average the conditional
   variances and neighborhood sizes (read algorithm description) to produce `L`.
 * `K = 3`: the amount of nearest neighbors considered, in order to compute σ_k^2
@@ -90,7 +90,6 @@ this embedding cycle as the value, where `N` has its first local minimum.
 
 [^Garcia2005a]: Garcia, S. P., Almeida, J. S. (2005). [Nearest neighbor embedding with different time delays. Physical Review E 71, 037204](https://doi.org/10.1103/PhysRevE.71.037204).
 """
-
 function garcia_embedding_cycle(Y::Dataset, s::Array; τ_max::Int = 50 , r::Int = 10,
     T::Int = 1, w::Int = 1, metric = Euclidean())
 
@@ -184,7 +183,6 @@ vectors, a univariate time series 's' (`Array` or `Dataset`) and a delay value
 component consisting of the τ-shifted values of the input time series `s` and
 outputs the new phase space trajectory `Y_new` (`Dataset`).
 """
-
 function embed2(Y::Dataset,s::Array,τ::Int)
     N = size(Y,1)   # length of input trajectory
     NN = size(Y,2)  # dimensionality of input trajectory
