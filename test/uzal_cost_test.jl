@@ -6,7 +6,8 @@ using Statistics
 using Random
 
 println("\nTesting uzal_cost.jl...")
-
+@testset "Uzal cost" begin
+@testset "Random vectors" begin
 ## Check on random vector
 Random.seed!(1516578735)
 tr = randn(10000)
@@ -41,7 +42,9 @@ L = uzal_cost(tr;
     metric = Euclidean()
 )
 @test L<-3
+end
 
+@testset "Lorenz system" begin
 ## Simple Check on Lorenz System
 lo = Systems.lorenz()
 
@@ -64,7 +67,9 @@ L = uzal_cost(tr;
 L_max = -2.475
 L_min = -2.485
 @test L_min < L < L_max
+end
 
+@testset "Roessler system" begin
 
 ## Test Roessler example as in Fig. 7 in the paper with internal data
 
@@ -152,8 +157,10 @@ L_max = -2.2
 # title("Roessler System as in Fig. 7(b) in the Uzal Paper")
 # grid()
 
-## Test Lorenz example as in Fig. 7 in the paper with internal data
+end
 
+## Test Lorenz example as in Fig. 7 in the paper with internal data
+@testset "Lorenz fig. 7." begin
 lo = Systems.lorenz([1.0, 1.0, 50.0])
 
 tr = trajectory(lo, 100; dt = 0.01, Ttr = 10)
@@ -233,3 +240,5 @@ L_max = -1.9
 # #yscale("symlog")
 # title("Lorenz System as in Fig. 7(a) in the Uzal Paper")
 # grid()
+end
+end
