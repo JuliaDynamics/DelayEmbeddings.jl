@@ -122,15 +122,11 @@ end
 """
     uzal_cost_local(Y::Dataset; kwargs...) → L_local
 Compute the local L-statistic `L_local` for input dataset `Y` according to
-Uzal et al.[^Uzal2011], based on theoretical arguments on noise amplification,
-the complexity of the reconstructed attractor and a direct measure of local
-stretch which constitutes an irrelevance measure. It serves as a cost function
-of a phase space trajectory/embedding and therefore allows to estimate a
-"goodness of a embedding". The length of `L_local` is length(`Y`)-`Tw` and
+Uzal et al.[^Uzal2011]. The length of `L_local` is length(`Y`)-`Tw` and
 denotes a value of the local cost-function to each of the points of the
 phase space trajectory. Note that the mean of 'L_local' is different to `L`,
 when calling `uzal_cost(...)`, since the averaging is performed before
-logarithmizing (see despcription below).
+logarithmizing (see [`uzal_cost`](@ref)).
 
 ## Keyword arguments
 
@@ -146,31 +142,11 @@ logarithmizing (see despcription below).
   and averaged over (read algorithm description).
 
 ## Description
-The `L_local`-statistic based on theoretical arguments on noise amplification, the
-complexity of the reconstructed attractor and a direct measure of local stretch
-which constitutes an irrelevance measure. Technically, it is the logarithm of
-the product of `σ`-statistic and a normalization statistic `α`:
-
-L = log10(σ*α)
-
-The `σ`-statistic is computed as follows. `σ`=√`σ²` and `σ²`=`E²`/`ϵ²`.
-`E²` approximates the conditional variance at each point in phase space and
-for a time horizon `T`∈`Tw`, using `K` nearest neighbors. For each reference
-point of the phase space trajectory, the neighborhood consists of the reference
-point itself and its `K`+1 nearest neighbors. `E²` measures how strong
-a neighborhood expands during `T` time steps. `E²` is averaged over many time
-horizons `T`=1:`Tw`. Consequently, `ϵ²` is the size of the neighborhood at the
-reference point itself and is defined as the mean pairwise distance of the
-neighborhood. In contrast to the function `uzal_cost(...)`, `σ²` here does not
-get averaged over all the phase space reference points on the attractor.
-
-The `α`-statistic is a normalization factor, such that `σ`'s from different
-reconstructions can be compared. `α²` is defined as the inverse of the sum of
-the inverse of all `ϵ²`'s for all considered reference points.
+See [`uzal_cost`](@ref). In contrast to the function `uzal_cost(...)`, `σ²` here
+does not get averaged over all the phase space reference points on the attractor.
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-
 function uzal_cost_local(Y::Dataset ; Tw::Int = 40, K::Int = 3, w::Int = 1,
     metric = Euclidean())
 
