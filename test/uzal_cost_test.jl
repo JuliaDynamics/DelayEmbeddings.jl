@@ -16,8 +16,9 @@ L = uzal_cost(tr;
     metric = Euclidean()
 )
 
-L_max = 2.059
+L_max = -2.059
 @test L < L_max
+
 
 ## check on clean step function (0-distances)
 tr = zeros(10000)
@@ -48,13 +49,22 @@ lo = Systems.lorenz()
 tr = trajectory(lo, 10; dt = 0.01, Ttr = 10)
 
 # check Euclidean metric
-L = uzal_cost(tr;
+L= uzal_cost(tr;
     Tw = 60, K= 3, w = 12, samplesize = 1.0,
     metric = Euclidean()
 )
 L_max = -2.411
 L_min = -2.412
 @test L_min < L < L_max
+
+# check local cost function output
+Tw = 60
+L_local= uzal_cost_local(tr;
+    Tw = Tw, K= 3, w = 12,metric = Euclidean()
+)
+@test length(L_local) == length(tr)-Tw
+@test maximum(L_local)>L
+@test minimum(L_local)<L
 
 # check Maximum metric
 L = uzal_cost(tr;
@@ -64,6 +74,7 @@ L = uzal_cost(tr;
 L_max = -2.475
 L_min = -2.485
 @test L_min < L < L_max
+
 
 
 ## Test Roessler example as in Fig. 7 in the paper with internal data
