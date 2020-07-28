@@ -122,28 +122,17 @@ end
 """
     uzal_cost_local(Y::Dataset; kwargs...) → L_local
 Compute the local L-statistic `L_local` for input dataset `Y` according to
-Uzal et al.[^Uzal2011]. The length of `L_local` is length(`Y`)-`Tw` and
+Uzal et al.[^Uzal2011]. The length of `L_local` is `length(Y)-Tw` and
 denotes a value of the local cost-function to each of the points of the
-phase space trajectory. Note that the mean of 'L_local' is different to `L`,
-when calling `uzal_cost(...)`, since the averaging is performed before
-logarithmizing (see [`uzal_cost`](@ref)).
+phase space trajectory.
 
-## Keyword arguments
-
-* `K = 3`: the amount of nearest neighbors considered, in order to compute σ_k^2
-  (read algorithm description).
-  If given a vector, minimum result over all `k ∈ K` is returned.
-* `metric = Euclidean()`: metric used for finding nearest neigbhors in the input
-  phase space trajectory `Y.
-* `w = 1`: Theiler window (neighbors in time with index `w` close to the point,
-  that are excluded from being true neighbors). `w=0` means to exclude only the
-  point itself, and no temporal neighbors.
-* `Tw = 40`: The time horizon (in sampling units) up to which E_k^2 gets computed
-  and averaged over (read algorithm description).
-
-## Description
-See [`uzal_cost`](@ref). In contrast to the function `uzal_cost(...)`, `σ²` here
+In contrast to [`uzal_cost`](@ref) `σ²` here
 does not get averaged over all the phase space reference points on the attractor.
+Therefore, the mean of 'L_local' is different to `L`,
+when calling `uzal_cost`, since the averaging is performed before logarithmizing.
+
+Keywords are
+`K = 3, metric = Euclidean(), w = 1, Tw = 40` as in [`uzal_cost`](@ref).
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
