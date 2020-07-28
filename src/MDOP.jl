@@ -20,16 +20,15 @@ end
 
 
 """
-    beta_statistic(Y::Dataset, s::Dataset(::Array); kwargs...) → β
-Compute the β-statistic `β` for input phase space trajectory `Y` (of type
-`Dataset`) and a univariate time series 's' (1-dim. `Array` or `Dataset`)
-according to Nichkawde [^Nichkawde2013], based on estimating derivatives on a
-projected manifold. For a range of delay values `τ` (ranging from `0:1:τ_max`)
+    beta_statistic(Y::Dataset, s::Vector; kwargs...) → β
+Compute the β-statistic `β` for input phase space trajectory `Y`
+and a  timeseries `s` according to Nichkawde [^Nichkawde2013],
+based on estimating derivatives on a projected manifold.
+For a range of delay values `τ` (ranging from `0:1:τ_max`)
 `β` gets computed and its maximum over all considered `τ`'s serves as the
 optimal delay considered in this embedding cycle.
 
 ## Keyword arguments
-
 * `τ_max = 50`: Maximum value of considered delay values `τ` (in sampling time
   units), ranging from `τ=0:1:τ_max`. For each of the `τ`'s the β-statistic gets
   computed.
@@ -66,12 +65,9 @@ trajectory `Y` can also be just a univariate time series.
 [^Nichkawde2013]: Nichkawde, Chetan (2013). [Optimal state-space reconstruction using derivatives on projected manifold. Physical Review E 87, 022905](https://doi.org/10.1103/PhysRevE.87.022905).
 [^Kennel1992]: Kennel, M. B., Brown, R., Abarbanel, H. D. I. (1992). [Determining embedding dimension for phase-space reconstruction using a geometrical construction. Phys. Rev. A 45, 3403] (https://doi.org/10.1103/PhysRevA.45.3403).
 """
+function beta_statistic(Y::Dataset, s::Vector; τ_max::Int = 50 , w::Int = 1)
 
-function beta_statistic(Y::Dataset, s::Array; τ_max::Int = 50 , w::Int = 1)
-
-    # assert a minimum length of the input time series
-    @assert length(s)>=length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
-
+    @assert length(s) ≥ length(Y)
     metric = Euclidean()    # consider only Euclidean norm
     K = 1                   # consider only first nearest neighbor
     N = length(Y)           # length of the phase space trajectory
@@ -93,37 +89,4 @@ function beta_statistic(Y::Dataset, s::Array; τ_max::Int = 50 , w::Int = 1)
 
     # compute final beta statistic
     β = mean(log10.(Δϕ), dims=1)     # Eq. 16
-
-    return β
-
-end
-
-
-function beta_statistic(Y::Dataset, s::Dataset; τ_max::Int = 50 , w::Int = 1)
-    @assert length(s)>=length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
-
-    metric = Euclidean()    # consider only Euclidean norm
-    K = 1                   # consider only first nearest neighbor
-    N = length(Y)           # length of the phase space trajectory
-    NN = N - τ_max          # allowed length of the trajectory w.r.t. τ_max
-
-    # tree for input data
-    vtree = KDTree(Y[1:NN], metric)
-    # compute nearest neighbors
-    allNNidxs, Δx = all_neighbors(vtree, Y[1:NN], 1:NN, K, w)   # Eq. 12
-
-    # loop over all phase space points in order to compute Δϕ
-    Δϕ = zeros(NN,τ_max+1)     # preallocation
-    for j = 1:NN
-        # loop over all considered τ's
-        for (i,τ) in enumerate(0:τ_max)
-            Δϕ[j,i] = abs(s[j+τ][1]-s[allNNidxs[j][1]+τ][1]) / Δx[j][1] # Eq. 14 & 15
-        end
-    end
-
-    # compute final beta statistic
-    β = mean(log10.(Δϕ), dims=1)     # Eq. 16
-
-    return β
-
 end

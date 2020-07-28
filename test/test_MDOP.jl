@@ -5,9 +5,7 @@ using StatsBase
 using Statistics
 using Random
 using Test
-using Peaks
-using DelimitedFiles
-using DifferentialEquations
+using DelayDiffEq
 
 println("\nTesting MDOP.jl...")
 
@@ -50,18 +48,8 @@ tau_max = 100
 β2 = DelayEmbeddings.beta_statistic(Y, ss; τ_max = tau_max , w = theiler)
 
 maxi, max_idx = findmax(β)
-maxi2, max_idx2 = findmax(β2)
-
-@test maxi == maxi2
 @test maxi>4.1
 @test max_idx[2]-1>=50
-
-# # display results as in Fig. 3 of the paper
-# using Plots
-# plot(0:tau_max, β[1:101], linewidth = 3, label = "1st embedding cycle")
-# plot!(title = "β-statistic for Mackey Glass System as in Fig. 3 in the Paper")
-# xlabel!("τ")
-# ylabel!("β-Statistic")
 
 # # display results as in Fig. 3 of the paper
 # using PyPlot
