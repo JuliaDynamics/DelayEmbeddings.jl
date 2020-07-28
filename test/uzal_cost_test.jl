@@ -76,16 +76,8 @@ L = uzal_cost(tr;
 )
 L_max = -2.475
 L_min = -2.485
-@test L_min < L < L_max
 end
 
-L_local = uzal_cost_local(tr;
-    Tw = Tw, K= 3, w = 12,
-    metric = Chebyshev()
-)
-@test length(L_local) == length(tr)-Tw
-@test maximum(L_local)>L
-@test minimum(L_local)<L
 @testset "Roessler system" begin
 
 ## Test Roessler example as in Fig. 7 in the paper with internal data
@@ -156,6 +148,15 @@ min4 = tw_max[min4_idx[1]]
 L_min = -2.36
 L_max = -2.2
 @test L_min < L[4,min4_idx[1]] < L_max
+
+@test L_min < L < L_max
+L_local = uzal_cost_local(tr;
+Tw = Tw, K= 3, w = 12,
+metric = Chebyshev()
+)
+@test length(L_local) == length(tr)-Tw
+@test maximum(L_local)>L
+@test minimum(L_local)<L
 
 # # plot results using PyPlot
 # using PyPlot
