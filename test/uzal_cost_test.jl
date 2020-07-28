@@ -6,7 +6,8 @@ using Statistics
 using Random
 
 println("\nTesting uzal_cost.jl...")
-
+@testset "Uzal cost" begin
+@testset "Random vectors" begin
 ## Check on random vector
 Random.seed!(1516578735)
 tr = randn(10000)
@@ -42,7 +43,9 @@ L = uzal_cost(tr;
     metric = Euclidean()
 )
 @test L<-3
+end
 
+@testset "Lorenz system" begin
 ## Simple Check on Lorenz System
 lo = Systems.lorenz()
 
@@ -74,6 +77,7 @@ L = uzal_cost(tr;
 L_max = -2.475
 L_min = -2.485
 @test L_min < L < L_max
+end
 
 L_local = uzal_cost_local(tr;
     Tw = Tw, K= 3, w = 12,
@@ -82,6 +86,7 @@ L_local = uzal_cost_local(tr;
 @test length(L_local) == length(tr)-Tw
 @test maximum(L_local)>L
 @test minimum(L_local)<L
+@testset "Roessler system" begin
 
 ## Test Roessler example as in Fig. 7 in the paper with internal data
 
@@ -169,66 +174,8 @@ L_max = -2.2
 # title("Roessler System as in Fig. 7(b) in the Uzal Paper")
 # grid()
 
-
-# Display local cost function for two different embeddings
-tau_value_1 = 8
-tau_value_2 = 20
-m = 2
-
-# embedding in two dimensions
-Y_1 = embed(x,m,tau_value_1)
-Y_2 = embed(x,m,tau_value_2)
-
-# compute local cost functions
-L_local_1= uzal_cost_local(Y_1;
-    Tw = Tw, K= 3, w = 12, metric = Euclidean()
-)
-L1= uzal_cost(Y_1;
-    Tw = Tw, K= 3, w = 12, metric = Euclidean(), samplesize=1.0
-)
-
-L_local_2= uzal_cost_local(Y_2;
-    Tw = Tw, K= 3, w = 12, metric = Euclidean()
-)
-L2= uzal_cost(Y_2;
-    Tw = Tw, K= 3, w = 12, metric = Euclidean(), samplesize=1.0
-)
-
-
-# # plot results using PyPlot
-# using PyPlot
-# pygui(true)
-#
-# x_val1 = Y_1[1:length(L_local_1),1]
-# y_val1 = Y_1[1:length(L_local_1),2]
-#
-# x_val2 = Y_2[1:length(L_local_2),1]
-# y_val2 = Y_2[1:length(L_local_2),2]
-#
-# markersize = 10
-#
-# figure()
-# subplot(1,2,1)
-# scatter(x_val1,y_val1,c=L_local_1,s=markersize)
-# plot(x_val1,y_val1,linewidth=0.1)
-# xlabel("x(t)")
-# ylabel("x(t+$tau_value_1)")
-# title("Local L for Roessler System first embedding cycle (τ=$tau_value_1)")
-# grid()
-#
-# subplot(1,2,2)
-# scatter(x_val2,y_val2,c=L_local_2,s=markersize)
-# plot(x_val2,y_val2,linewidth=0.1)
-# xlabel("x(t)")
-# ylabel("x(t+$tau_value_2)")
-# title("Local L for Roessler System first embedding cycle (τ=$tau_value_2)")
-# grid()
-# cbar = colorbar()
-# cbar.set_label("Local cost function")
-
-
 ## Test Lorenz example as in Fig. 7 in the paper with internal data
-
+@testset "Lorenz fig. 7." begin
 lo = Systems.lorenz([1.0, 1.0, 50.0])
 
 tr = trajectory(lo, 100; dt = 0.01, Ttr = 10)
@@ -308,3 +255,5 @@ L_max = -1.9
 # #yscale("symlog")
 # title("Lorenz System as in Fig. 7(a) in the Uzal Paper")
 # grid()
+end
+end
