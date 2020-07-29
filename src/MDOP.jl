@@ -20,13 +20,12 @@ end
 
 
 """
-    beta_statistic(Y::Dataset, s::Dataset(::Array); kwargs...) → β
+    beta_statistic(Y::Dataset, s::Vector); kwargs...) → β
 Compute the β-statistic `β` for input phase space trajectory `Y` (of type
-`Dataset`) and a univariate time series 's' (1-dim. `Array` or `Dataset`)
-according to Nichkawde [^Nichkawde2013], based on estimating derivatives on a
-projected manifold. For a range of delay values `τs`, `β` gets computed and its
-maximum over all considered `τs` serves as the optimal delay considered in this
-embedding cycle.
+`Dataset`) and a time series `s` according to Nichkawde [^Nichkawde2013],
+based on estimating derivatives on a projected manifold. For a range of delay
+values `τs`, `β` gets computed and its maximum over all considered `τs` serves
+as the optimal delay considered in this embedding cycle.
 
 ## Keyword arguments
 
@@ -66,10 +65,10 @@ trajectory `Y` can also be just a univariate time series.
 [^Kennel1992]: Kennel, M. B., Brown, R., Abarbanel, H. D. I. (1992). [Determining embedding dimension for phase-space reconstruction using a geometrical construction. Phys. Rev. A 45, 3403] (https://doi.org/10.1103/PhysRevA.45.3403).
 """
 
-function beta_statistic(Y::Dataset, s::Array; τs::AbstractRange = 0:50 , w::Int = 1)
+function beta_statistic(Y::Dataset, s::Vector; τs::AbstractRange = 0:50 , w::Int = 1)
 
     # assert a minimum length of the input time series
-    @assert length(s)>=length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
+    @assert length(s) ≥ length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
 
     τ_max = maximum(τs)
     metric = Euclidean()    # consider only Euclidean norm
@@ -97,7 +96,7 @@ function beta_statistic(Y::Dataset, s::Array; τs::AbstractRange = 0:50 , w::Int
     # convert β into Vector-type
     ββ = zeros(length(β))
     [ββ[i]=β[i] for i in 1:length(β)]
-    
+
     return ββ
 
 end
