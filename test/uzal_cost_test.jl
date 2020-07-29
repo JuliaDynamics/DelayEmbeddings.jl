@@ -145,10 +145,13 @@ end
     L_max = -2.2
     @test L_min < L[4,min4_idx[1]] < L_max
 
-    @test L_min < L < L_max
     L_local = uzal_cost_local(tr;
         Tw = Tw, K= 3, w = 12,
         metric = Chebyshev()
+    )
+    L = uzal_cost(tr;
+        Tw = Tw, K= 3, w = 12,
+        metric = Chebyshev(),samplesize=1.0
     )
     @test length(L_local) == length(tr)-Tw
     @test maximum(L_local) > L
