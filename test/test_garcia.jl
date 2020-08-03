@@ -6,6 +6,7 @@ using Statistics
 using Random
 using Test
 using Peaks
+using Revise
 
 println("\nTesting garcia_almeida.jl...")
 
@@ -18,16 +19,16 @@ tr = trajectory(lo, 60; dt = 0.01, Ttr = 10)
 x = tr[:, 1]
 Y = Dataset(x)
 
-τ_max = 50
+τs = 0:50
 
-N , NN_distances = garcia_embedding_cycle(Y, x, w=0, T=1, τ_max = τ_max)
+N , NN_distances = garcia_embedding_cycle(Y, x, w=0, T=1, τs = τs)
 
 T = 17
-N2 , NN_distances2 = garcia_embedding_cycle(Y, x, w=0, T=T, τ_max = τ_max)
+N2 , NN_distances2 = garcia_embedding_cycle(Y, x, w=0, T=T, τs = τs)
 
 # check whether the `d_E1`-statistic is the same
-@test NN_distances[1][1][1:50] == NN_distances2[1][1][1:50]
-@test NN_distances[5][1][1:100] == NN_distances2[5][1][1:100]
+@test NN_distances[1][1:50] == NN_distances2[1][1:50]
+@test NN_distances[5][1:100] == NN_distances2[5][1:100]
 
 min_dist = 12
 max_1_idx = Peaks.maxima(N,min_dist)

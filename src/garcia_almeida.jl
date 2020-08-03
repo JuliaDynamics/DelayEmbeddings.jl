@@ -50,14 +50,14 @@ end
 """
     garcia_embedding_cycle(Y,s; kwargs...) → N, d_E1 (`Array`, `Array of Arrays`)
 Performs one embedding cycle according to the method proposed in [^Garcia2005a]
-for a given input `Y` (phase space trajectory or time series in `Dataset`-Format)
-and `s` (timeseries as `Array` or `Dataset`). Returns the proposed N-Statistic
-`N` and all nearest neighbor distances `d_E1` for each point of the input phase
-space trajectory `Y`. Note that `Y` is a single time series in case of the first
-embedding cycle.
+for a given phase space trajectory `Y` (of type `Dataset`) and a time series `s
+(of type `Vector`). Returns the proposed N-Statistic `N` and all nearest
+neighbor distances `d_E1` for each point of the input phase space trajectory
+`Y`. Note that `Y` is a single time series in case of the first embedding cycle.
 
 ## Keyword arguments
-* `τ_max = 50`: Maximum of the τ-values the algorithm checkes (0:τ_max).
+* `τs= 0:50`: Considered delay values `τs` (in sampling time units). For each of
+  the `τs`'s the N-statistic gets computed.
 * `r = 10`: The threshold, which defines the factor of tolerable stretching for
   the d_E1-statistic (see algorithm description).
 * `T = 1`: The forward time step (in sampling units) in order to compute the
@@ -71,36 +71,37 @@ embedding cycle.
   phase space trajectory `Y`.
 
 ## Description
-For a range of possible delay values `τ` from 0:`τ_max` one constructs a
-temporary embedding matrix. That is, one concatenates the input phase space
-trajectory `Y` with the `τ`-lagged input time series `s`. For each point on the
-temporary trajectory one computes its nearest neighbor, which is denoted as the
-`d_E1`-statistic for a specific `τ`. Now one considers the distance between the
-reference point and its nearest neighbor `T` sampling units ahead and calls this
-statistic `d_E2`. [^Garcia2005a] strictly use `T=1`, so they forward each
-reference point and its corresponding nearest neighbor just by one (!) sampling
-unit. Here it is a free parameter.
+For a range of possible delay values `τs` one constructs a temporary embedding
+matrix. That is, one concatenates the input phase space trajectory `Y` with the
+`τ`-lagged input time series `s`. For each point on the temporary trajectory one
+computes its nearest neighbor, which is denoted as the `d_E1`-statistic for a
+specific `τ`. Now one considers the distance between the reference point and its
+nearest neighbor `T` sampling units ahead and calls this statistic `d_E2`.
+[^Garcia2005a] strictly use `T=1`, so they forward each reference point and its
+corresponding nearest neighbor just by one (!) sampling unit. Here it is a free
+parameter.
 
 The `N`-statistic is then the fraction of `d_E2`/`d_E1`-pairs which exceed a
 threshold `r`.
 
-Plotted vs. the considered `τ`-values it is proposed to pick the `τ`-value for
+Plotted vs. the considered `τs`-values it is proposed to pick the `τ`-value for
 this embedding cycle as the value, where `N` has its first local minimum.
 
 [^Garcia2005a]: Garcia, S. P., Almeida, J. S. (2005). [Nearest neighbor embedding with different time delays. Physical Review E 71, 037204](https://doi.org/10.1103/PhysRevE.71.037204).
 """
-function garcia_embedding_cycle(Y::Dataset, s::Array; τ_max::Int = 50 , r::Int = 10,
+function garcia_embedding_cycle(Y::Dataset, s::Vector; τs = 0:50 , r::Int = 10,
     T::Int = 1, w::Int = 1, metric = Euclidean())
 
     # assert a minimum length of the input time series
-    @assert length(s)>=length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
-
+    @assert length(s) ≥ length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
+    @assert all(x -> x ≥ 0, τs)
+    τ_max = maximum(τs)
 
     # preallocation of output
-    N_stat = zeros(τ_max+1)
-    NN_distances = [AbstractArray[] for i=1, j=1:τ_max+1]
+    N_stat = zeros(length(τs))
+    NN_distances = [AbstractArray[] for j in τs]
 
-    for (i,τ) in enumerate(0:τ_max)
+    for (i,τ) in enumerate(τs)
         # build temporary embedding matrix Y_temp
         Y_temp = embed2(Y,s,τ)
         NN = length(Y_temp)     # length of the temporary phase space vector
@@ -110,7 +111,8 @@ function garcia_embedding_cycle(Y::Dataset, s::Array; τ_max::Int = 50 , r::Int 
         # nearest neighbors (d_E1)
         allNNidxs, d_E1 = all_neighbors(vtree, Y_temp[1:N], 1:N, 1, w)
         # save d_E1-statistic
-        push!(NN_distances[i],hcat(d_E1...))
+        #push!(NN_distances[i],hcat(d_E1...))
+        NN_distances[i] = d_E1
 
         # for each point, consider its next iterate and compute the distance to
         # its former(!) nearest neighbour iterate
@@ -130,48 +132,6 @@ function garcia_embedding_cycle(Y::Dataset, s::Array; τ_max::Int = 50 , r::Int 
 
     return N_stat, NN_distances
 end
-
-function garcia_embedding_cycle(Y::Dataset, s::Dataset; τ_max::Int = 50 , r::Int = 10,
-    T::Int = 1, w::Int = 1, metric = Euclidean())
-
-    # assert a minimum length of the input time series
-    @assert length(s)>=length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
-
-    # preallocation of output
-    N_stat = zeros(τ_max+1)
-    NN_distances = [AbstractArray[] for i=1, j=1:τ_max+1]
-
-    for (i,τ) in enumerate(0:τ_max)
-        # build temporary embedding matrix Y_temp
-        Y_temp = embed2(Y,s,τ)
-        NN = length(Y_temp)     # length of the temporary phase space vector
-        N = NN-T               # accepted length w.r.t. the time horizon `T
-
-        vtree = KDTree(Y_temp[1:N], metric) # tree for input data
-        # nearest neighbors (d_E1)
-        allNNidxs, d_E1 = all_neighbors(vtree, Y_temp[1:N], 1:N, 1, w)
-        # save d_E1-statistic
-        push!(NN_distances[i],hcat(d_E1...))
-
-        # for each point, consider its next iterate and compute the distance to
-        # its former(!) nearest neighbour iterate
-        newfididxs = [j .+ T for j = 1:N]
-        newNNidxs = [j .+ T for j in allNNidxs]
-
-        # compute d_E2
-        d_E2 = [evaluate(metric,Y_temp[newfididxs[i]],Y_temp[newNNidxs[i][1]]) for i = 1:N]
-
-        # look at ratio d_E2/d_E1
-        distance_ratios = d_E2./vcat(d_E1...)
-
-        # number of distance ratio larger than r
-        N_stat[i] = sum(distance_ratios.>r)/NN
-
-    end
-
-    return N_stat, NN_distances
-end
-
 
 
 """
