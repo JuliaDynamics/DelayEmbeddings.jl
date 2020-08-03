@@ -26,16 +26,16 @@ T = 17
 N2 , NN_distances2 = garcia_embedding_cycle(Y, x, w=0, T=T, τ_max = τ_max)
 
 # check whether the `d_E1`-statistic is the same
-@test NN_distances[1][1][1:100] == NN_distances2[1][1][1:100]
+@test NN_distances[1][1][1:50] == NN_distances2[1][1][1:50]
 @test NN_distances[5][1][1:100] == NN_distances2[5][1][1:100]
 
-min_dist = 4
+min_dist = 12
 max_1_idx = Peaks.maxima(N,min_dist)
 max_2_idx = Peaks.maxima(N2,min_dist)
 
 @test max_1_idx == max_2_idx
 
-# # plot N-Statistic for the Lorenz system as in Fig. 2(a) in [^Garcia2005b]
+# plot N-Statistic for the Lorenz system as in Fig. 2(a) in [^Garcia2005b]
 # using Plots
 # plot(N,linewidth = 2, label = "T=1 (as in the Paper)", xaxis=:log)
 # plot!(N2,linewidth = 2, label = "T=$T", xaxis=:log)
