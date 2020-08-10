@@ -148,9 +148,9 @@ function garcia_almeida_embed(s::Vector{Float64}; τs = 0:50 , w::Int = 1,
     end
 
     if Ns
-        return Y_act, τ_vals, ts_vals, FNNs, NS[:,1:cnt-1]
+        return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1], NS[:,1:cnt-1]
     else
-        return Y_act, τ_vals, ts_vals, FNNs
+        return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1]
     end
 end
 

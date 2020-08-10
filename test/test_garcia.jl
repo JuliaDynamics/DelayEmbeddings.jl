@@ -53,10 +53,19 @@ max_2_idx = Peaks.maxima(N2,min_dist)
 #end
 
 #@testset "garcia_embed univariate" begin
-Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embed(x; τs=0:100,  w = 17,  Ns=true)
+@code_warntype garcia_almeida_embed(x; τs=0:100,  w = 17,  Ns=true)
+Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embed(x; τs=0:100,  w = 17, T = 17,  Ns=true)
+Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embed(x; τs=0:100,  w = 1, T = 1,  Ns=true)
 
+@test size(Y_act,2)==3
+@test FNNs[end]<=0.05
 
-
+# using Plots
+# plot3d(Y_act[:,1],Y_act[:,2],Y_act[:,3], marker=2, camera = (6, 4))
+# plot!(title = "Reconstruction of Lorenz attractor using Garcia&Almeida univariate embedding")
+#
+# plot3d(Y_act2[:,1],Y_act2[:,2],Y_act2[:,3], marker=2, camera = (6, 4))
+# plot!(title = "Reconstruction of Lorenz attractor using Garcia&Almeida univariate embedding as in the paper")
 #end
 
 
