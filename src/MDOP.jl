@@ -330,7 +330,7 @@ time series of that Dataset and the maximum value will be returned. The returned
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
 function estimate_maximum_delay(s::Vector{Float64}; tw=1:50, samplesize::Float64=1.0)
-    L = zeros(length(tw),1)
+    L = zeros(Float64,length(tw),1)
     # loop over time windows
     cnt = 1
     for i in tw
@@ -344,7 +344,7 @@ end
 
 function estimate_maximum_delay(s::Dataset; tw=1:50, samplesize::Float64=1.0)
     τs_max = zeros(Int,size(s,2))
-    Ls = zeros(length(tw),size(s,2))
+    Ls = zeros(Float64,length(tw),size(s,2))
     for i = 1:size(s,2)
         τs_max[i], L = estimate_maximum_delay(vec(s[:,i]); tw = tw, samplesize = samplesize)
         Ls[:,i] = Matrix(L)

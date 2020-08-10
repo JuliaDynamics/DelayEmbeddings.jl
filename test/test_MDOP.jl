@@ -8,9 +8,10 @@ using Test
 using Peaks
 using DelimitedFiles
 using DifferentialEquations
+using BenchmarkTools
 
 println("\nTesting MDOP.jl...")
-@testset "Nichkawde method" begin
+#@testset "Nichkawde method" begin
 
 # solve Mackey-Glass-Delay Diff.Eq. as in the Paper
 function mackey_glass(du,u,h,p,t)
@@ -43,11 +44,12 @@ ss = zeros(length(s))
 Y = Dataset(s)
 theiler = 57
 
-@testset "beta statistic" begin
+#@testset "beta statistic" begin
 ## Test beta_statistic (core algorithm of MDOP)
 
 
 taus = 0:100
+@code_warntype DelayEmbeddings.beta_statistic(Y, ss; τs = taus, w = theiler)
 β = DelayEmbeddings.beta_statistic(Y, ss; τs = taus, w = theiler)
 
 maxi, max_idx = findmax(β)
@@ -76,6 +78,7 @@ maxi, max_idx = findmax(β)
 
 # test different tau range
 taus2 = 1:4:100
+@code_warntype DelayEmbeddings.beta_statistic(Y, ss; τs = taus2, w = theiler)
 β2 = DelayEmbeddings.beta_statistic(Y, ss; τs = taus2, w = theiler)
 
 maxi2, max_idx2 = findmax(β2)
@@ -89,14 +92,19 @@ maxi2, max_idx2 = findmax(β2)
 # plot!(title = "coarse β-statistic for Mackey Glass System as in Fig. 3 in the Paper")
 # xlabel!("τ")
 # ylabel!("β-Statistic")
-end
+
+#end
 
 
-@testset "estimate tau max for MDOP" begin
+#@testset "estimate tau max for MDOP" begin
 roe = Systems.roessler([0.1;0;0])
 s = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
 
 tws = 32:36
+
+@code_warntype DelayEmbeddings.estimate_maximum_delay(s[:,2]; tw = tws, samplesize=1.0)
+@code_warntype DelayEmbeddings.estimate_maximum_delay(Dataset(s[:,2]); tw = tws, samplesize=1.0)
+
 τ_m, L = DelayEmbeddings.estimate_maximum_delay(s[:,2]; tw = tws, samplesize=1.0)
 @test τ_m == 34
 τ_m, Ls = DelayEmbeddings.estimate_maximum_delay(s[:,1:2]; tw = tws, samplesize=1.0)
@@ -112,10 +120,10 @@ tws = 32:36
 # plot(twss,L, label="")
 # xlabel!("time window")
 # ylabel!("L")
-end
 
+#end
 
-@testset "MDOP univariate" begin
+#@testset "MDOP univariate" begin
 ## test MDOP() univariate
 
 # tw=1:4:200
@@ -130,6 +138,7 @@ end
 # ylabel!("L")
 
 taus = 0:100
+@code_warntype MDOP(ss; τs = taus, w = theiler, βs=true)
 Y, τ_vals, ts_vals, FNNs, betas = MDOP(ss; τs = taus, w = theiler, βs=true)
 # for different τs
 taus2 = 1:4:100
@@ -169,14 +178,15 @@ Y2, τ_vals2, ts_vals2, FNNs2, betas2 = MDOP(ss; τs = taus2, w = theiler, βs=t
 # plot!(title = "β-statistic's for each embedding cycle of Mackey Glass System as in Fig. 3")
 # xlabel!("delay τ")
 # ylabel!("log10 β(τ)")
-end
+
+#end
 
 
-@testset "MDOP multivariate" begin
+#@testset "MDOP multivariate" begin
 ## test MDOP() multivariate
 
 
 
 
-end
-end
+#end
+#end
