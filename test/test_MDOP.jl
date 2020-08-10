@@ -5,9 +5,8 @@ using StatsBase
 using Statistics
 using Random
 using Test
-using Peaks
 using DelimitedFiles
-using DifferentialEquations
+using DelayDiffEq
 using BenchmarkTools
 
 println("\nTesting MDOP.jl...")
