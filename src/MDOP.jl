@@ -8,7 +8,7 @@ export estimate_maximum_delay
 
 
 """
-    MDOP(s::Vector; kwargs...) → Y, τ_vals, ts_vals, FNNs [,βs]
+    MDOP(s::Vector; kwargs...) → Y, τ_vals, ts_vals, FNNs [,βS]
 MDOP is a unified approach to properly embed a time series (`Vector` type) or a
 set of time series (`Dataset` type) based on the paper of Chetan Nichkawde
 [^Nichkawde2013].
@@ -45,8 +45,7 @@ FNN-statistic `FNNs` increases . The final embedding vector is stored in `Y`
 `τ_vals` and the according time series number chosen for the according delay
 value in `τ_vals` is stored in `ts_vals`. For univariate embedding (`s::Vector`)
 `ts_vals` is a vector of ones of length `τ_vals`, because there is simply just
-time series to choose from. If `βs=true` then the function also returns the
-`β`-statistic for each embedding cycle as a `List` of `Vector`s.
+one `β`-statistic for each embedding cycle as a `List` of `Vector`s.
 
 [^Nichkawde2013]: Nichkawde, Chetan (2013). [Optimal state-space reconstruction using derivatives on projected manifold. Physical Review E 87, 022905](https://doi.org/10.1103/PhysRevE.87.022905).
 [^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
@@ -54,7 +53,7 @@ time series to choose from. If `βs=true` then the function also returns the
 """
 function MDOP(s::Vector{Float64}; τs = 0:50 , w::Int = 1, fnn_thres::Float64 = 0.05,
     r::Float64 = 2.0, βs::Bool=false)
-    @assert 0 < fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ (0 1)"
+    @assert 0 <= fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
 
     max_num_of_cycles = 50 # assure that the algorithm will break after 50 embedding cycles
@@ -132,9 +131,9 @@ function MDOP(s::Vector{Float64}; τs = 0:50 , w::Int = 1, fnn_thres::Float64 = 
     end
 
     if βs
-        return Y_act, τ_vals, ts_vals, FNNs, βS[:,1:cnt-1]
+        return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1], βS[:,1:cnt-1]
     else
-        return Y_act, τ_vals, ts_vals, FNNs
+        return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1]
     end
 end
 
