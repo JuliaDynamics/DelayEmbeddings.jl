@@ -7,9 +7,11 @@ using Random
 using Test
 using Peaks
 using Revise
+using BenchmarkTools
 
 println("\nTesting garcia_almeida.jl...")
 
+#@testset "G&A method" begin
 
 ## Check on Lorenz System
 lo = Systems.lorenz()
@@ -19,8 +21,10 @@ tr = trajectory(lo, 60; dt = 0.01, Ttr = 10)
 x = tr[:, 1]
 Y = Dataset(x)
 
-τs = 0:50
 
+#@testset "N-statistic" begin
+τs = 0:50
+@code_warntype(garcia_embedding_cycle(Y, x, w=0, T=1, τs = τs))
 N , NN_distances = garcia_embedding_cycle(Y, x, w=0, T=1, τs = τs)
 
 T = 17
@@ -45,3 +49,23 @@ max_2_idx = Peaks.maxima(N2,min_dist)
 # plot!(title = "Lorenz System as in Fig. 2(a) in the Paper")
 # xlabel!("τ")
 # ylabel!("N-Statistic")
+
+#end
+
+#@testset "garcia_embed univariate" begin
+Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embed(x; τs=0:100,  w = 17,  Ns=true)
+
+
+
+#end
+
+
+#@testset "garcia_embed multivariate" begin
+
+
+
+
+#end
+
+
+#end
