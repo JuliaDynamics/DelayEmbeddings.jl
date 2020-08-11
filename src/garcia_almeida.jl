@@ -114,7 +114,7 @@ function garcia_almeida_embed(s::Vector{Float64}; τs = 0:50 , w::Int = 1,
         push!(ts_vals,1)
 
         # create phase space vector for this embedding cycle
-        Y_act = embed2(Y_act,s,τ_vals[cnt+1])
+        Y_act = embed_one_cycle(Y_act,s,τ_vals[cnt+1])
 
         # compute nearest neighbor distances in the new embedding dimension for
         # FNN statistic
@@ -215,7 +215,7 @@ function garcia_embedding_cycle(Y::Vector{Float64}, s::Vector{Float64}; τs = 0:
 
     for (i,τ) in enumerate(τs)
         # build temporary embedding matrix Y_temp
-        Y_temp = embed2(Y,s,τ)
+        Y_temp = embed_one_cycle(Y,s,τ)
         NN = length(Y_temp)     # length of the temporary phase space vector
         N = NN-T               # accepted length w.r.t. the time horizon `T
 
@@ -247,50 +247,26 @@ end
 
 
 """
-    embed2(Y,s,τ) → Dataset
-takes a phase space trajectory 'Y' (`Dataset`) containing all phase space
-vectors, a univariate time series 's' (`Array` or `Dataset`) and a delay value
-'τ' as input. embed2 then expands the input phase space vectors by an additional
-component consisting of the τ-shifted values of the input time series `s` and
-outputs the new phase space trajectory `Y_new` (`Dataset`).
+    embed_one_cycle(Y, s::Vector, τ::Int) -> Y_new
+Add the `τ` lagged values of the time series `s` as additional component to the
+time series `Y` (`Vector` or `Dataset`), in order to form a higher embedded
+vector `Y_new`. The dimensionality of `Y_new` , thus, equals the dimensionality
+of `Y+1`.
 """
-function embed2(Y::Dataset,s::Array,τ::Int)
-    N = size(Y,1)   # length of input trajectory
-    NN = size(Y,2)  # dimensionality of input trajectory
-    M = N - τ       # length of output trajectory
-
-    # preallocation
-    Y_new = zeros(M,NN+1)
-    # fill vector up until index M
-    for i = 1:NN
-        Y_new[:,i] = Y[1:M,i]
-    end
-    # add lagged component of s
-    Y_new[:,NN+1] = s[1+τ:N]
-
-    return Dataset(Y_new)
-
+function embed_one_cycle(Y::Dataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
+    N = length(Y)
+    @assert N <= length(s)
+    M = N - τ
+    return Dataset(hcat(view(Matrix(Y), 1:M, :), view(s, τ+1:N)))
 end
 
-function embed2(Y::Dataset,s::Dataset,τ::Int)
-
-    s = Matrix(s)   # convert Dataset into Array
-    N = size(Y,1)   # length of input trajectory
-    NN = size(Y,2)  # dimensionality of input trajectory
-    M = N - τ       # length of output trajectory
-
-    # preallocation
-    Y_new = zeros(M,NN+1)
-    # fill vector up until index M
-    for i = 1:NN
-        Y_new[:,i] = Y[1:M,i]
-    end
-    # add lagged component of s
-    Y_new[:,NN+1] = s[1+τ:N]
-
-    return Dataset(Y_new)
-
+function embed_one_cycle(Y::Vector{T}, s::Vector{T}, τ::Int) where {D, T<:Real}
+    N = length(Y)
+    @assert N <= length(s)
+    M = N - τ
+    return Dataset(hcat(view(s, 1:M), view(s, τ+1:N)))
 end
+
 
 """
     fnn(NNdist,NNdistnew,r::Float64=2.0) -> FNNs
