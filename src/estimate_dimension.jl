@@ -226,6 +226,49 @@ function _compare_first_nn(s, γ::Int, τ::Int, Rγ::Dataset{D,T}, metric) where
     return (nf1nn, Rγ1)
 end
 
+"""
+    fnn_embedding_cycle(NNdist, NNdistnew; r=2) -> FNNs
+compute the amount of false nearest neighbors `FNNs`, when adding another component
+to a given (vector-) time series. This new component is the `τ`-lagged version
+of a univariate time series. `NNdist` is storing the distances of the nearest
+neighbor for all considered fiducial points and `NNdistnew` is storing the
+distances of the nearest neighbor for each fiducial point in one embedding
+dimension higher using a given `τ`. The obligatory threshold `r` is by default
+set to 2.
+[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
+"""
+function fnn_embedding_cycle(NNdist::T, NNdistnew::T; r::Real=2) where {T}
+    @assert length(NNdist) == length(NNdistnew) "Both input vectors need to store the same number of distances."
+
+    # convert array of arrays into simple vectors, since we only look at K=1
+    NN_old = zeros(length(NNdist))
+    NN_new = zeros(length(NNdistnew))
+    for i = 1:length(NNdist)
+        NN_old[i]=NNdist[i][1]
+        NN_new[i]=NNdistnew[i][1]
+    end
+
+    # first ratio
+    ratio1 = 1/r    # since we input only z-standardized data with unit
+    # construct statistic
+    ratio2 = NN_new./NN_old
+
+    cond1 = ratio2 .> r
+    cond2 = NN_old .< ratio1
+
+    fnns = sum(cond1.*cond2)
+    fnns2 = sum(NN_old .< ratio1)
+
+    # store fraction of valid nearest neighbors
+    if fnns2 == 0
+        FNN = NaN;
+    else
+        FNN = fnns/fnns2
+    end
+
+    return FNN
+end
+
 
 """
     stochastic_indicator(s::AbstractVector, τ:Int, γs = 1:4) -> E₂s

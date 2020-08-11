@@ -9,6 +9,8 @@ using DelimitedFiles
 using DelayDiffEq
 using BenchmarkTools
 
+using Revise
+
 println("\nTesting MDOP.jl...")
 #@testset "Nichkawde method" begin
 
@@ -35,10 +37,9 @@ prob = DDEProblem(mackey_glass,u0,h,tspan,p; constant_lags=tau_d)
 alg = MethodOfSteps(Tsit5())
 sol = solve(prob,alg; adaptive=false, dt=δt)
 
-s = sol.u
+s = [u[1] for u in sol.u]
 s = s[4001:end]
-ss = zeros(length(s))
-[ss[i] = s[i][1] for i in 1:length(s)]
+Y = Dataset(s)
 
 Y = Dataset(s)
 theiler = 57
@@ -48,8 +49,8 @@ theiler = 57
 
 
 taus = 0:100
-@code_warntype DelayEmbeddings.beta_statistic(Y, ss; τs = taus, w = theiler)
-β = DelayEmbeddings.beta_statistic(Y, ss; τs = taus, w = theiler)
+@code_warntype DelayEmbeddings.beta_statistic(Y, s; τs = taus, w = theiler)
+β = DelayEmbeddings.beta_statistic(Y, s; τs = taus, w = theiler)
 
 maxi, max_idx = findmax(β)
 
@@ -77,8 +78,8 @@ maxi, max_idx = findmax(β)
 
 # test different tau range
 taus2 = 1:4:100
-@code_warntype DelayEmbeddings.beta_statistic(Y, ss; τs = taus2, w = theiler)
-β2 = DelayEmbeddings.beta_statistic(Y, ss; τs = taus2, w = theiler)
+@code_warntype DelayEmbeddings.beta_statistic(Y, s; τs = taus2, w = theiler)
+β2 = DelayEmbeddings.beta_statistic(Y, s; τs = taus2, w = theiler)
 
 maxi2, max_idx2 = findmax(β2)
 
@@ -97,12 +98,12 @@ maxi2, max_idx2 = findmax(β2)
 
 #@testset "estimate tau max for MDOP" begin
 roe = Systems.roessler([0.1;0;0])
-s = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
+ss = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
 
 tws = 32:36
 
-@code_warntype DelayEmbeddings.estimate_maximum_delay(s[:,2]; tw = tws, samplesize=1.0)
-@code_warntype DelayEmbeddings.estimate_maximum_delay(Dataset(s[:,2]); tw = tws, samplesize=1.0)
+@code_warntype DelayEmbeddings.estimate_maximum_delay(ss[:,2]; tw = tws, samplesize=1.0)
+@code_warntype DelayEmbeddings.estimate_maximum_delay(Dataset(ss[:,2]); tw = tws, samplesize=1.0)
 
 τ_m, L = DelayEmbeddings.estimate_maximum_delay(s[:,2]; tw = tws, samplesize=1.0)
 @test τ_m == 34
@@ -137,14 +138,14 @@ tws = 32:36
 # ylabel!("L")
 
 taus = 0:100
-@code_warntype MDOP(ss; τs = taus, w = theiler, βs=true)
-Y, τ_vals, ts_vals, FNNs, betas = MDOP(ss; τs = taus, w = theiler, βs=true)
+@code_warntype MDOP(s; τs = taus, w = theiler, β_condition=true)
+Y, τ_vals, ts_vals, FNNs, betas = MDOP(s; τs = taus, w = theiler, β_condition=true)
 # for different τs
 taus2 = 1:4:100
-Y2, τ_vals2, ts_vals2, FNNs2, betas2 = MDOP(ss; τs = taus2, w = theiler, βs=true)
+Y2, τ_vals2, ts_vals2, FNNs2, betas2 = MDOP(s; τs = taus2, w = theiler, β_condition=true)
 
 @test round.(β,digits=7) == round.(betas[:,1],digits=7)
-@test size(Y,2) == 6
+@test size(Y,2) == 5
 @test size(Y,2) == size(Y2,2)
 @test sum(findall(x -> x != 1, ts_vals))==0
 @test sum(abs.(diff(τ_vals)) .< 10) == 0
