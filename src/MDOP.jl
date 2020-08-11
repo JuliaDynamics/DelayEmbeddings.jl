@@ -22,7 +22,7 @@ set of time series (`Dataset` type) based on the paper of Chetan Nichkawde
   point itself, and no temporal neighbors.
 * `fnn_thres::Real= 0.05`: A threshold value defining a sufficiently small fraction
   of false nearest neighbors, in order to the let algorithm terminate and stop
-  the embedding procedure (`0 >= fnn_thres > 1).
+  the embedding procedure (`0 <= fnn_thres < 1).
 * `r::Real = 2`: The threshold for the tolerable relative increase of the distance
   between the nearest neighbors, when increasing the embedding dimension.
 * `β_condition::Bool = false`: When set `true`, the function also returnes the `β`-statistics
