@@ -41,7 +41,6 @@ s = [u[1] for u in sol.u]
 s = s[4001:end]
 Y = Dataset(s)
 
-Y = Dataset(s)
 theiler = 57
 
 #@testset "beta statistic" begin
@@ -105,9 +104,9 @@ tws = 32:36
 @code_warntype DelayEmbeddings.estimate_maximum_delay(ss[:,2]; tw = tws, samplesize=1.0)
 @code_warntype DelayEmbeddings.estimate_maximum_delay(Dataset(ss[:,2]); tw = tws, samplesize=1.0)
 
-τ_m, L = DelayEmbeddings.estimate_maximum_delay(s[:,2]; tw = tws, samplesize=1.0)
+τ_m, L = DelayEmbeddings.estimate_maximum_delay(ss[:,2]; tw = tws, samplesize=1.0)
 @test τ_m == 34
-τ_m, Ls = DelayEmbeddings.estimate_maximum_delay(s[:,1:2]; tw = tws, samplesize=1.0)
+τ_m, Ls = DelayEmbeddings.estimate_maximum_delay(Dataset(ss[:,1:2]); tw = tws, samplesize=1.0)
 @test τ_m == 34
 
 # # reproduce Fig.2 of the paper
