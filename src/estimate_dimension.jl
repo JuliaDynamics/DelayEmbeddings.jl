@@ -228,7 +228,7 @@ end
 
 """
     fnn_embedding_cycle(NNdist, NNdistnew; r=2) -> FNNs
-compute the amount of false nearest neighbors `FNNs`, when adding another component
+Compute the amount of false nearest neighbors `FNNs`, when adding another component
 to a given (vector-) time series. This new component is the `τ`-lagged version
 of a univariate time series. `NNdist` is storing the distances of the nearest
 neighbor for all considered fiducial points and `NNdistnew` is storing the
@@ -243,7 +243,7 @@ function fnn_embedding_cycle(NNdist::T, NNdistnew::T; r::Real=2) where {T}
     # convert array of arrays into simple vectors, since we only look at K=1
     NN_old = zeros(length(NNdist))
     NN_new = zeros(length(NNdistnew))
-    for i = 1:length(NNdist)
+    @inbounds for i = 1:length(NNdist)
         NN_old[i]=NNdist[i][1]
         NN_new[i]=NNdistnew[i][1]
     end

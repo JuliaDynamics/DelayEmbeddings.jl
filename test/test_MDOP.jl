@@ -104,7 +104,7 @@ tws = 32:36
 @code_warntype DelayEmbeddings.estimate_maximum_delay(ss[:,2]; tw = tws, samplesize=1.0)
 @code_warntype DelayEmbeddings.estimate_maximum_delay(Dataset(ss[:,2]); tw = tws, samplesize=1.0)
 
-τ_m, L = DelayEmbeddings.estimate_maximum_delay(ss[:,2]; tw = tws, samplesize=1.0)
+τ_m, L = DelayEmbeddings.estimate_maximum_delay(ss[:,2]; tw = tws, samplesize = 1)
 @test τ_m == 34
 τ_m, Ls = DelayEmbeddings.estimate_maximum_delay(Dataset(ss[:,1:2]); tw = tws, samplesize=1.0)
 @test τ_m == 34

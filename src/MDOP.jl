@@ -8,10 +8,10 @@ export estimate_maximum_delay
 
 
 """
-    MDOP(s::Vector; kwargs...) → Y, τ_vals, ts_vals, FNNs [,βS]
-MDOP is a unified approach to properly embed a time series (`Vector` type) or a
-set of time series (`Dataset` type) based on the paper of Chetan Nichkawde
-[^Nichkawde2013].
+    MDOP(s::Vector; kwargs...) → Y, τ_vals, ts_vals, FNNs ,βS
+MDOP (maximizing derivatives on projection) is a unified approach to properly
+embed a time series (`Vector` type) or a set of time series (`Dataset` type)
+based on the paper of Chetan Nichkawde [^Nichkawde2013].
 
 ## Keyword arguments
 
@@ -25,8 +25,6 @@ set of time series (`Dataset` type) based on the paper of Chetan Nichkawde
   the embedding procedure (`0 <= fnn_thres < 1).
 * `r::Real = 2`: The threshold for the tolerable relative increase of the distance
   between the nearest neighbors, when increasing the embedding dimension.
-* `β_condition::Bool = false`: When set `true`, the function also returnes the `β`-statistics
-  of all embedding cycles.
 
 ## Description
 The method works iteratively and gradually builds the final embedding vectors
@@ -45,7 +43,8 @@ FNN-statistic `FNNs` increases . The final embedding vector is stored in `Y`
 `τ_vals` and the according time series number chosen for the according delay
 value in `τ_vals` is stored in `ts_vals`. For univariate embedding (`s::Vector`)
 `ts_vals` is a vector of ones of length `τ_vals`, because there is simply just
-one `β`-statistic for each embedding cycle as an `Array` of `Vector`s.
+one time series to choose from. `βS` is an `Array` of `Vector`s and stores all
+the `β`-statistics for each embedding cycle.
 
 [^Nichkawde2013]: Nichkawde, Chetan (2013). [Optimal state-space reconstruction using derivatives on projected manifold. Physical Review E 87, 022905](https://doi.org/10.1103/PhysRevE.87.022905).
 [^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
@@ -53,7 +52,7 @@ one `β`-statistic for each embedding cycle as an `Array` of `Vector`s.
 """
 function MDOP(s::Vector{<:Real}; τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05,
     r::Real = 2, β_condition::Bool=false)
-    @assert 0 <= fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
+    @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
 
     T = eltype(s)
@@ -62,7 +61,7 @@ function MDOP(s::Vector{<:Real}; τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05
 
     metric = Euclidean()
     # normalize input time series (especially important for fnn-computation)
-    s .= (s.-mean(s))./std(s)
+    s = regularize(s)
     # define actual phase space trajectory
     Y_act = Dataset(s)
 
@@ -82,7 +81,7 @@ function MDOP(s::Vector{<:Real}; τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05
     τ_vals = zeros(Int,1)
     ts_vals = ones(Int,1)
     FNNs = zeros(Float64,1)
-    if β_condition; βS = Array{T}(undef, length(τs), max_num_of_cycles); end
+    βS = Array{T}(undef, length(τs), max_num_of_cycles)
 
     # loop over increasing embedding dimensions until some break criterion will
     # tell the loop to stop/break
@@ -90,7 +89,7 @@ function MDOP(s::Vector{<:Real}; τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05
 
         # get the β-statistic
         β = beta_statistic(Y_act, s; τs = τs , w = w)
-        if β_condition; βS[:, cnt] = β; end
+        βS[:, cnt] = β
 
         # determine the optimal tau value from the β-statistic
         maxi, max_idx = findmax(β)
@@ -101,8 +100,6 @@ function MDOP(s::Vector{<:Real}; τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05
         # create phase space vector for this embedding cycle
         Y_act = DelayEmbeddings.embed_one_cycle(Y_act,s,τ_vals[cnt+1])
 
-        # compute nearest neighbor distances in the new embedding dimension for
-        # FNN statistic
         vtree = KDTree(Y_act, metric)
         allNNidxs, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
 
@@ -131,11 +128,7 @@ function MDOP(s::Vector{<:Real}; τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05
         NNdist_old = NNdist_new
     end
 
-    if β_condition
-        return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1], βS[:,1:cnt-1]
-    else
-        return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1]
-    end
+    return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1], βS[:,1:cnt-1]
 end
 
 """
@@ -281,12 +274,11 @@ function estimate_maximum_delay(s::Vector{T}; tw=1:50, samplesize::Real=1) where
 end
 
 function estimate_maximum_delay(s::Dataset{D,T}; tw=1:50, samplesize::Real=1) where {D, T<:Real}
-    #M = size(s,2)
+    display(D)
     τs_max = zeros(Int,D)
-    Ls = zeros(T,length(tw),D)
-    for i = 1:D
-        τs_max[i], L = estimate_maximum_delay(vec(s[:,i]); tw = tw, samplesize = samplesize)
-        Ls[:,i] = L
+    Ls = Vector{SVector{length(tw), T}}(undef, D)
+    @inbounds for i = 1:D
+        τs_max[i], Ls[i] = estimate_maximum_delay(vec(s[:,i]); tw = tw, samplesize = samplesize)
     end
-    return maximum(τs_max), Dataset(Ls)
+    return maximum(τs_max), Dataset(Ls...)
 end
