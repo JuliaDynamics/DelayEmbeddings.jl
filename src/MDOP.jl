@@ -283,7 +283,7 @@ function estimate_maximum_delay(s::Dataset{D,T}; tw=1:50, samplesize::Real=1) wh
     Ls = zeros(T,length(tw),M)
     for i = 1:M
         τs_max[i], L = estimate_maximum_delay(vec(s[:,i]); tw = tw, samplesize = samplesize)
-        Ls[:,i] = Matrix(L)
+        Ls[:,i] = L
     end
     return maximum(τs_max), Dataset(Ls)
 end
