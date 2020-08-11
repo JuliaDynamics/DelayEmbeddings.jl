@@ -223,24 +223,27 @@ end
 
 
 """
-    embed_one_cycle(Y, s::Vector, τ::Int) -> Y_new
-Add the `τ` lagged values of the time series `s` as additional component to the
-time series `Y` (`Vector` or `Dataset`), in order to form a higher embedded
-vector `Y_new`. The dimensionality of `Y_new` , thus, equals the dimensionality
-of `Y+1`.
+    embed_one_cycle(Y, s::Vector, τ::Int) -> Z
+Add the `τ` lagged values of the time series `s` as additional component to `Y`
+(`Vector` or `Dataset`), in order to form a higher embedded
+dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
 """
 function embed_one_cycle(Y::Dataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
     N = length(Y)
-    @assert N <= length(s)
+    @assert N ≤ length(s)
     M = N - τ
-    return Dataset(hcat(view(Matrix(Y), 1:M, :), view(s, τ+1:N)))
+    data = Vector{SVector{D+1, T}}(undef, M)
+    @inbounds for i in 1:M
+        data[i] = SVector{D+1, T}(Y[i]..., s[i+τ])
+    end
+    return Dataset(data)
 end
 
-function embed_one_cycle(Y::Vector{T}, s::Vector{T}, τ::Int) where {D, T<:Real}
+function embed_one_cycle(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
     N = length(Y)
-    @assert N <= length(s)
+    @assert N ≤ length(s)
     M = N - τ
-    return Dataset(hcat(view(s, 1:M), view(s, τ+1:N)))
+    return Dataset(view(s, 1:M), view(s, τ+1:N))
 end
 
 
