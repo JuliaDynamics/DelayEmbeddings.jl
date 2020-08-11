@@ -2,7 +2,7 @@ using Neighborhood
 using NearestNeighbors
 using StatsBase
 using Distances
-using Peaks
+import Peaks
 
 export garcia_almeida_embed
 export garcia_embedding_cycle
@@ -162,9 +162,9 @@ end
 
 """
     garcia_embedding_cycle(Y, s; kwargs...) → N, d_E1 (`Array`, `Array of Arrays`)
-Performs one embedding cycle according to the method proposed in [^Garcia2005a]
+Perform one embedding cycle according to the method proposed in [^Garcia2005a]
 for a given phase space trajectory `Y` (of type `Dataset`) and a time series `s
-(of type `Vector`). Returns the proposed N-Statistic `N` and all nearest
+(of type `Vector`). Return the proposed N-Statistic `N` and all nearest
 neighbor distances `d_E1` for each point of the input phase space trajectory
 `Y`. Note that `Y` is a single time series in case of the first embedding cycle.
 
@@ -223,8 +223,6 @@ function garcia_embedding_cycle(Y::Dataset{D, F}, s::Vector{F}; τs = 0:50 , r::
         vtree = KDTree(Y_temp[1:N], metric) # tree for input data
         # nearest neighbors (d_E1)
         allNNidxs, d_E1 = all_neighbors(vtree, Y_temp[1:N], 1:N, 1, w)
-        # save d_E1-statistic
-        #push!(NN_distances[i],hcat(d_E1...))
         NN_distances[i] = d_E1
 
         # for each point, consider its next iterate and compute the distance to

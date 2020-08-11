@@ -5,7 +5,7 @@ using StatsBase
 using Statistics
 using Random
 using Test
-using Peaks
+import Peaks
 using Revise
 using BenchmarkTools
 
@@ -35,8 +35,8 @@ N2 , NN_distances2 = garcia_embedding_cycle(Y, x, w=0, T=T, τs = τs)
 @test NN_distances[5][1:100] == NN_distances2[5][1:100]
 
 min_dist = 12
-max_1_idx = Pks_min(N,min_dist)
-max_2_idx = Pks_max(N2,min_dist)
+max_1_idx = Peaks.maxima(N,min_dist)
+max_2_idx = Peaks.maxima(N2,min_dist)
 
 @test max_1_idx == max_2_idx
 
@@ -54,8 +54,8 @@ max_2_idx = Pks_max(N2,min_dist)
 
 #@testset "garcia_embed univariate" begin
 @code_warntype garcia_almeida_embed(x; τs=0:100,  w = 17,  Ns=true)
-Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embed(x; τs=0:100,  w = 17, T = 17,  Ns=true)
-Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embed(x; τs=0:100,  w = 1, T = 1,  Ns=true)
+Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embed(x; τs=0:100,  w = 17, T = 17,  Ns_condition=true)
+Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embed(x; τs=0:100,  w = 1, T = 1,  Ns_condition=true)
 
 @test size(Y_act,2)==3
 @test FNNs[end]<=0.05
