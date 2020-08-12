@@ -134,7 +134,7 @@ is between d0 < dj ≤ d. Here is how we find the nearest neighbor:
 
 =#
 
-using Distances, Statistics, StatsBase
+using Distances, Statistics, StatsBase, Distributions
 export pecora
 
 # TODO: Generalize the table for more α values
@@ -221,7 +221,7 @@ function pecora(
     # Loop over potential timeseries to use in new embedding
     for i in 1:length(J)
         x = allts[J[i]]
-        x = (x .- mean(x)) ./ std(x) # so that different timeseries can be compared
+        x = regularize(x) # so that different timeseries can be compared
         all_ε★[:, i] .= continuity_per_timeseries(x, ns, allNNidxs, T, K)
         if undersampling
             println("Started undersampling for $(J[i]) timeseries")
@@ -393,4 +393,25 @@ function integral_σ(ρ, ξ)
         ∫ += σ*dζ
     end
     return ∫
+end
+
+"""
+    get_binomial_table(p, α; trial_range::Int=8) -> `δ_to_ε_amount`, Dict(δ_points => ϵ_points)
+compute the numbers of points from the δ-neighborhood, which need to fall outside
+the ϵ-neighborhood, in order to reject the Null Hypothesis at a significance
+level `α`. One parameter of the binomial distribution is `p`, the other one would
+be the number of trials, i.e. the considered number of points of the δ-neighborhood.
+`trial_range` determines the number of considered δ-neighborhood-points, always
+starting from 8. For instance, if `trial_range=8` (Default), then δ-neighborhood
+sizes from 8 up to 15 are considered.
+Return `δ_to_ε_amount`, a dictionary with `δ_points` as keys and the corresponding number of
+points in order to reject the Null, `ϵ_points`, constitute the values.
+"""
+function get_binomial_table(p::T, α::T; trial_range::Int=8) where {T<:Real}
+    @assert trial_range ≥ 1 "`trial_range` must be an integer ≥ 1"
+    δ_to_ε_amount = Dict{Int, Int}()
+    @inbounds for key = 8:(7+trial_range)
+        δ_to_ε_amount[key] = quantile(Distributions.Binomial(key,p), 1-α)
+    end
+    return δ_to_ε_amount
 end
