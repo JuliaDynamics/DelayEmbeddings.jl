@@ -243,7 +243,7 @@ function fnn_embedding_cycle(NNdist::T, NNdistnew::T; r::Real=2) where {T}
     # convert array of arrays into simple vectors, since we only look at K=1
     NN_old = zeros(length(NNdist))
     NN_new = zeros(length(NNdistnew))
-    for i = 1:length(NNdist)
+    @inbounds for i = 1:length(NNdist)
         NN_old[i]=NNdist[i][1]
         NN_new[i]=NNdistnew[i][1]
     end

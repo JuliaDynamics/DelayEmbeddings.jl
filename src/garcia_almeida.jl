@@ -9,7 +9,7 @@ export garcia_embedding_cycle
 
 
 """
-    garcia_almeida_embed(s; kwargs...) → Y, τ_vals, ts_vals, FNNs [,NS]
+    garcia_almeida_embed(s; kwargs...) → Y, τ_vals, ts_vals, FNNs ,NS
 A unified approach to properly embed a time series (`Vector` type) or a
 set of time series (`Dataset` type) based on the papers of Garcia & Almeida
 [^Garcia2005a],[^Garcia2005b].
@@ -27,14 +27,12 @@ set of time series (`Dataset` type) based on the papers of Garcia & Almeida
   between the nearest neighbors, when increasing the embedding dimension.
 * `fnn_thres= 0.05`: A threshold value defining a sufficiently small fraction
   of false nearest neighbors, in order to the let algorithm terminate and stop
-  the embedding procedure (`0 <= fnn_thres <= 1).
+  the embedding procedure (`0 ≤ fnn_thres < 1).
 * `T::Int = 1`: The forward time step (in sampling units) in order to compute the
   `d_E2`-statistic (see algorithm description). Note that in the paper this is
   not a free parameter and always set to `T=1`.
 * `metric = Euclidean()`: metric used for finding nearest neigbhors in the input
   phase space trajectory `Y`.
-* `Ns_condition::Bool = false`: When set `true`, the function also returnes the `N`-statistics
-  of all embedding cycles.
 
 
 ## Description
@@ -54,17 +52,17 @@ stored in `Y` (`Dataset`). The chosen delay values for each embedding cycle are
 stored in the `τ_vals` and the according time series number chosen for the
 according delay value in `τ_vals` is stored in `ts_vals`. For univariate
 embedding (`s::Vector`) `ts_vals` is a vector of ones of length `τ_vals`,
-because there is simply just one time series to choose from. If `Ns_condition=true`
-then the function also returns the `N`-statistic `NS` for each embedding cycle
-as an `Array` of `Vector`s.
+because there is simply just one time series to choose from. The function also
+returns the `N`-statistic `NS` for each embedding cycle as an `Array` of
+`Vector`s.
 
 [^Garcia2005a]: Garcia, S. P., Almeida, J. S. (2005). [Nearest neighbor embedding with different time delays. Physical Review E 71, 037204](https://doi.org/10.1103/PhysRevE.71.037204).
 [^Garcia2005b]: Garcia, S. P., Almeida, J. S. (2005). [Multivariate phase space reconstruction by nearest neighbor embedding with different time delays. Physical Review E 72, 027205](https://doi.org/10.1103/PhysRevE.72.027205).
 """
 function garcia_almeida_embed(s::Vector{<:Real}; τs = 0:50 , w::Int = 1,
     r1::Real = 10, r2::Real = 2, fnn_thres::Real = 0.05,
-    T::Int = 1, metric = Euclidean(), Ns_condition::Bool=false)
-    @assert 0 <= fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
+    T::Int = 1, metric = Euclidean())
+    @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
 
     F = eltype(s)
@@ -72,7 +70,7 @@ function garcia_almeida_embed(s::Vector{<:Real}; τs = 0:50 , w::Int = 1,
     max_num_of_cycles = 50 # assure that the algorithm will break after 50 embedding cycles
 
     # normalize input time series (especially important for fnn-computation)
-    s = (s.-mean(s))./std(s)
+    s = regularize(s)
     # define actual phase space trajectory
     Y_act = Dataset(s)
 
@@ -92,7 +90,7 @@ function garcia_almeida_embed(s::Vector{<:Real}; τs = 0:50 , w::Int = 1,
     τ_vals = zeros(Int,1)
     ts_vals = ones(Int,1)
     FNNs = zeros(Float64,1)
-    if Ns_condition; NS = Array{F}(undef, length(τs), max_num_of_cycles); end
+    NS = Array{F}(undef, length(τs), max_num_of_cycles)
 
     # loop over increasing embedding dimensions until some break criterion will
     # tell the loop to stop/break
@@ -101,7 +99,7 @@ function garcia_almeida_embed(s::Vector{<:Real}; τs = 0:50 , w::Int = 1,
         # get the N-statistic
         N, NNdistances = garcia_embedding_cycle(Y_act, s; τs = τs , r = r1,
             T = T, w = w, metric = metric)
-        if Ns_condition; NS[:, cnt] = N; end
+        NS[:, cnt] = N
 
         # determine the optimal tau value from the N-statistic
         min_idx = Peaks.minima(N)
@@ -112,11 +110,11 @@ function garcia_almeida_embed(s::Vector{<:Real}; τs = 0:50 , w::Int = 1,
             continue
         end
         # store chosen delay (and chosen time series)
-        push!(τ_vals,τs[min_idx[1]])
-        push!(ts_vals,1)
+        push!(τ_vals, τs[min_idx[1]])
+        push!(ts_vals, 1)
 
         # create phase space vector for this embedding cycle
-        Y_act = embed_one_cycle(Y_act,s,τ_vals[cnt+1])
+        Y_act = embed_one_cycle(Y_act, s, τ_vals[cnt+1])
 
         # compute nearest neighbor distances in the new embedding dimension for
         # FNN statistic
@@ -148,11 +146,8 @@ function garcia_almeida_embed(s::Vector{<:Real}; τs = 0:50 , w::Int = 1,
         NNdist_old = NNdist_new
     end
 
-    if Ns_condition
-        return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1], NS[:,1:cnt-1]
-    else
-        return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1]
-    end
+    return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1], NS[:,1:cnt-1]
+
 end
 
 
@@ -246,22 +241,25 @@ end
 
 
 """
-    embed_one_cycle(Y, s::Vector, τ::Int) -> Y_new
-Add the `τ` lagged values of the time series `s` as additional component to the
-time series `Y` (`Vector` or `Dataset`), in order to form a higher embedded
-vector `Y_new`. The dimensionality of `Y_new` , thus, equals the dimensionality
-of `Y+1`.
+    embed_one_cycle(Y, s::Vector, τ::Int) -> Z
+Add the `τ` lagged values of the time series `s` as additional component to `Y`
+(`Vector` or `Dataset`), in order to form a higher embedded
+dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
 """
 function embed_one_cycle(Y::Dataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
     N = length(Y)
-    @assert N <= length(s)
+    @assert N ≤ length(s)
     M = N - τ
-    return Dataset(hcat(view(Matrix(Y), 1:M, :), view(s, τ+1:N)))
+    data = Vector{SVector{D+1, T}}(undef, M)
+    @inbounds for i in 1:M
+        data[i] = SVector{D+1, T}(Y[i]..., s[i+τ])
+    end
+    return Dataset(data)
 end
 
-function embed_one_cycle(Y::Vector{T}, s::Vector{T}, τ::Int) where {D, T<:Real}
+function embed_one_cycle(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
     N = length(Y)
-    @assert N <= length(s)
+    @assert N ≤ length(s)
     M = N - τ
-    return Dataset(hcat(view(s, 1:M), view(s, τ+1:N)))
+    return Dataset(view(s, 1:M), view(s, τ+1:N))
 end
