@@ -93,6 +93,11 @@ function MDOP(s::Vector{<:Real}; τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05
 
         # determine the optimal tau value from the β-statistic
         maxi, max_idx = findmax(β)
+        if length(max_idx) == 0
+            flag = false
+            display("Algorithm could not pick a delay value from β-statistic. Increase the considered delays in `τs`-input. NO valid embedding achieved")
+            continue
+        end
         # store chosen delay (and chosen time series)
         push!(τ_vals, τs[max_idx])
         push!(ts_vals, 1)
