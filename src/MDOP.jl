@@ -269,7 +269,7 @@ function estimate_maximum_delay(s::Vector{T}; tw=1:50, samplesize::Real=1) where
         L[cnt] = uzal_cost(Y_act; samplesize = samplesize)
         cnt +=1
     end
-    ~, τ_max = findmin(L)
+    _, τ_max = findmin(L)
     return tw[τ_max], L
 end
 
