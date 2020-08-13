@@ -58,8 +58,10 @@ the inverse of all `ϵ²`'s for all considered reference points.
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost(Y::Dataset ; Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Float64 = .5,
-    metric = Euclidean())
+function uzal_cost(Y::Dataset;
+        Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Real = 0.5,
+        metric = Euclidean()
+    )
 
     # select a random phase space vector sample according to input `SampleSize
     NN = length(Y)-Tw;

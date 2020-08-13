@@ -1,12 +1,12 @@
-# test MDOP
+# test mdop_embedding
 using DynamicalSystemsBase
 using DelayEmbeddings
 using Test
 using DelimitedFiles
 using DelayDiffEq
 
-println("\nTesting MDOP.jl...")
-#@testset "Nichkawde method" begin
+println("\nTesting mdop_embedding.jl...")
+@testset "Nichkawde method MDOP" begin
 
 # solve Mackey-Glass-Delay Diff.Eq. as in the Paper
 function mackey_glass(du,u,h,p,t)
@@ -37,14 +37,11 @@ Y = Dataset(s)
 
 theiler = 57
 
-#@testset "beta statistic" begin
-## Test beta_statistic (core algorithm of MDOP)
-
+@testset "beta statistic" begin
+## Test beta_statistic (core algorithm of mdop_embedding)
 
 taus = 0:100
-@code_warntype DelayEmbeddings.beta_statistic(Y, s; τs = taus, w = theiler)
-β = DelayEmbeddings.beta_statistic(Y, s; τs = taus, w = theiler)
-
+β = @inferred DelayEmbeddings.beta_statistic(Y, s, taus, theiler)
 maxi, max_idx = findmax(β)
 
 @test maxi>4.1
@@ -71,9 +68,7 @@ maxi, max_idx = findmax(β)
 
 # test different tau range
 taus2 = 1:4:100
-@code_warntype DelayEmbeddings.beta_statistic(Y, s; τs = taus2, w = theiler)
-β2 = DelayEmbeddings.beta_statistic(Y, s; τs = taus2, w = theiler)
-
+β2 = @inferred beta_statistic(Y, s, taus2, theiler)
 maxi2, max_idx2 = findmax(β2)
 
 @test maxi2>4.1
@@ -86,56 +81,16 @@ maxi2, max_idx2 = findmax(β2)
 # xlabel!("τ")
 # ylabel!("β-Statistic")
 
-#end
+end
 
-
-#@testset "estimate tau max for MDOP" begin
-roe = Systems.roessler([0.1;0;0])
-ss = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
-
-tws = 32:36
-
-@code_warntype DelayEmbeddings.estimate_maximum_delay(ss[:,2]; tw = tws, samplesize=1.0)
-@code_warntype DelayEmbeddings.estimate_maximum_delay(Dataset(ss[:,2]); tw = tws, samplesize=1.0)
-
-τ_m, L = DelayEmbeddings.estimate_maximum_delay(ss[:,2]; tw = tws, samplesize = 1)
-@test τ_m == 34
-τ_m, Ls = DelayEmbeddings.estimate_maximum_delay(Dataset(ss[:,1:2]); tw = tws, samplesize=1.0)
-@test τ_m == 34
-
-# # reproduce Fig.2 of the paper
-# tws = 1:2:101
-# τ_m, L = DelayEmbeddings.estimate_maximum_delay(s[:,2]; tw = tws, samplesize=1.0)
-#
-# using Plots
-# twss = zeros(length(tws))
-# [twss[cnt] = i for (cnt,i) in enumerate(tws)]
-# plot(twss,L, label="")
-# xlabel!("time window")
-# ylabel!("L")
-
-#end
-
-#@testset "MDOP univariate" begin
-## test MDOP() univariate
-
-# tw=1:4:200
-# tau_max, LL = DelayEmbeddings.estimate_maximum_delay(ss; tw=tw)
-#
-# using Plots
-# gui()
-# twss = zeros(length(tw))
-# [twss[cnt] = i for (cnt,i) in enumerate(tw)]
-# plot(twss,LL, label="")
-# xlabel!("time window")
-# ylabel!("L")
+@testset "mdop_embedding univariate" begin
 
 taus = 0:100
-@code_warntype MDOP(s; τs = taus, w = theiler, β_condition=true)
-Y, τ_vals, ts_vals, FNNs, betas = MDOP(s; τs = taus, w = theiler, β_condition=true)
+# @code_warntype mdop_embedding(s; τs = taus, w = theiler, β_condition=true)
+Y, τ_vals, ts_vals, FNNs, betas = mdop_embedding(s; τs = taus, w = theiler)
 # for different τs
 taus2 = 1:4:100
-Y2, τ_vals2, ts_vals2, FNNs2, betas2 = MDOP(s; τs = taus2, w = theiler, β_condition=true)
+Y2, τ_vals2, ts_vals2, FNNs2, betas2 = mdop_embedding(s; τs = taus2, w = theiler)
 
 @test round.(β,digits=7) == round.(betas[:,1],digits=7)
 @test size(Y,2) == 5
@@ -172,14 +127,44 @@ Y2, τ_vals2, ts_vals2, FNNs2, betas2 = MDOP(s; τs = taus2, w = theiler, β_con
 # xlabel!("delay τ")
 # ylabel!("log10 β(τ)")
 
-#end
+end
+
+@testset "estimate tau max for mdop_embedding & Roessler" begin
+roe = Systems.roessler([0.1;0;0])
+sroe = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
+
+tws = 32:36
+
+@inferred DelayEmbeddings.estimate_maximum_delay(sroe[:,2]; tw = tws, samplesize=1.0)
+@inferred DelayEmbeddings.estimate_maximum_delay(Dataset(sroe[:,2]); tw = tws, samplesize=1.0)
+
+τ_m, L = DelayEmbeddings.estimate_maximum_delay(sroe[:,2]; tw = tws, samplesize = 1)
+@test τ_m == 34
+τ_m, Ls = DelayEmbeddings.estimate_maximum_delay(Dataset(sroe[:,1:2]); tw = tws, samplesize=1.0)
+@test τ_m == 34
+
+# # reproduce Fig.2 of the paper
+# tws = 1:2:101
+# τ_m, L = DelayEmbeddings.estimate_maximum_delay(s[:,2]; tw = tws, samplesize=1.0)
+#
+# using Plots
+# twss = zeros(length(tws))
+# [twss[cnt] = i for (cnt,i) in enumerate(tws)]
+# plot(twss,L, label="")
+# xlabel!("time window")
+# ylabel!("L")
+
+# tw=1:4:200
+# tau_max, LL = DelayEmbeddings.estimate_maximum_delay(sroe; tw=tw)
+#
+# using Plots
+# gui()
+# twss = zeros(length(tw))
+# [twss[cnt] = i for (cnt,i) in enumerate(tw)]
+# plot(twss,LL, label="")
+# xlabel!("time window")
+# ylabel!("L")
+end
 
 
-#@testset "MDOP multivariate" begin
-## test MDOP() multivariate
-
-
-
-
-#end
-#end
+end
