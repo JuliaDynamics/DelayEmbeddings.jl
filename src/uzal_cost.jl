@@ -133,7 +133,7 @@ function comp_Ek2!(ϵ_ball, u_k, Y, ns::Int, NNidxs, T::Int, K::Int, metric)
 
     E²_sum = 0
     @inbounds for j = 1:K+1
-        E²_sum += (evaluate(metric,ϵ_ball[j,:],u_k))^2
+        E²_sum += (evaluate(metric, view(ϵ_ball, j, :), u_k))^2
     end
     E² = E²_sum / (K+1)         # Eq. 13
 end
