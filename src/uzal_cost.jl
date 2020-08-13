@@ -61,10 +61,10 @@ the inverse of all `ϵ²`'s for all considered reference points.
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost(Y::Dataset;
+function uzal_cost(Y::Dataset{D, ET};
         Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Real = 0.5,
         metric = Euclidean()
-    )
+    ) where {D, ET}
 
     # select a random phase space vector sample according to input samplesize
     NN = length(Y)-Tw;
@@ -77,6 +77,8 @@ function uzal_cost(Y::Dataset;
     ϵ² = zeros(NNN)             # neighborhood size
     E²_avrg = zeros(NNN)        # averaged conditional variance
     E² = zeros(Tw)
+    ϵ_ball = zeros(ET, K+1, D) # preallocation
+    u_k = zeros(ET, D)
 
     # loop over each fiducial point
     for (i,v) in enumerate(vs)
@@ -86,7 +88,7 @@ function uzal_cost(Y::Dataset;
         ϵ²[i] = (2/(K*(K+1))) * pdsqrd  # Eq. 16
         # loop over the different time horizons
         for T = 1:Tw
-            E²[T] = comp_Ek2(Y, ns[i], NNidxs, T, K, metric) # Eqs. 13 & 14
+            E²[T] = comp_Ek2!(ϵ_ball, u_k, Y, ns[i], NNidxs, T, K, metric) # Eqs. 13 & 14
         end
         # Average E²[T] over all prediction horizons
         E²_avrg[i] = mean(E²)                   # Eq. 15
@@ -109,26 +111,25 @@ function fiducial_pairwise_dist_sqrd(fiducials, v, metric)
     return sum(pd)
 end
 
-
-# TODO: This function should NOT allocate!!!
 """
-    comp_Ek2(Y,v,NNidxs,T,K,metric) → E²(T)
+    comp_Ek2!(ϵ_ball,u_k,Y,v,NNidxs,T,K,metric) → E²(T)
 Returns the approximated conditional variance for a specific point in phase space
 `ns` (index value) with its `K`-nearest neighbors, which indices are stored in
 `NNidxs`, for a time horizon `T`. This corresponds to Eqs. 13 & 14 in [^Uzal2011].
 The norm specified in input parameter `metric` is used for distance computations.
 """
-function comp_Ek2(Y, ns::Int, NNidxs, T::Int, K::Int, metric)
+function comp_Ek2!(ϵ_ball, u_k, Y, ns::Int, NNidxs, T::Int, K::Int, metric)
     # determine neighborhood `T` time steps ahead
-    ϵ_ball = zeros(K+1, size(Y,2)) # preallocation
-    ϵ_ball[1,:] = Y[ns+T]
-    ϵ_ball[2:K+1,:] = vcat(transpose(Y[NNidxs.+T])...)
+    ϵ_ball[1, :] .= Y[ns+T]
+    @inbounds for (i, j) in enumerate(NNidxs)
+        ϵ_ball[i+1, :] .= Y[j + T]
+    end
 
     # compute center of mass
-    u_k = sum(ϵ_ball,dims=1) ./ (K+1) # Eq. 14
+    @inbounds for i in 1:size(Y)[2]; u_k[i] = sum(view(ϵ_ball, :, i))/(K+1); end # Eq. 14
 
     E²_sum = 0
-    for j = 1:K+1
+    @inbounds for j = 1:K+1
         E²_sum += (evaluate(metric,ϵ_ball[j,:],u_k))^2
     end
     E² = E²_sum / (K+1)         # Eq. 13
