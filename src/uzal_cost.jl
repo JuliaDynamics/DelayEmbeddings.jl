@@ -115,6 +115,31 @@ function fiducial_pairwise_dist_sqrd(fiducials, v, metric)
 end
 
 """
+    comp_Ek2!(ϵ_ball,u_k,Y,v,NNidxs,T,K,metric) → E²(T)
+Returns the approximated conditional variance for a specific point in phase space
+`ns` (index value) with its `K`-nearest neighbors, which indices are stored in
+`NNidxs`, for a time horizon `T`. This corresponds to Eqs. 13 & 14 in [^Uzal2011].
+The norm specified in input parameter `metric` is used for distance computations.
+"""
+function comp_Ek2!(ϵ_ball, u_k, Y, ns::Int, NNidxs, T::Int, K::Int, metric)
+    # determine neighborhood `T` time steps ahead
+    ϵ_ball[1, :] .= Y[ns+T]
+    @inbounds for (i, j) in enumerate(NNidxs)
+        ϵ_ball[i+1, :] .= Y[j + T]
+    end
+
+    # compute center of mass
+    @inbounds for i in 1:size(Y)[2]; u_k[i] = sum(view(ϵ_ball, :, i))/(K+1); end # Eq. 14
+
+    E²_sum = 0
+    @inbounds for j = 1:K+1
+        E²_sum += (evaluate(metric,ϵ_ball[j,:],u_k))^2
+    end
+    E² = E²_sum / (K+1)         # Eq. 13
+end
+
+
+"""
     uzal_cost_local(Y::Dataset; kwargs...) → L_local
 Compute the local L-statistic `L_local` for input dataset `Y` according to
 Uzal et al.[^Uzal2011]. The length of `L_local` is `length(Y)-Tw` and
@@ -183,29 +208,4 @@ function uzal_cost_local(Y::Dataset ; Tw::Int = 40, K::Int = 3, w::Int = 1,
     L_local = log10.(sqrt.(σ²).*sqrt(α²))
 
     return L_local
-end
-
-
-"""
-    comp_Ek2!(ϵ_ball,u_k,Y,v,NNidxs,T,K,metric) → E²(T)
-Returns the approximated conditional variance for a specific point in phase space
-`ns` (index value) with its `K`-nearest neighbors, which indices are stored in
-`NNidxs`, for a time horizon `T`. This corresponds to Eqs. 13 & 14 in [^Uzal2011].
-The norm specified in input parameter `metric` is used for distance computations.
-"""
-function comp_Ek2!(ϵ_ball, u_k, Y, ns::Int, NNidxs, T::Int, K::Int, metric)
-    # determine neighborhood `T` time steps ahead
-    ϵ_ball[1, :] .= Y[ns+T]
-    @inbounds for (i, j) in enumerate(NNidxs)
-        ϵ_ball[i+1, :] .= Y[j + T]
-    end
-
-    # compute center of mass
-    @inbounds for i in 1:size(Y)[2]; u_k[i] = sum(view(ϵ_ball, :, i))/(K+1); end # Eq. 14
-
-    E²_sum = 0
-    @inbounds for j = 1:K+1
-        E²_sum += (evaluate(metric,ϵ_ball[j,:],u_k))^2
-    end
-    E² = E²_sum / (K+1)         # Eq. 13
 end
