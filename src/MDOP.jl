@@ -250,10 +250,9 @@ end
 
 function estimate_maximum_delay(s::Dataset{D,T}; tw=1:50, samplesize::Real=1) where {D, T<:Real}
     τs_max = zeros(Int,D)
-    # TODO: This is super-duper type unstable, gotta rework the algorithm!
-    Ls = Vector{SVector{length(tw), T}}(undef, D)
+    Ls = zeros(T, length(tw), D)
     @inbounds for i = 1:D
-        τs_max[i], Ls[i] = estimate_maximum_delay(vec(s[:,i]); tw = tw, samplesize = samplesize)
+        τs_max[i], Ls[:, i] = estimate_maximum_delay(vec(s[:,i]); tw = tw, samplesize = samplesize)
     end
-    return maximum(τs_max), Dataset(Ls...)
+    return maximum(τs_max), Ls
 end

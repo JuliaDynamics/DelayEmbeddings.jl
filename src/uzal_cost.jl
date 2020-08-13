@@ -4,6 +4,9 @@ using Distances
 
 export uzal_cost
 
+# TODO: The function `uzal_cost` is massive, and thus very hard to optimize. It has
+# to be split up into smaller functions.
+
 
 """
     uzal_cost(Y::Dataset; kwargs...) → L
