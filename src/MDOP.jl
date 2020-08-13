@@ -51,7 +51,7 @@ the `β`-statistics for each embedding cycle.
 [^Kennel1992]: Kennel, M. B., Brown, R., Abarbanel, H. D. I. (1992). [Determining embedding dimension for state-space reconstruction using a geometrical construction. Phys. Rev. A 45, 3403] (https://doi.org/10.1103/PhysRevA.45.3403).
 """
 function MDOP(s::Vector{<:Real}; τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05,
-    r::Real = 2, β_condition::Bool=false)
+    r::Real = 2)
     @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
 
