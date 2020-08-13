@@ -24,18 +24,18 @@ let x(t+τ) ≡ s_j(t+τ) be this extra dimension we add into the embedding. Out
 k points in the δ-ball, we count l of them that land into a range ε around x.  Notice that
 "points" is a confusing term that should not be used interchange-bly. Here in truth we
 refer to **indices** not points. Because of delay embedding, all points are mapped 1-to-1
-to a unique time idex. We count the x points with the same time indices ti, if they
+to a unique time index. We count the x points with the same time indices ti, if they
 are around the original x point with index t0.
 
 Now, if l ≥ δ_to_ε_amount[k] (where δ_to_ε_amount a dictionary defined below), we can
-reject the null hypothesis (that the point mapping was by chance), and thus we satisfy
-the continuity criterion.
+reject the null hypothesis (that the point mapping was by chance) at a significance
+level α, and thus we satisfy the continuity criterion.
 
 ## 2. Finding minimum ε
 
 Notice that in the current code implementation, δ (which is a real number)
 is never given/existing in code.
-Let a fiducial point v, and we find the k nearest neighbors (say Vs)
+Let there be a fiducial point v, and we find the k nearest neighbors (say Vs)
 and then map their indices to the ε-space. The map of the fiducial point in ε-space
 is a and the map of the neighbors is As.
 
@@ -43,12 +43,15 @@ In the ε-space we calculate the distances of As from a. We then sort these dist
 
 We want the minimum range ε★ within which there are at least l (l = δ_to_ε_amount[k])
 neighbors of a. This is simply the l-th maximum distance of As from a.
-Why? because if ε★ was any smaller, one neighbor wouldn't be a neighbor anymore and
+Why? Because if ε★ was any smaller, one neighbor wouldn't be a neighbor anymore and
 we would have 1 less l.
+
+#TODO comments on δ_to_ε_amount
 
 ## 3. Averaging ε
 We repeat step 1 and 2 for several different input points v, and possibly several
 input `k`, and average the result in ⟨ε★⟩.
+#TODO comments on `k`
 
 The larger ⟨ε★⟩, the more functionaly independent is the new d+1 entry to the rest
 d entries of the embedding.
@@ -68,6 +71,10 @@ reduces ⟨ε★⟩ for the next entry.
 This process continues until ε cannot be reduced further, in which scenario the
 process terminates and we have found an optimal embedding that maximizes
 functional independence among the dimensions of the embedding.
+
+## Perforamance notes
+#TODO comment on `samplesize`
+
 
 ## The undersampling statistic
 Because real world data are finite, the aforementioned process (of seeing when ⟨ε★⟩
@@ -137,25 +144,6 @@ is between d0 < dj ≤ d. Here is how we find the nearest neighbor:
 using Distances, Statistics, StatsBase, Distributions
 export pecora
 
-# TODO: Generalize the table for more α values
-
-"""
-Table 1 of Pecora (2007), i.e. the necessary amount of points for given δ points
-that *must* be mapped into the ε set to reject the null hypothesis for p=0.5
-and α=0.05.
-"""
-const δ_to_ε_amount = Dict(
-    5=>5,
-    6=>6,
-    7=>7,
-    8=>7,
-    9=>8,
-    10=>9,
-    11=>9,
-    12=>9,
-    13=>10,
-)
-
 """
     pecora(s, τs, js; kwargs...) → ⟨ε★⟩, ⟨Γ⟩
 Compute the (average) continuity statistic `⟨ε★⟩` and undersampling statistic `⟨Γ⟩`
@@ -171,8 +159,9 @@ The returned results are *matrices* with size `T`x`J`.
 * `J = 1:dimension(s)`: calculate for all timeseries indices in `J`.
   If input `s` is a timeseries, this is always just 1.
 * `N = 100`: over how many fiducial points v to average ε★ to produce `⟨ε★⟩, ⟨Γ⟩`
-* `K = 7`: the amount of nearest neighbors in the δ-ball (read algorithm description).
-  If given a vector, minimum result over all `k ∈ K` is returned.
+* `K::Int = 8`: the amount of nearest neighbors in the δ-ball (read algorithm description).
+  Must be at least 8 (in order to gurantee a valid statistic). `⟨ε★⟩` is computed
+  taking the minimum result over all `k ∈ K`.
 * `metric = Chebyshev()`: metrix with which to find nearest neigbhors in the input
   embedding (ℝᵈ space, `d = length(τs)`).
 * `w = 1`: Theiler window (neighbors in time with index `w` close to the point, that
@@ -183,6 +172,9 @@ The returned results are *matrices* with size `T`x`J`.
   slower than `⟨ε★⟩`.
 * `db::Int = 100`: Amount of bins used into calculating the histograms of
   each timeseries (for the undersampling statistic).
+* `α::Real = 0.05`: The significance level for obtaining the continuity statistic
+* `p::Real = 0.5`: The p-parameter for the binomial distribution used for the
+  computation of the continuity statistic.
 
 ## Description
 Notice that the full algorithm is too large to discuss here, and is
@@ -192,11 +184,11 @@ written in detail (several pages!) in the source code of `pecora`.
 """
 function pecora(
         s, τs::NTuple{D, Int}, js::NTuple{D, Int} = Tuple(ones(Int, D));
-        T = maximum(τs) .+ 1:50, J=maxdimspan(s), N = 100, K = 13, w::Int = 1,
-        db = 250, undersampling = false, metric = Chebyshev()
-        ) where {D}
+        T = maximum(τs) .+ 1:50, J=maxdimspan(s), N = 100, K::Int = 8, w::Int = 1,
+        db = 250, undersampling = false, metric = Chebyshev(), α::Real = 0.05,
+        p::Real = 0.5) where {D}
 
-
+    @assert K ≥ 8 "You must provide a δ-neighborhood size consisting of at least 8 neighbors."
     if undersampling
         error("Undersampling statistic is not yet accurate for production use.")
     end
@@ -221,8 +213,8 @@ function pecora(
     # Loop over potential timeseries to use in new embedding
     for i in 1:length(J)
         x = allts[J[i]]
-        x = regularize(x) # so that different timeseries can be compared
-        all_ε★[:, i] .= continuity_per_timeseries(x, ns, allNNidxs, T, K)
+        x = (x .- mean(x))./std(x) # so that different timeseries can be compared
+        all_ε★[:, i] .= continuity_per_timeseries(x, ns, allNNidxs, T, K, α, p)
         if undersampling
             println("Started undersampling for $(J[i]) timeseries")
             all_Γ[:, i] .= undersampling_per_timeseries(
@@ -254,8 +246,9 @@ maxdimspan(s) = 1:size(s)[2]
 maxdimspan(s::AbstractVector) = 1
 columns(s::AbstractVector) = (s, )
 
-function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, T, K)
+function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, T, K, α, p)
     avrg_ε★ = zeros(size(T))
+    Ks = [k for k in 8:K]
     for (ι, τ) in enumerate(T) # Loop over the different delays
         c = 0
         for (i, n) in enumerate(ns) # Loop over fiducial points
@@ -263,7 +256,7 @@ function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, T, K)
             # Check if any of the indices of the neighbors falls out of temporal range
             any(j -> (j+τ > length(x)) | (j+τ < 1), NNidxs) && continue
             # If not, calculate minimum ε
-            avrg_ε★[ι] += ε★(x, n, τ, NNidxs, K)
+            avrg_ε★[ι] += ε★(x, n, τ, NNidxs, Ks, α, p)
             c += 1
         end
         c == 0 && error("Encountered astronomically small chance of all neighbors having "*
@@ -273,7 +266,9 @@ function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, T, K)
     return avrg_ε★
 end
 
-function ε★(x, n, τ, NNidxs, K::AbstractVector)
+
+function ε★(x, n, τ, NNidxs, K::AbstractVector, α, p)
+    δ_to_ε_amount = get_binomial_table(p, α; trial_range = length(K))
     a = x[n+τ] # fiducial point in ε-space
     @inbounds dis = [abs(a - x[i+τ]) for i in NNidxs]
     ε = zeros(length(K))
@@ -285,13 +280,14 @@ function ε★(x, n, τ, NNidxs, K::AbstractVector)
     return minimum(ε)
 end
 
-function ε★(x, n, τ, NNidxs, K::Int)
-    a = x[n+τ] # fiducial point in ε-space
-    @inbounds dis = [abs(a - x[i+τ]) for i in NNidxs]
-    sortedds = sort!(dis; alg = QuickSort)
-    l = δ_to_ε_amount[K]
-    ε = sortedds[l]
-end
+# function ε★(x, n, τ, NNidxs, K::Int, α, p)
+#     δ_to_ε_amount = get_binomial_table(p, α; trial_range = 1)
+#     a = x[n+τ] # fiducial point in ε-space
+#     @inbounds dis = [abs(a - x[i+τ]) for i in NNidxs]
+#     sortedds = sort!(dis; alg = QuickSort)
+#     l = δ_to_ε_amount[K]
+#     ε = sortedds[l]
+# end
 
 ##########################################################################################
 # Undersampling statistic code
