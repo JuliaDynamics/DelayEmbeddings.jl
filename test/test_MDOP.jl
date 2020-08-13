@@ -129,23 +129,23 @@ Y2, τ_vals2, ts_vals2, FNNs2, betas2 = mdop_embedding(s; τs = taus2, w = theil
 
 end
 
-@testset "estimate tau max for mdop_embedding & Roessler" begin
+@testset "estimate τ max (Roessler)" begin
 roe = Systems.roessler([0.1;0;0])
 sroe = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
 
 tws = 32:36
 
-@inferred DelayEmbeddings.estimate_maximum_delay(sroe[:,2]; tw = tws, samplesize=1.0)
-@inferred DelayEmbeddings.estimate_maximum_delay(Dataset(sroe[:,2]); tw = tws, samplesize=1.0)
+@inferred mdop_maximum_delay(sroe[:,2]; tw = tws, samplesize=1.0)
+@inferred mdop_maximum_delay(Dataset(sroe[:,2]); tw = tws, samplesize=1.0)
 
-τ_m, L = DelayEmbeddings.estimate_maximum_delay(sroe[:,2]; tw = tws, samplesize = 1)
+τ_m, L = mdop_maximum_delay(sroe[:,2]; tw = tws, samplesize = 1)
 @test τ_m == 34
-τ_m, Ls = DelayEmbeddings.estimate_maximum_delay(Dataset(sroe[:,1:2]); tw = tws, samplesize=1.0)
+τ_m, Ls = mdop_maximum_delay(Dataset(sroe[:,1:2]); tw = tws, samplesize=1.0)
 @test τ_m == 34
 
 # # reproduce Fig.2 of the paper
 # tws = 1:2:101
-# τ_m, L = DelayEmbeddings.estimate_maximum_delay(s[:,2]; tw = tws, samplesize=1.0)
+# τ_m, L = DelayEmbeddings.mdop_maximum_delay(s[:,2]; tw = tws, samplesize=1.0)
 #
 # using Plots
 # twss = zeros(length(tws))
@@ -155,7 +155,7 @@ tws = 32:36
 # ylabel!("L")
 
 # tw=1:4:200
-# tau_max, LL = DelayEmbeddings.estimate_maximum_delay(sroe; tw=tw)
+# tau_max, LL = DelayEmbeddings.mdop_maximum_delay(sroe; tw=tw)
 #
 # using Plots
 # gui()

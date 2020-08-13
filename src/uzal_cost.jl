@@ -66,61 +66,51 @@ function uzal_cost(Y::Dataset;
         metric = Euclidean()
     )
 
-    # select a random phase space vector sample according to input `SampleSize
+    # select a random phase space vector sample according to input samplesize
     NN = length(Y)-Tw;
-    NNN = floor(Int,samplesize*NN)
+    NNN = floor(Int, samplesize*NN)
     ns = sample(1:NN, NNN; replace=false) # the fiducial point indices
     vs = Y[ns] # the fiducial points in the data set
 
-    # tree for input data
     vtree = KDTree(Y[1:end-Tw], metric)
     allNNidxs, allNNdist = all_neighbors(vtree, vs, ns, K, w)
-
-    # preallocation
     ϵ² = zeros(NNN)             # neighborhood size
     E²_avrg = zeros(NNN)        # averaged conditional variance
+    E² = zeros(Tw)
 
     # loop over each fiducial point
     for (i,v) in enumerate(vs)
         NNidxs = allNNidxs[i] # indices of k nearest neighbors to v
-        NNdist = allNNdist[i] # k nearest neighbor distances to v
-
-        # construct neighborhood for this fiducial point
-        neighborhood = zeros(K+1,size(Y,2))
-        neighborhood[1,:] = v  # the fiducial point is included in the neighborhood
-        neighborhood[2:K+1,:] = vcat(transpose(Y[NNidxs])...)
-
-        # estimate size of the neighborhood
-        pd = pairwise(metric,neighborhood, dims = 1)
-        ϵ²[i] = (2/(K*(K+1))) * sum(pd.^2)  # Eq. 16
-
-        # estimate E²[T]
-        E² = zeros(Tw)   # preallocation
+        # pairwise distance of fiducial points and `v`
+        pdsqrd = fiducial_pairwise_dist_sqrd(view(Y.data, NNidxs), v, metric)
+        ϵ²[i] = (2/(K*(K+1))) * pdsqrd  # Eq. 16
         # loop over the different time horizons
         for T = 1:Tw
-            E²[T] = comp_Ek2(Y,ns[i],NNidxs,T,K,metric) # Eqs. 13 & 14
+            E²[T] = comp_Ek2(Y, ns[i], NNidxs, T, K, metric) # Eqs. 13 & 14
         end
         # Average E²[T] over all prediction horizons
         E²_avrg[i] = mean(E²)                   # Eq. 15
-
     end
-
-    # compute the noise amplification σ²
-    σ² = E²_avrg ./ ϵ²                          # Eq. 17
-
-    # compute the averaged value of the noise amplification
-    σ²_avrg = mean(σ²)                          # Eq. 18
-
-    # compute α² for normalization
-    α² = 1 / sum(ϵ².^(-1))                      # Eq. 21
-
-    # compute the final L-Statistic
+    σ² = E²_avrg ./ ϵ² # noise amplification σ², Eq. 17
+    σ²_avrg = mean(σ²) # averaged value of the noise amplification, Eq. 18
+    α² = 1 / sum(ϵ².^(-1)) # for normalization, Eq. 21
     L = log10(sqrt(σ²_avrg)*sqrt(α²))
+end
 
-    return L
+function fiducial_pairwise_dist_sqrd(fiducials, v, metric)
+    pd = zero(eltype(fiducials[1]))
+    pd += 2evaluate(metric, v, v)^2
+    for (i, v1) in enumerate(fiducials)
+        pd += 2evaluate(metric, v1, v)^2
+        for j in i+1:length(fiducials)
+            @inbounds pd += 2evaluate(metric, v1, fiducials[j])^2
+        end
+    end
+    return sum(pd)
 end
 
 
+# TODO: This function should NOT allocate!!!
 """
     comp_Ek2(Y,v,NNidxs,T,K,metric) → E²(T)
 Returns the approximated conditional variance for a specific point in phase space

@@ -46,7 +46,7 @@ end
 
 @testset "Lorenz system" begin
 ## Simple Check on Lorenz System
-lo = Systems.lorenz()
+lo = Systems.lorenz([0, 10.0, 0.0])
 
 tr = trajectory(lo, 10; dt = 0.01, Ttr = 10)
 
@@ -58,6 +58,10 @@ L = uzal_cost(tr;
 L_max = -2.411
 L_min = -2.412
 @test L_min < L < L_max
+@test L ≈ -2.411081390295944
+
+# using BenchmarkTools
+# @btime uzal_cost($tr; Tw = 60, K = 3, w = 12, samplesize = 1.0, metric = Euclidean())
 
 # check Maximum metric
 L = uzal_cost(tr;

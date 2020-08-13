@@ -4,7 +4,7 @@ using Distances
 
 export beta_statistic
 export mdop_embedding
-export estimate_maximum_delay
+export mdop_maximum_delay
 
 
 """
@@ -218,7 +218,7 @@ end
 
 
 """
-    estimate_maximum_delay(s; tw = 1:50, samplesize = 1.0)) -> τ_max, L
+    mdop_maximum_delay(s, tw = 1:50, samplesize = 1.0)) -> τ_max, L
 Compute an upper bound for the search of optimal delays, when using `mdop_embedding`
 [`mdop_embedding`](@ref) or `beta_statistic` [`beta_statistic`](@ref).
 
@@ -230,13 +230,13 @@ will be computed. `samplesize` determines the fraction of points to be
 considered in the computation of `L` (see [`uzal_cost`](@ref)). When this
 statistic reaches its global minimum the maximum delay value `τ_max` gets
 returned. When `s` is a multivariate `Dataset`, `τ_max` will becomputed for all
-time series of that Dataset and the maximum value will be returned. The returned
-`L`-statistic is a Dataset of size (length(tw)*size(s,2)).
+timeseries of that Dataset and the maximum value will be returned. The returned
+`L`-statistic has size `(length(tw), size(s,2))`.
 
 [^Nichkawde2013]: Nichkawde, Chetan (2013). [Optimal state-space reconstruction using derivatives on projected manifold. Physical Review E 87, 022905](https://doi.org/10.1103/PhysRevE.87.022905).
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function estimate_maximum_delay(s::Vector{T}; tw=1:50, samplesize::Real=1) where {T<:Real}
+function mdop_maximum_delay(s::Vector{T}, tw=1:50, samplesize::Real=1) where {T<:Real}
     L = zeros(T, length(tw))
     counter = 1
     for i in tw
@@ -248,11 +248,11 @@ function estimate_maximum_delay(s::Vector{T}; tw=1:50, samplesize::Real=1) where
     return tw[τ_max], L
 end
 
-function estimate_maximum_delay(s::Dataset{D,T}; tw=1:50, samplesize::Real=1) where {D, T<:Real}
+function mdop_maximum_delay(s::Dataset{D,T}, tw=1:50, samplesize::Real=1) where {D, T<:Real}
     τs_max = zeros(Int,D)
     Ls = zeros(T, length(tw), D)
     @inbounds for i = 1:D
-        τs_max[i], Ls[:, i] = estimate_maximum_delay(vec(s[:,i]); tw = tw, samplesize = samplesize)
+        τs_max[i], Ls[:, i] = mdop_maximum_delay(vec(s[:,i]); tw = tw, samplesize = samplesize)
     end
     return maximum(τs_max), Ls
 end
