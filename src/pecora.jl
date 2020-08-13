@@ -46,12 +46,23 @@ neighbors of a. This is simply the l-th maximum distance of As from a.
 Why? Because if ε★ was any smaller, one neighbor wouldn't be a neighbor anymore and
 we would have 1 less l.
 
-#TODO comments on δ_to_ε_amount
+δ_to_ε_amount is a dictionary, which stores the number of points of the δ
+neighborhood as keys, and the corresponding maximum numbers of points in the ε
+neighborhood as values, for rejecting the Null-Hypothesis (that there is a
+functional relationship) under the significance-level `α`. The input parameter
+`p` controls the shape of the binomial distribution. This is by default set to
+0.5, which and has been proposed by Pecora et al. . The locations of the maxima
+of the resulting ⟨ε★⟩ stay the same for a wide range of `p`-values.
 
 ## 3. Averaging ε
 We repeat step 1 and 2 for several different input points v, and possibly several
-input `k`, and average the result in ⟨ε★⟩.
-#TODO comments on `k`
+input `k ∈ K`, and average the result in ⟨ε★⟩. The number `K` of considered points
+in the δ-neighborhood is by default 13. In a range from `8:K`, the corresponding
+ε★'s get computed (see description above) and finally the minimum of all these
+values is chosen. This is due to the fact that there is no preferable size
+of the δ-neighborhood a priori and it also depends on the quality of the data. So
+we can not wheight any of the choices of `k`, which is why we take the minimum of
+all considered choices.
 
 The larger ⟨ε★⟩, the more functionaly independent is the new d+1 entry to the rest
 d entries of the embedding.
@@ -73,7 +84,11 @@ process terminates and we have found an optimal embedding that maximizes
 functional independence among the dimensions of the embedding.
 
 ## Perforamance notes
-#TODO comment on `samplesize`
+`samplesize` controls the number of considered fiducial points v. It determines
+the fraction of all available points in the trajectory. This is just for
+performance reasons and one would get the "very best" result for setting
+`samplesize = 1`, obviously, i.e. considering every single point of the trajectory.
+Default is `samplesize = 0.1`.
 
 
 ## The undersampling statistic
@@ -155,11 +170,15 @@ between the components of the existing embedding and one additional timeseries.
 The returned results are *matrices* with size `T`x`J`.
 
 ## Keyword arguments
-* `T = maximum(τs) .+ 1:50`: calculate for all delay times in `T`.
+* `delays = 0:50`: Considered time delay values `delays` (in sampling time units).
+  For each of the `τ`'s in `delays` the continuity-statistic `⟨ε★⟩` gets computed.
+  If `undersampling = true` (see further down), also the undersampling statistic
+  `⟨Γ⟩` gets returned for all considered delay values.
 * `J = 1:dimension(s)`: calculate for all timeseries indices in `J`.
   If input `s` is a timeseries, this is always just 1.
-* `N = 100`: over how many fiducial points v to average ε★ to produce `⟨ε★⟩, ⟨Γ⟩`
-* `K::Int = 8`: the amount of nearest neighbors in the δ-ball (read algorithm description).
+* `samplesize::Real = 0.1`: determine the fraction of all phase space points (=`length(s)`)
+  to be considered (fiducial points v) to average ε★ to produce `⟨ε★⟩, ⟨Γ⟩`
+* `K::Int = 13`: the amount of nearest neighbors in the δ-ball (read algorithm description).
   Must be at least 8 (in order to gurantee a valid statistic). `⟨ε★⟩` is computed
   taking the minimum result over all `k ∈ K`.
 * `metric = Chebyshev()`: metrix with which to find nearest neigbhors in the input
@@ -184,23 +203,29 @@ written in detail (several pages!) in the source code of `pecora`.
 """
 function pecora(
         s, τs::NTuple{D, Int}, js::NTuple{D, Int} = Tuple(ones(Int, D));
-        T = maximum(τs) .+ 1:50, J=maxdimspan(s), N = 100, K::Int = 8, w::Int = 1,
-        db = 250, undersampling = false, metric = Chebyshev(), α::Real = 0.05,
-        p::Real = 0.5) where {D}
+        delays = 0:50 , J=maxdimspan(s), samplesize::Real = 0.1, K::Int = 13, w::Int = 1,
+        db = 250, undersampling = false, metric = Chebyshev(), α::T = 0.05,
+        p::T = 0.5) where {D, T<:Real}
 
     @assert K ≥ 8 "You must provide a δ-neighborhood size consisting of at least 8 neighbors."
+    @assert all(x -> x ≥ 0, τs) "τ's and j's for generalized embedding must be positive integers"
+    @assert all(x -> x ≥ 0, js) "τ's and j's for generalized embedding must be positive integers"
+    @assert all(x -> x ≥ 0, delays) "considered delay values must be positive integers"
+    @assert 0 < samplesize ≤ 1 "`samplesize` must be ∈ (0,1]"
+
+    N = floor(Int,samplesize*length(s)) #number of fiducial points
     if undersampling
         error("Undersampling statistic is not yet accurate for production use.")
     end
     undersampling && metric ≠ Chebyshev() && error("Chebyshev metric required for undersampling")
     vspace = genembed(s, τs, js)
     vtree = KDTree(vspace.data, metric)
-    all_ε★ = zeros(length(T), length(J))
+    all_ε★ = zeros(length(delays), length(J))
     all_Γ = copy(all_ε★)
     allts = columns(s)
     # indices of random fiducial points (with valid time range w.r.t. T)
     L = length(vspace)
-    ns = rand(max(1, (-minimum(T) + 1)):min(L, L - maximum(T)), N)
+    ns = rand(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays)), N)
     vs = vspace[ns]
     allNNidxs, allNNdist = all_neighbors(vtree, vs, ns, K, w)
     # prepare things for undersampling statistic
@@ -214,11 +239,11 @@ function pecora(
     for i in 1:length(J)
         x = allts[J[i]]
         x = (x .- mean(x))./std(x) # so that different timeseries can be compared
-        all_ε★[:, i] .= continuity_per_timeseries(x, ns, allNNidxs, T, K, α, p)
+        all_ε★[:, i] .= continuity_per_timeseries(x, ns, allNNidxs, delays, K, α, p)
         if undersampling
             println("Started undersampling for $(J[i]) timeseries")
             all_Γ[:, i] .= undersampling_per_timeseries(
-                x, vspace, ns, uidxs, udist, [js..., J[i]], T, ρs
+                x, vspace, ns, uidxs, udist, [js..., J[i]], delays, ρs
             )
         end
     end
@@ -246,10 +271,10 @@ maxdimspan(s) = 1:size(s)[2]
 maxdimspan(s::AbstractVector) = 1
 columns(s::AbstractVector) = (s, )
 
-function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, T, K, α, p)
-    avrg_ε★ = zeros(size(T))
+function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, delays, K, α, p)
+    avrg_ε★ = zeros(size(delays))
     Ks = [k for k in 8:K]
-    for (ι, τ) in enumerate(T) # Loop over the different delays
+    for (ι, τ) in enumerate(delays) # Loop over the different delays
         c = 0
         for (i, n) in enumerate(ns) # Loop over fiducial points
             NNidxs = allNNidxs[i] # indices of k nearest neighbors to v
@@ -280,21 +305,12 @@ function ε★(x, n, τ, NNidxs, K::AbstractVector, α, p)
     return minimum(ε)
 end
 
-# function ε★(x, n, τ, NNidxs, K::Int, α, p)
-#     δ_to_ε_amount = get_binomial_table(p, α; trial_range = 1)
-#     a = x[n+τ] # fiducial point in ε-space
-#     @inbounds dis = [abs(a - x[i+τ]) for i in NNidxs]
-#     sortedds = sort!(dis; alg = QuickSort)
-#     l = δ_to_ε_amount[K]
-#     ε = sortedds[l]
-# end
-
 ##########################################################################################
 # Undersampling statistic code
 ##########################################################################################
-function undersampling_per_timeseries(x, vspace, ns, uidxs, udist, JS, T, ρs)
-    avrg_Γ = zeros(size(T))
-    for (ι, τ) in enumerate(T) # loop over delay times
+function undersampling_per_timeseries(x, vspace, ns, uidxs, udist, JS, delays, ρs)
+    avrg_Γ = zeros(size(delays))
+    for (ι, τ) in enumerate(delays) # loop over delay times
         println("τ = $τ")
         c = 0
         τr = max(1, (-τ + 1)):min(length(vspace), length(vspace) - τ) # valid time range
