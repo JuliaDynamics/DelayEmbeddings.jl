@@ -1,15 +1,9 @@
 # test MDOP
 using DynamicalSystemsBase
 using DelayEmbeddings
-using StatsBase
-using Statistics
-using Random
 using Test
 using DelimitedFiles
 using DelayDiffEq
-using BenchmarkTools
-
-using Revise
 
 println("\nTesting MDOP.jl...")
 #@testset "Nichkawde method" begin
