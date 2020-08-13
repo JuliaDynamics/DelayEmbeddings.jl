@@ -1,3 +1,5 @@
+# v1.9.0
+* New `uzal_cost_local`: Local version of `uzal_cost` function.
 # v1.8.0
 * New cost function for testing "goodness" of a delay embedding: `uzal_cost` from Uzal et. al.
 # v1.7.0
