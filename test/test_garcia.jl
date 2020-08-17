@@ -1,17 +1,12 @@
 # test garcia-almeida-method
 using DynamicalSystemsBase
 using DelayEmbeddings
-using StatsBase
-using Statistics
-using Random
 using Test
 import Peaks
-using Revise
-using BenchmarkTools
 
 println("\nTesting garcia_almeida.jl...")
 
-#@testset "G&A method" begin
+@testset "G&A method" begin
 
 ## Check on Lorenz System
 lo = Systems.lorenz()
@@ -22,9 +17,8 @@ x = tr[:, 1]
 Y = Dataset(x)
 
 
-#@testset "N-statistic" begin
+@testset "N-statistic" begin
 τs = 0:50
-@code_warntype(garcia_embedding_cycle(Y, x, w=0, T=1, τs = τs))
 N , NN_distances = garcia_embedding_cycle(Y, x, w=0, T=1, τs = τs)
 
 T = 17
@@ -40,7 +34,7 @@ max_2_idx = Peaks.maxima(N2,min_dist)
 
 @test max_1_idx == max_2_idx
 
-# plot N-Statistic for the Lorenz system as in Fig. 2(a) in [^Garcia2005b]
+# # plot N-Statistic for the Lorenz system as in Fig. 2(a) in [^Garcia2005b]
 # using Plots
 # plot(N,linewidth = 2, label = "T=1 (as in the Paper)", xaxis=:log)
 # plot!(N2,linewidth = 2, label = "T=$T", xaxis=:log)
@@ -50,12 +44,11 @@ max_2_idx = Peaks.maxima(N2,min_dist)
 # xlabel!("τ")
 # ylabel!("N-Statistic")
 
-#end
+end
 
-#@testset "garcia_embed univariate" begin
-@code_warntype garcia_almeida_embed(x; τs=0:100,  w = 17,  Ns=true)
-Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embed(x; τs=0:100,  w = 17, T = 17,  Ns_condition=true)
-Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embed(x; τs=0:100,  w = 1, T = 1,  Ns_condition=true)
+@testset "garcia_embed univariate" begin
+Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embedding(x; τs=0:100,  w = 17, T = 17)
+Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embedding(x; τs=0:100,  w = 1, T = 1)
 
 @test size(Y_act,2)==3
 @test FNNs[end]<=0.05
@@ -66,7 +59,7 @@ Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embed(x; τs=0:100,  w =
 #
 # plot3d(Y_act2[:,1],Y_act2[:,2],Y_act2[:,3], marker=2, camera = (6, 4))
 # plot!(title = "Reconstruction of Lorenz attractor using Garcia&Almeida univariate embedding as in the paper")
-#end
+end
 
 
 #@testset "garcia_embed multivariate" begin
@@ -77,4 +70,4 @@ Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embed(x; τs=0:100,  w =
 #end
 
 
-#end
+end

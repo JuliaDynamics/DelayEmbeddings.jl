@@ -4,7 +4,7 @@ using StatsBase
 using Distances
 import Peaks
 
-export garcia_almeida_embed
+export garcia_almeida_embedding
 export garcia_embedding_cycle
 
 
@@ -33,6 +33,7 @@ set of time series (`Dataset` type) based on the papers of Garcia & Almeida
   not a free parameter and always set to `T=1`.
 * `metric = Euclidean()`: metric used for finding nearest neigbhors in the input
   phase space trajectory `Y`.
+* `max_num_of_cycles = 50`: The algorithm will stop after that many cycles no matter what.
 
 
 ## Description
@@ -59,18 +60,13 @@ returns the `N`-statistic `NS` for each embedding cycle as an `Array` of
 [^Garcia2005a]: Garcia, S. P., Almeida, J. S. (2005). [Nearest neighbor embedding with different time delays. Physical Review E 71, 037204](https://doi.org/10.1103/PhysRevE.71.037204).
 [^Garcia2005b]: Garcia, S. P., Almeida, J. S. (2005). [Multivariate phase space reconstruction by nearest neighbor embedding with different time delays. Physical Review E 72, 027205](https://doi.org/10.1103/PhysRevE.72.027205).
 """
-function garcia_almeida_embed(s::Vector{<:Real}; τs = 0:50 , w::Int = 1,
+function garcia_almeida_embedding(s::Vector{F}; τs = 0:50 , w::Int = 1,
     r1::Real = 10, r2::Real = 2, fnn_thres::Real = 0.05,
-    T::Int = 1, metric = Euclidean())
+    T::Int = 1, metric = Euclidean(), max_num_of_cycles = 50) where {F<:Real}
+
     @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
-
-    F = eltype(s)
-
-    max_num_of_cycles = 50 # assure that the algorithm will break after 50 embedding cycles
-
-    # normalize input time series (especially important for fnn-computation)
-    s = regularize(s)
+    s = regularize(s) # especially important for fnn-computation
     # define actual phase space trajectory
     Y_act = Dataset(s)
 
@@ -81,72 +77,60 @@ function garcia_almeida_embed(s::Vector{<:Real}; τs = 0:50 , w::Int = 1,
 
     # set a flag, in order to tell the while loop when to stop. Each loop
     # stands for encountering a new embedding dimension
-    flag = true
-
-    # set index-counter for the while loop
-    cnt = 1;
+    flag, counter = true, 1
 
     # preallocate output variables
-    τ_vals = zeros(Int,1)
-    ts_vals = ones(Int,1)
-    FNNs = zeros(Float64,1)
+    τ_vals = Int64[0]
+    ts_vals = Int64[1]
+    FNNs = Float64[0.0]
     NS = Array{F}(undef, length(τs), max_num_of_cycles)
 
     # loop over increasing embedding dimensions until some break criterion will
     # tell the loop to stop/break
     while flag
-
-        # get the N-statistic
         N, NNdistances = garcia_embedding_cycle(Y_act, s; τs = τs , r = r1,
             T = T, w = w, metric = metric)
-        NS[:, cnt] = N
+        NS[:, counter] = N
 
         # determine the optimal tau value from the N-statistic
         min_idx = Peaks.minima(N)
 
-        if length(min_idx) == 0
-            flag = false
-            display("Algorithm could not pick a delay value from N-statistic. Increase the considered delays in `τs`-input. NO valid embedding achieved")
-            continue
-        end
         # store chosen delay (and chosen time series)
         push!(τ_vals, τs[min_idx[1]])
         push!(ts_vals, 1)
 
         # create phase space vector for this embedding cycle
-        Y_act = embed_one_cycle(Y_act, s, τ_vals[cnt+1])
+        Y_act = DelayEmbeddings.hcat_lagged_values(Y_act,s,τ_vals[counter+1])
 
-        # compute nearest neighbor distances in the new embedding dimension for
-        # FNN statistic
-        NNdist_new = NNdistances[τ_vals[cnt+1]+1]
-        NNdist_new = [NNdist_new[i][1] for i = 1:length(NNdist_new)]
+        vtree = KDTree(Y_act, metric)
+        allNNidxs, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
+
         # truncate distance-vector to the "new" length of the actual embedding vector
-        NNdist_old = NNdist_old[1:length(Y_act)-T]
-        NNdist_old = [NNdist_old[i][1] for i = 1:length(NNdist_old)]
+        NNdist_old = NNdist_old[1:length(Y_act)]
 
         # compute FNN-statistic and store vals
         fnns = DelayEmbeddings.fnn_embedding_cycle(NNdist_old, NNdist_new; r=r2)
-        cnt == 1 ? FNNs[1] = fnns : push!(FNNs, fnns)
+        counter == 1 ? FNNs[1] = fnns : push!(FNNs,fnns)
 
         # break criterion 1
-        if FNNs[cnt] <= fnn_thres
+        if FNNs[counter] ≤ fnn_thres
             flag = false
-            display("Algorithm stopped due to sufficiently small FNNs. VALID embedding achieved.")
+            println("Algorithm stopped due to sufficiently small FNNs. VALID embedding achieved.")
         end
         # break criterion 2
-        if cnt > 1 && FNNs[cnt]>FNNs[cnt-1]
+        if counter > 1 && FNNs[counter] > FNNs[counter-1]
             flag = false
-            display("Algorithm stopped due to rising FNNs.")
+            println("Algorithm stopped due to rising FNNs.")
         end
         # break criterion 3 (maximum embedding cycles reached)
-        if max_num_of_cycles == cnt; flag = false; end
+        if max_num_of_cycles == counter; flag = false; end
 
-        cnt += 1
+        counter += 1
         # for the next embedding cycle save the distances of NN for this dimension
         NNdist_old = NNdist_new
     end
 
-    return Y_act[:,1:cnt-1], τ_vals[1:cnt-1], ts_vals[1:cnt-1], FNNs[1:cnt-1], NS[:,1:cnt-1]
+    return Y_act[:,1:counter-1], τ_vals[1:counter-1], ts_vals[1:counter-1], FNNs[1:counter-1], NS[:,1:counter-1]
 
 end
 
@@ -211,7 +195,7 @@ function garcia_embedding_cycle(Y::Dataset{D, F}, s::Vector{F}; τs = 0:50 , r::
 
     for (i,τ) in enumerate(τs)
         # build temporary embedding matrix Y_temp
-        Y_temp = embed_one_cycle(Y,s,τ)
+        Y_temp = hcat_lagged_values(Y,s,τ)
         NN = length(Y_temp)     # length of the temporary phase space vector
         N = NN-T               # accepted length w.r.t. the time horizon `T
 
@@ -237,29 +221,4 @@ function garcia_embedding_cycle(Y::Dataset{D, F}, s::Vector{F}; τs = 0:50 , r::
     end
 
     return N_stat, NN_distances
-end
-
-
-"""
-    embed_one_cycle(Y, s::Vector, τ::Int) -> Z
-Add the `τ` lagged values of the time series `s` as additional component to `Y`
-(`Vector` or `Dataset`), in order to form a higher embedded
-dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
-"""
-function embed_one_cycle(Y::Dataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
-    N = length(Y)
-    @assert N ≤ length(s)
-    M = N - τ
-    data = Vector{SVector{D+1, T}}(undef, M)
-    @inbounds for i in 1:M
-        data[i] = SVector{D+1, T}(Y[i]..., s[i+τ])
-    end
-    return Dataset(data)
-end
-
-function embed_one_cycle(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
-    N = length(Y)
-    @assert N ≤ length(s)
-    M = N - τ
-    return Dataset(view(s, 1:M), view(s, τ+1:N))
 end
