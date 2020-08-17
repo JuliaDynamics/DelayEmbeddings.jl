@@ -3,6 +3,10 @@ using StatsBase
 using Distances
 
 export uzal_cost
+export uzal_cost_local
+
+# TODO: The function `uzal_cost` is massive, and thus very hard to optimize. It has
+# to be split up into smaller functions.
 
 
 """
@@ -13,7 +17,8 @@ reconstructed attractor and a direct measure of local stretch which constitutes
 an irrelevance measure. It serves as a cost function of a phase space
 trajectory/embedding and therefore allows to estimate a "goodness of a
 embedding" and also to choose proper embedding parameters, while minimizing
-`L` over the parameter space.
+`L` over the parameter space. For receiving the local cost function `L_local`
+(for each point in phase space - not averaged), use `uzal_cost_local(...)`.
 
 ## Keyword arguments
 
@@ -58,83 +63,134 @@ the inverse of all `ϵ²`'s for all considered reference points.
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost(Y::Dataset ; Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Float64 = .5,
-    metric = Euclidean())
+function uzal_cost(Y::Dataset{D, ET};
+        Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Real = 0.5,
+        metric = Euclidean()
+    ) where {D, ET}
 
-    # select a random phase space vector sample according to input `SampleSize
+    # select a random phase space vector sample according to input samplesize
     NN = length(Y)-Tw;
-    NNN = floor(Int,samplesize*NN)
+    NNN = floor(Int, samplesize*NN)
     ns = sample(1:NN, NNN; replace=false) # the fiducial point indices
+
     vs = Y[ns] # the fiducial points in the data set
 
-    # tree for input data
     vtree = KDTree(Y[1:end-Tw], metric)
     allNNidxs, allNNdist = all_neighbors(vtree, vs, ns, K, w)
-
-    # preallocation
     ϵ² = zeros(NNN)             # neighborhood size
     E²_avrg = zeros(NNN)        # averaged conditional variance
+    E² = zeros(Tw)
+    ϵ_ball = zeros(ET, K+1, D) # preallocation
+    u_k = zeros(ET, D)
 
     # loop over each fiducial point
     for (i,v) in enumerate(vs)
         NNidxs = allNNidxs[i] # indices of k nearest neighbors to v
-        NNdist = allNNdist[i] # k nearest neighbor distances to v
-
-        # construct neighborhood for this fiducial point
-        neighborhood = zeros(K+1,size(Y,2))
-        neighborhood[1,:] = v  # the fiducial point is included in the neighborhood
-        neighborhood[2:K+1,:] = vcat(transpose(Y[NNidxs])...)
-
-        # estimate size of the neighborhood
-        pd = pairwise(metric,neighborhood, dims = 1)
-        ϵ²[i] = (2/(K*(K+1))) * sum(pd.^2)  # Eq. 16
-
-        # estimate E²[T]
-        E² = zeros(Tw)   # preallocation
+        # pairwise distance of fiducial points and `v`
+        pdsqrd = fiducial_pairwise_dist_sqrd(view(Y.data, NNidxs), v, metric)
+        ϵ²[i] = (2/(K*(K+1))) * pdsqrd  # Eq. 16
         # loop over the different time horizons
         for T = 1:Tw
-            E²[T] = comp_Ek2(Y,ns[i],NNidxs,T,K,metric) # Eqs. 13 & 14
+            E²[T] = comp_Ek2!(ϵ_ball, u_k, Y, ns[i], NNidxs, T, K, metric) # Eqs. 13 & 14
         end
         # Average E²[T] over all prediction horizons
         E²_avrg[i] = mean(E²)                   # Eq. 15
-
     end
-
-    # compute the noise amplification σ²
-    σ² = E²_avrg ./ ϵ²                          # Eq. 17
-
-    # compute the averaged value of the noise amplification
-    σ²_avrg = mean(σ²)                          # Eq. 18
-
-    # compute α² for normalization
-    α² = 1 / sum(ϵ².^(-1))                      # Eq. 21
-
-    # compute the final L-Statistic
+    σ² = E²_avrg ./ ϵ² # noise amplification σ², Eq. 17
+    σ²_avrg = mean(σ²) # averaged value of the noise amplification, Eq. 18
+    α² = 1 / sum(ϵ².^(-1)) # for normalization, Eq. 21
     L = log10(sqrt(σ²_avrg)*sqrt(α²))
-
-    return L
 end
 
+function fiducial_pairwise_dist_sqrd(fiducials, v, metric)
+    pd = zero(eltype(fiducials[1]))
+    pd += 2evaluate(metric, v, v)^2
+    for (i, v1) in enumerate(fiducials)
+        pd += 2evaluate(metric, v1, v)^2
+        for j in i+1:length(fiducials)
+            @inbounds pd += 2evaluate(metric, v1, fiducials[j])^2
+        end
+    end
+    return sum(pd)
+end
 
 """
-    comp_Ek2(Y,v,NNidxs,T,K,metric) → E²(T)
+    comp_Ek2!(ϵ_ball,u_k,Y,v,NNidxs,T,K,metric) → E²(T)
 Returns the approximated conditional variance for a specific point in phase space
 `ns` (index value) with its `K`-nearest neighbors, which indices are stored in
 `NNidxs`, for a time horizon `T`. This corresponds to Eqs. 13 & 14 in [^Uzal2011].
 The norm specified in input parameter `metric` is used for distance computations.
 """
-function comp_Ek2(Y, ns::Int, NNidxs, T::Int, K::Int, metric)
+function comp_Ek2!(ϵ_ball, u_k, Y, ns::Int, NNidxs, T::Int, K::Int, metric)
     # determine neighborhood `T` time steps ahead
-    ϵ_ball = zeros(K+1, size(Y,2)) # preallocation
-    ϵ_ball[1,:] = Y[ns+T]
-    ϵ_ball[2:K+1,:] = vcat(transpose(Y[NNidxs.+T])...)
+    ϵ_ball[1, :] .= Y[ns+T]
+    @inbounds for (i, j) in enumerate(NNidxs)
+        ϵ_ball[i+1, :] .= Y[j + T]
+    end
 
     # compute center of mass
-    u_k = sum(ϵ_ball,dims=1) ./ (K+1) # Eq. 14
+    @inbounds for i in 1:size(Y)[2]; u_k[i] = sum(view(ϵ_ball, :, i))/(K+1); end # Eq. 14
 
     E²_sum = 0
-    for j = 1:K+1
-        E²_sum += (evaluate(metric,ϵ_ball[j,:],u_k))^2
+    @inbounds for j = 1:K+1
+        E²_sum += (evaluate(metric, view(ϵ_ball, j, :), u_k))^2
     end
     E² = E²_sum / (K+1)         # Eq. 13
+end
+
+
+"""
+    uzal_cost_local(Y::Dataset; kwargs...) → L_local
+Compute the local L-statistic `L_local` for input dataset `Y` according to
+Uzal et al.[^Uzal2011]. The length of `L_local` is `length(Y)-Tw` and
+denotes a value of the local cost-function to each of the points of the
+phase space trajectory.
+
+In contrast to [`uzal_cost`](@ref) `σ²` here
+does not get averaged over all the phase space reference points on the attractor.
+Therefore, the mean of 'L_local' is different to `L`,
+when calling `uzal_cost`, since the averaging is performed before logarithmizing.
+
+Keywords are
+`K = 3, metric = Euclidean(), w = 1, Tw = 40` as in [`uzal_cost`](@ref).
+
+[^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
+"""
+function uzal_cost_local(Y::Dataset{D, ET};
+        Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Real = 0.5,
+        metric = Euclidean()
+    ) where {D, ET}
+
+    # select a random phase space vector sample according to input samplesize
+    NN = length(Y)-Tw;
+    NNN = floor(Int, samplesize*NN)
+    ns = sample(1:NN, NNN; replace=false) # the fiducial point indices
+
+    vs = Y[ns] # the fiducial points in the data set
+
+    vtree = KDTree(Y[1:end-Tw], metric)
+    allNNidxs, allNNdist = all_neighbors(vtree, vs, ns, K, w)
+    ϵ² = zeros(NNN)             # neighborhood size
+    E²_avrg = zeros(NNN)        # averaged conditional variance
+    E² = zeros(Tw)
+    ϵ_ball = zeros(ET, K+1, D) # preallocation
+    u_k = zeros(ET, D)
+
+    # loop over each fiducial point
+    for (i,v) in enumerate(vs)
+        NNidxs = allNNidxs[i] # indices of k nearest neighbors to v
+        # pairwise distance of fiducial points and `v`
+        pdsqrd = fiducial_pairwise_dist_sqrd(view(Y.data, NNidxs), v, metric)
+        ϵ²[i] = (2/(K*(K+1))) * pdsqrd  # Eq. 16
+        # loop over the different time horizons
+        for T = 1:Tw
+            E²[T] = comp_Ek2!(ϵ_ball, u_k, Y, ns[i], NNidxs, T, K, metric) # Eqs. 13 & 14
+        end
+        # Average E²[T] over all prediction horizons
+        E²_avrg[i] = mean(E²)                   # Eq. 15
+    end
+    σ² = E²_avrg ./ ϵ² # noise amplification σ², Eq. 17
+    α² = 1 / sum(ϵ².^(-1)) # for normalization, Eq. 21
+    L_local = log10.(sqrt.(σ²).*sqrt(α²))
+    return L_local
 end

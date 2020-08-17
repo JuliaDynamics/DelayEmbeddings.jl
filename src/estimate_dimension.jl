@@ -94,6 +94,7 @@ function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Euclidean()) wher
 end
 # then use function `saturation_point(γs, E1s)` from ChaosTools
 
+# TODO: This algorithm needs to be re-written on Neighborhood.jl.
 function _average_a(s::AbstractVector{T},γ,τ,metric) where {T}
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
     Rγ = reconstruct(s[1:end-τ],γ,τ)
