@@ -1,10 +1,8 @@
-using DelayEmbeddings, DynamicalSystemsBase, DelimitedFiles
+using DelayEmbeddings, DynamicalSystemsBase
 using DifferentialEquations
-using Distances
 using Random
 using Test
-using Peaks
-using BenchmarkTools
+import Peaks
 
 
 @testset "Pecora" begin
@@ -37,7 +35,6 @@ samplesize = 0.05
 
 
 τs = (0,)
-@code_warntype pecora(s, τs; delays = 0:Tmax, w = optimal_τ, samplesize = samplesize, K = K, metric = metric, undersampling = UNDERSAMPLING)
 es_ref, Γs = pecora(s, τs; delays = 0:Tmax, w = optimal_τ, samplesize = samplesize, K = K, metric = metric, undersampling = UNDERSAMPLING)
 max1 = Peaks.maxima(vec(es_ref))
 @test max1[1]-1 == optimal_τ

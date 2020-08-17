@@ -170,7 +170,7 @@ between the components of the existing embedding and one additional timeseries.
 The returned results are *matrices* with size `T`x`J`.
 
 ## Keyword arguments
-* `delays = 0:50`: Considered time delay values `delays` (in sampling time units).
+* `delays = 0:50`: Possible time delay values `delays` (in sampling time units).
   For each of the `τ`'s in `delays` the continuity-statistic `⟨ε★⟩` gets computed.
   If `undersampling = true` (see further down), also the undersampling statistic
   `⟨Γ⟩` gets returned for all considered delay values.
