@@ -156,56 +156,41 @@ Keywords are
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost_local(Y::Dataset ; Tw::Int = 40, K::Int = 3, w::Int = 1,
-    metric = Euclidean())
+function uzal_cost_local(Y::Dataset{D, ET};
+        Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Real = 0.5,
+        metric = Euclidean()
+    ) where {D, ET}
 
-    # select a random phase space vector sample according to input `SampleSize
+    # select a random phase space vector sample according to input samplesize
     NN = length(Y)-Tw;
-    ns = 1:NN
+    NNN = floor(Int, samplesize*NN)
+    ns = sample(1:NN, NNN; replace=false) # the fiducial point indices
 
     vs = Y[ns] # the fiducial points in the data set
 
-    # tree for input data
     vtree = KDTree(Y[1:end-Tw], metric)
     allNNidxs, allNNdist = all_neighbors(vtree, vs, ns, K, w)
-
-    # preallocation
-    ϵ² = zeros(NN)             # neighborhood size
-    E²_avrg = zeros(NN)        # averaged conditional variance
+    ϵ² = zeros(NNN)             # neighborhood size
+    E²_avrg = zeros(NNN)        # averaged conditional variance
+    E² = zeros(Tw)
+    ϵ_ball = zeros(ET, K+1, D) # preallocation
+    u_k = zeros(ET, D)
 
     # loop over each fiducial point
     for (i,v) in enumerate(vs)
         NNidxs = allNNidxs[i] # indices of k nearest neighbors to v
-        NNdist = allNNdist[i] # k nearest neighbor distances to v
-
-        # construct neighborhood for this fiducial point
-        neighborhood = zeros(K+1,size(Y,2))
-        neighborhood[1,:] = v  # the fiducial point is included in the neighborhood
-        neighborhood[2:K+1,:] = vcat(transpose(Y[NNidxs])...)
-
-        # estimate size of the neighborhood
-        pd = pairwise(metric,neighborhood, dims = 1)
-        ϵ²[i] = (2/(K*(K+1))) * sum(pd.^2)  # Eq. 16
-
-        # estimate E²[T]
-        E² = zeros(Tw)   # preallocation
+        # pairwise distance of fiducial points and `v`
+        pdsqrd = fiducial_pairwise_dist_sqrd(view(Y.data, NNidxs), v, metric)
+        ϵ²[i] = (2/(K*(K+1))) * pdsqrd  # Eq. 16
         # loop over the different time horizons
         for T = 1:Tw
-            E²[T] = comp_Ek2(Y,ns[i],NNidxs,T,K,metric) # Eqs. 13 & 14
+            E²[T] = comp_Ek2!(ϵ_ball, u_k, Y, ns[i], NNidxs, T, K, metric) # Eqs. 13 & 14
         end
         # Average E²[T] over all prediction horizons
         E²_avrg[i] = mean(E²)                   # Eq. 15
-
     end
-
-    # compute the noise amplification σ²
-    σ² = E²_avrg ./ ϵ²                          # Eq. 17
-
-    # compute α² for normalization
-    α² = 1 / sum(ϵ².^(-1))                      # Eq. 21
-
-    # output of local cost function
+    σ² = E²_avrg ./ ϵ² # noise amplification σ², Eq. 17
+    α² = 1 / sum(ϵ².^(-1)) # for normalization, Eq. 21
     L_local = log10.(sqrt.(σ²).*sqrt(α²))
-
     return L_local
 end
