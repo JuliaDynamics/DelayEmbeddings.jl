@@ -80,16 +80,11 @@ function mdop_embedding(s::Vector{T};
     # loop over increasing embedding dimensions until some break criterion will
     # tell the loop to stop/break (and thus an embedding has been achieved)
     while flag
-        β = beta_statistic(Y_act, s; τs = τs, w = w)
+        β = beta_statistic(Y_act, s, τs, w)
         βS[:, counter] = β
 
         # determine the optimal tau value from the β-statistic
         maxi, max_idx = findmax(β)
-        if length(max_idx) == 0
-            flag = false
-            println("Algorithm could not pick a delay value from β-statistic. Increase the considered delays in `τs`-input. NO valid embedding achieved")
-            continue
-        end
         # store chosen delay (and chosen time series)
         push!(τ_vals, τs[max_idx])
         push!(ts_vals, 1)
@@ -252,7 +247,7 @@ function mdop_maximum_delay(s::Dataset{D,T}, tw=1:50, samplesize::Real=1) where 
     τs_max = zeros(Int,D)
     Ls = zeros(T, length(tw), D)
     @inbounds for i = 1:D
-        τs_max[i], Ls[:, i] = mdop_maximum_delay(vec(s[:,i]); tw = tw, samplesize = samplesize)
+        τs_max[i], Ls[:, i] = mdop_maximum_delay(vec(s[:,i]), tw, samplesize)
     end
     return maximum(τs_max), Ls
 end

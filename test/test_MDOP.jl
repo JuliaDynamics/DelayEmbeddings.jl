@@ -2,7 +2,6 @@
 using DynamicalSystemsBase
 using DelayEmbeddings
 using Test
-using DelimitedFiles
 using DelayDiffEq
 
 println("\nTesting mdop_embedding.jl...")
@@ -135,12 +134,12 @@ sroe = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
 
 tws = 32:36
 
-@inferred mdop_maximum_delay(sroe[:,2]; tw = tws, samplesize=1.0)
-@inferred mdop_maximum_delay(Dataset(sroe[:,2]); tw = tws, samplesize=1.0)
+@inferred mdop_maximum_delay(sroe[:,2], tws)
+@inferred mdop_maximum_delay(Dataset(sroe[:,2]), tws)
 
-τ_m, L = mdop_maximum_delay(sroe[:,2]; tw = tws, samplesize = 1)
+τ_m, L = mdop_maximum_delay(sroe[:,2], tws)
 @test τ_m == 34
-τ_m, Ls = mdop_maximum_delay(Dataset(sroe[:,1:2]); tw = tws, samplesize=1.0)
+τ_m, Ls = mdop_maximum_delay(Dataset(sroe[:,1:2]), tws)
 @test τ_m == 34
 
 # # reproduce Fig.2 of the paper
