@@ -9,7 +9,7 @@ export garcia_embedding_cycle
 
 
 """
-    garcia_almeida_embed(s; kwargs...) → Y, τ_vals, ts_vals, FNNs ,NS
+    garcia_almeida_embedding(s; kwargs...) → Y, τ_vals, ts_vals, FNNs ,NS
 A unified approach to properly embed a time series (`Vector` type) or a
 set of time series (`Dataset` type) based on the papers of Garcia & Almeida
 [^Garcia2005a],[^Garcia2005b].
