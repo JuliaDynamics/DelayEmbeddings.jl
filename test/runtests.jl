@@ -10,6 +10,7 @@ include("delaytime_test.jl")
 include("delaycount_test.jl")
 # include("test_pecora.jl")
 include("uzal_cost_test.jl")
+include("mdop_tests.jl")
 
 ti = time() - ti
 println("\nTest took total time of:")
