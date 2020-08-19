@@ -1,8 +1,6 @@
 using DynamicalSystemsBase
 using DelayEmbeddings
-using StatsBase
 using Test
-using Statistics
 using Random
 
 println("\nTesting uzal_cost.jl...")
