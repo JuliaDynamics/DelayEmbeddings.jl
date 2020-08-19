@@ -228,7 +228,7 @@ function _compare_first_nn(s, γ::Int, τ::Int, Rγ::Dataset{D,T}, metric) where
 end
 
 """
-    fnn_embedding_cycle(NNdist, NNdistnew; r=2) -> FNNs
+    fnn_embedding_cycle(NNdist, NNdistnew, r=2) -> FNNs
 Compute the amount of false nearest neighbors `FNNs`, when adding another component
 to a given (vector-) time series. This new component is the `τ`-lagged version
 of a univariate time series. `NNdist` is storing the distances of the nearest
@@ -238,7 +238,7 @@ dimension higher using a given `τ`. The obligatory threshold `r` is by default
 set to 2.
 [^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
-function fnn_embedding_cycle(NNdist::T, NNdistnew::T; r::Real=2) where {T}
+function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
     @assert length(NNdist) == length(NNdistnew) "Both input vectors need to store the same number of distances."
 
     # convert array of arrays into simple vectors, since we only look at K=1
