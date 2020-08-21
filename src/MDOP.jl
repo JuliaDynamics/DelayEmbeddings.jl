@@ -250,10 +250,11 @@ timeseries of that Dataset and the maximum value will be returned. The returned
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
 function mdop_maximum_delay(s::Vector{T}, tw=1:50, samplesize::Real=1) where {T<:Real}
+    @assert all(x -> x ≥ 0, tw)
     L = zeros(T, length(tw))
     counter = 1
     for i in tw
-        Y_act = embed(s,i,1)
+        i==1 ? Y_act = Dataset(s) : Y_act = embed(s,i,1)
         L[counter] = uzal_cost(Y_act; samplesize = samplesize)
         counter +=1
     end
