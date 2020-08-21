@@ -3,35 +3,42 @@ using DynamicalSystemsBase
 using DelayEmbeddings
 using Test
 using DelayDiffEq
+using DelimitedFiles
 
 println("\nTesting mdop_embedding.jl...")
 @testset "Nichkawde method MDOP" begin
 
-# solve Mackey-Glass-Delay Diff.Eq. as in the Paper
-function mackey_glass(du,u,h,p,t)
-  beta,n,gamma,tau = p
-  hist = h(p, t-tau)[1]
-  du[1] = (beta*hist)/(1+hist^n) - gamma * u[1]
-end
-# set parameters
-h(p,t) = 0
-tau_d = 44
-n = 10
-β = 0.2
-γ = 0.1
-δt = 0.5
-p = (β,n,γ,tau_d)
+# For comparison reasons using Travis CI we carry out the integration on a UNIX
+# OS and save the resulting time series
+# # solve Mackey-Glass-Delay Diff.Eq. as in the Paper
+# function mackey_glass(du,u,h,p,t)
+#   beta,n,gamma,tau = p
+#   hist = h(p, t-tau)[1]
+#   du[1] = (beta*hist)/(1+hist^n) - gamma * u[1]
+# end
+# # set parameters
+# h(p,t) = 0
+# tau_d = 44
+# n = 10
+# β = 0.2
+# γ = 0.1
+# δt = 0.5
+# p = (β,n,γ,tau_d)
+#
+# # time span
+# tspan = (0.0, 12000.0)
+# u0 = [1.0]
+#
+# prob = DDEProblem(mackey_glass,u0,h,tspan,p; constant_lags=tau_d)
+# alg = MethodOfSteps(Tsit5())
+# sol = solve(prob,alg; adaptive=false, dt=δt)
+#
+# s = [u[1] for u in sol.u]
+# s = s[4001:end]
+# writedlm("mackey_glass_ts.csv",s)
 
-# time span
-tspan = (0.0, 12000.0)
-u0 = [1.0]
-
-prob = DDEProblem(mackey_glass,u0,h,tspan,p; constant_lags=tau_d)
-alg = MethodOfSteps(Tsit5())
-sol = solve(prob,alg; adaptive=false, dt=δt)
-
-s = [u[1] for u in sol.u]
-s = s[4001:end]
+s = readdlm("mackey_glass_ts.csv")
+s = vec(s)
 Y = Dataset(s)
 
 theiler = 57
@@ -85,14 +92,14 @@ end
 @testset "mdop_embedding univariate" begin
 
 taus = 0:100
-# @code_warntype mdop_embedding(s; τs = taus, w = theiler, β_condition=true)
+β = DelayEmbeddings.beta_statistic(Y, s, taus, theiler)
 Y, τ_vals, ts_vals, FNNs, betas = mdop_embedding(s; τs = taus, w = theiler)
 # for different τs
 taus2 = 1:4:100
 Y2, τ_vals2, ts_vals2, FNNs2, betas2 = mdop_embedding(s; τs = taus2, w = theiler)
 
 @test round.(β, digits=6) == round.(betas[:,1], digits=6)
-@test size(Y,2) ∈ 5:7
+@test size(Y,2) == 5
 @test size(Y,2) == size(Y2,2)
 @test sum(findall(x -> x != 1, ts_vals))==0
 @test sum(abs.(diff(τ_vals)) .< 10) == 0
@@ -129,17 +136,18 @@ Y2, τ_vals2, ts_vals2, FNNs2, betas2 = mdop_embedding(s; τs = taus2, w = theil
 end
 
 @testset "estimate τ max (Roessler)" begin
-roe = Systems.roessler([0.1;0;0])
-sroe = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
+# For comparison reasons using Travis CI we carry out the integration on a UNIX
+# OS and save the resulting time series
+# roe = Systems.roessler([0.1;0;0])
+# sroe = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
+# writedlm("roessler_mdop_ts.csv", sroe)
 
+sroe = readdlm("roessler_mdop_ts.csv")
 tws = 32:36
 
-@inferred mdop_maximum_delay(sroe[:,2], tws)
-@inferred mdop_maximum_delay(Dataset(sroe[:,2]), tws)
-
-τ_m, L = mdop_maximum_delay(sroe[:,2], tws)
+τ_m, L = @inferred mdop_maximum_delay(sroe[:,2], tws)
 @test τ_m == 34
-τ_m, Ls = mdop_maximum_delay(Dataset(sroe[:,1:2]), tws)
+τ_m, Ls = @inferred mdop_maximum_delay(Dataset(sroe[:,1:2]), tws)
 @test τ_m == 34
 
 # # reproduce Fig.2 of the paper
