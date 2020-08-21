@@ -2,6 +2,7 @@ using DynamicalSystemsBase
 using DelayEmbeddings
 using Test
 using Random
+using DelimitedFiles
 
 println("\nTesting uzal_cost.jl...")
 @testset "Uzal cost" begin
@@ -44,53 +45,70 @@ println("\nTesting uzal_cost.jl...")
 end
 
 @testset "Lorenz system" begin
-## Simple Check on Lorenz System
-lo = Systems.lorenz([0, 10.0, 0.0])
-tr = trajectory(lo, 10; dt = 0.01, Ttr = 10)
+    ## Simple Check on Lorenz System
 
-# check Euclidean metric
-L = uzal_cost(tr;
-    Tw = 60, K= 3, w = 12, samplesize = 1.0,
-    metric = Euclidean()
-)
-L_max = -2.411
-L_min = -2.412
-@test L_min < L < L_max
-@test L ≈ -2.411081390295944
+    # For comparison reasons using Travis CI we carry out the integration on a UNIX
+    # OS and save the resulting time series
+    # lo = Systems.lorenz([0, 10.0, 0.0])
+    # tr = trajectory(lo, 10; dt = 0.01, Ttr = 10)
+    # writedlm("lorenz_uzal_1.csv", tr)
 
-# using BenchmarkTools
-# @btime uzal_cost($tr; Tw = 60, K = 3, w = 12, samplesize = 1.0, metric = Euclidean())
+    tr = readdlm("lorenz_uzal_1.csv")
+    tr = Dataset(tr)
+
+    # check Euclidean metric
+    L = uzal_cost(tr;
+        Tw = 60, K= 3, w = 12, samplesize = 1.0,
+        metric = Euclidean()
+    )
+    L_max = -2.411
+    L_min = -2.412
+    @test L_min < L < L_max
+    @test L ≈ -2.411081390295944
+
+    # using BenchmarkTools
+    # @btime uzal_cost($tr; Tw = 60, K = 3, w = 12, samplesize = 1.0, metric = Euclidean())
 end
 
 @testset "Uzal local cost (Lorenz)" begin
-lo = Systems.lorenz([0, 10.0, 0.0])
-tr = trajectory(lo, 10; dt = 0.01, Ttr = 10)
+    tr = readdlm("lorenz_uzal_1.csv")
+    tr = Dataset(tr)
 
-# check local cost function output
-Tw = 60
-L = uzal_cost(tr;
+    # check local cost function output
+    Tw = 60
+    L = uzal_cost(tr;
+        Tw = Tw, K= 3, w = 12, samplesize = 1.0,
+        metric = Euclidean()
+    )
+    L_local= uzal_cost_local(tr; Tw = Tw, K= 3, samplesize = 1.0,w = 12, metric = Euclidean())
+    @test length(L_local) == length(tr)-Tw
+    @test maximum(L_local)>L
+    @test minimum(L_local)<L
+
+    # check Maximum metric
+    L = uzal_cost(tr;
     Tw = Tw, K= 3, w = 12, samplesize = 1.0,
-    metric = Euclidean()
-)
-L_local= uzal_cost_local(tr; Tw = Tw, K= 3, samplesize = 1.0,w = 12, metric = Euclidean())
-@test length(L_local) == length(tr)-Tw
-@test maximum(L_local)>L
-@test minimum(L_local)<L
-
-# check Maximum metric
-L = uzal_cost(tr;
-Tw = Tw, K= 3, w = 12, samplesize = 1.0,
-metric = Chebyshev()
-)
-L_max = -2.475
-L_min = -2.485
+    metric = Chebyshev()
+    )
+    L_max = -2.475
+    L_min = -2.485
 end
 
 @testset "Roessler system" begin
+    # For comparison reasons using Travis CI we carry out the integration on a UNIX
+    # OS and save the resulting time series
+
     ## Test Roessler example as in Fig. 7 in the paper with internal data
-    ro = Systems.roessler([1.0, 1.0, 1.0], a=0.15, b = 0.2, c=10)
-    tr = trajectory(ro, 1250; dt = 0.125, Ttr = 10)
-    x = tr[:,1]
+    # ro = Systems.roessler([1.0, 1.0, 1.0], a=0.15, b = 0.2, c=10)
+    # tr = trajectory(ro, 1250; dt = 0.125, Ttr = 10)
+    # x = tr[:,1]
+    # writedlm("roessler_uzal_ts.csv", x)
+    # writedlm("roessler_uzal_tr.csv", tr)
+
+    x = readdlm("roessler_uzal_ts.csv")
+    x = vec(x)
+    tr = readdlm("roessler_uzal_tr.csv")
+    tr = Dataset(tr)
 
     # theiler window
     w  = 12
@@ -240,88 +258,91 @@ end
 
 ## Test Lorenz example as in Fig. 7 in the paper with internal data
 @testset "Lorenz fig. 7." begin
-lo = Systems.lorenz([1.0, 1.0, 50.0])
-tr = trajectory(lo, 100; dt = 0.01, Ttr = 10)
-x = tr[:, 1]
+    # For comparison reasons using Travis CI we carry out the integration on a UNIX
+    # OS and save the resulting time series
+    # lo = Systems.lorenz([1.0, 1.0, 50.0])
+    # tr = trajectory(lo, 100; dt = 0.01, Ttr = 10)
+    # x = tr[:, 1]
+    # writedlm("lorenz_uzal_2.csv", x)
 
-# theiler window
-w  = 12
-# Time horizon
-Tw = 80
-# sample size
-SampleSize = 1.0
-# metric
-metric = Euclidean()
-# embedding dimension
-m = 3
-# maximum neighbours
-k_max = 4
-# number of total trials
-trials = 16
+    x = readdlm("lorenz_uzal_2.csv")
+    x = vec(x)
 
-# preallocation
-L = zeros(k_max,trials)
-tw_max = zeros(trials)
+    # theiler window
+    w  = 12
+    # Time horizon
+    Tw = 80
+    # sample size
+    SampleSize = 1.0
+    # metric
+    metric = Euclidean()
+    # embedding dimension
+    m = 3
+    # maximum neighbours
+    k_max = 4
+    # number of total trials
+    trials = 16
 
-for K = 1:k_max
-    for i = 1:trials
-        tw_max[i] = i*(m-1)
-        Y = embed(x,m,i)
-        L[K,i] = uzal_cost(Y; Tw=Tw, K=K, w=w, samplesize=SampleSize, metric=metric)
+    # preallocation
+    L = zeros(k_max,trials)
+    tw_max = zeros(trials)
+
+    for K = 1:k_max
+        for i = 1:trials
+            tw_max[i] = i*(m-1)
+            Y = embed(x,m,i)
+            L[K,i] = uzal_cost(Y; Tw=Tw, K=K, w=w, samplesize=SampleSize, metric=metric)
+        end
     end
-end
 
-# For the following 3 tests, there is a numeric inconsistency on Travis.
-# We can pass the tests locally for sensible `tau_min, tau_max`, but Travis
-# disagrees with our values for some reason. Must investigate further in the future.
-tau_min = 0
-tau_max = Inf
-min1_idx = sortperm(L[1,:])
-min1 = tw_max[min1_idx[1]]
-@test tau_min < min1 < tau_max
-L_max = -2.3
-@test L[1,min1_idx[1]] < L_max
+    tau_min = 9
+    tau_max = 11
+    min1_idx = sortperm(L[1,:])
+    min1 = tw_max[min1_idx[1]]
+    @test tau_min < min1 < tau_max
+    L_max = -2.3
+    @test L[1,min1_idx[1]] < L_max
 
-tau_min = 0
-tau_max = Inf
-min2_idx = sortperm(L[2,:])
-min2 = tw_max[min2_idx[1]]
-@test tau_min < min2 < tau_max
-L_max = -2.0
-@test L[2,min2_idx[1]] < L_max
+    tau_min = 22
+    tau_max = 25
+    min2_idx = sortperm(L[2,:])
+    min2 = tw_max[min2_idx[1]]
+    @test tau_min < min2 < tau_max
+    L_max = -2.0
+    @test L[2,min2_idx[1]] < L_max
 
-tau_min = 19
-tau_max = 22
-min3_idx = sortperm(L[3,:])
-min3 = tw_max[min3_idx[1]]
-@test tau_min < min3 < tau_max
-L_max = -1.9
-@test L[3,min3_idx[1]] < L_max
+    tau_min = 19
+    tau_max = 22
+    min3_idx = sortperm(L[3,:])
+    min3 = tw_max[min3_idx[1]]
+    @test tau_min < min3 < tau_max
+    L_max = -1.9
+    @test L[3,min3_idx[1]] < L_max
 
-tau_min = 0
-tau_max = Inf
-min4_idx = sortperm(L[4,:])
-min4 = tw_max[min4_idx[1]]
-@test tau_min < min4 < tau_max
-L_max = -1.8
-@test L[4,min4_idx[1]] < L_max
+    tau_min = 20
+    tau_max = 24
+    min4_idx = sortperm(L[4,:])
+    min4 = tw_max[min4_idx[1]]
+    @test tau_min < min4 < tau_max
+    L_max = -1.8
+    @test L[4,min4_idx[1]] < L_max
 
-# # plot results using PyPlot
-# using PyPlot
-# pygui(true)
-# labels = ["k=1", "k=2", "k=3", "k=4"]
-# figure()
-# plot(tw_max,L[1,:], linewidth = 2)
-# plot(tw_max,L[2,:], linewidth = 2)
-# plot(tw_max,L[3,:], linewidth = 2)
-# plot(tw_max,L[4,:], linewidth = 2)
-# xlabel(L"$t_w$")
-# ylabel(L"$L_k$")
-# legend(labels)
-# xticks(0:2:32)
-# #yscale("symlog")
-# title("Lorenz System as in Fig. 7(a) in the Uzal Paper")
-# grid()
+    # # plot results using PyPlot
+    # using PyPlot
+    # pygui(true)
+    # labels = ["k=1", "k=2", "k=3", "k=4"]
+    # figure()
+    # plot(tw_max,L[1,:], linewidth = 2)
+    # plot(tw_max,L[2,:], linewidth = 2)
+    # plot(tw_max,L[3,:], linewidth = 2)
+    # plot(tw_max,L[4,:], linewidth = 2)
+    # xlabel(L"$t_w$")
+    # ylabel(L"$L_k$")
+    # legend(labels)
+    # xticks(0:2:32)
+    # #yscale("symlog")
+    # title("Lorenz System as in Fig. 7(a) in the Uzal Paper")
+    # grid()
 end
 
 
