@@ -251,11 +251,13 @@ function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
         if NNdist[i][1] < (1/r)
             fnns2 +=1
         end
-        if fnns==0
-            return 1
-        else
-            return fnns/fnns2
-        end
+    end
+    display(fnns)
+    display(fnns2)
+    if fnns==0
+        return 1
+    else
+        return fnns/fnns2
     end
 end
 
