@@ -45,7 +45,7 @@ function mutinfo(k, Xm::Vararg{<:AbstractVector,M}) where M
 
     I = digamma(k) - (M-1)/k + (M-1)*digamma(N)
 
-    nns = (x = knn(tree, d.data, k)[1]; [ind[1] for ind in x])
+    nns = (x = NearestNeighbors.knn(tree, d.data, k)[1]; [ind[1] for ind in x])
 
     I_itr = zeros(M)
     # Makes more sense computationally to loop over N rather than M
