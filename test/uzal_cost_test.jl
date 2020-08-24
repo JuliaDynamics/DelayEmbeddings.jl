@@ -68,7 +68,7 @@ end
 
     # check Maximum metric
     L = uzal_cost(tr;
-        Tw = Tw, K= 3, w = 12, samplesize = 1.0,
+        Tw = 60, K= 3, w = 12, samplesize = 1.0,
         metric = Chebyshev()
     )
     @test L_min < L < L_max
