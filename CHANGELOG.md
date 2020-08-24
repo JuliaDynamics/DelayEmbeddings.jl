@@ -1,3 +1,7 @@
+# v1.10.0
+* Chetan Nichkawde method for delay coordinates embedding.
+* New `hcat` function for delay coordinates construction: `hcat_lagged_values`
+
 # v1.9.0
 * New `uzal_cost_local`: Local version of `uzal_cost` function.
 # v1.8.0

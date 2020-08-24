@@ -233,23 +233,6 @@ function pecora(
     return all_ε★, all_Γ
 end
 
-"""
-    all_neighbors(vtree, vs, ns, K, w)
-Return the `maximum(K)`-th nearest neighbors for all input points `vs`, with indices `ns` in
-original data, while respecting the theiler window `w`.
-"""
-function all_neighbors(vtree, vs, ns, K, w)
-    k, sortres, N = maximum(K), true, length(vs)
-    dists = [Vector{eltype(vs[1])}(undef, k) for _ in 1:N]
-    idxs = [Vector{Int}(undef, k) for _ in 1:N]
-    for i in 1:N
-        # The skip predicate also skips the point itself for w ≥ 0
-        skip = j -> ns[i] - w ≤ j ≤ ns[i] + w
-        NearestNeighbors.knn_point!(vtree, vs[i], sortres, dists[i], idxs[i], skip)
-    end
-    return idxs, dists
-end
-
 maxdimspan(s) = 1:size(s)[2]
 maxdimspan(s::AbstractVector) = 1
 columns(s::AbstractVector) = (s, )

@@ -8,6 +8,11 @@ export minmaxima, columns, regularize
 
 abstract type AbstractDataset{D, T} end
 
+@inline dimension(::AbstractDataset{D,T}) where {D,T} = D
+@inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T
+import Base: ==
+==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
+
 # Size:
 @inline Base.length(d::AbstractDataset) = length(d.data)
 @inline Base.size(d::AbstractDataset{D,T}) where {D,T} = (length(d.data), D)
@@ -18,6 +23,8 @@ abstract type AbstractDataset{D, T} end
 @inline Base.eachindex(D::AbstractDataset) = Base.OneTo(length(D.data))
 @inline Base.iterate(d::AbstractDataset, state = 1) = iterate(d.data, state)
 @inline Base.eltype(::Type{<:AbstractDataset{D, T}}) where {D, T} = SVector{D, T}
+Base.eachcol(ds::AbstractDataset) = (ds[:, i] for i in 1:size(ds, 2))
+Base.eachrow(ds::AbstractDataset) = ds.data
 
 # 1D indexing over the container elements:
 @inline Base.getindex(d::AbstractDataset, i) = d.data[i]
@@ -58,15 +65,6 @@ function Base.getindex(d::AbstractDataset{D,T}, i::AbstractVector{Int},
     return Dataset(transpose(ret))
 end
 
-function mygetindex(d::AbstractDataset{D,T}, I::AbstractVector{Int},
-    J::AbstractVector{Int}) where {D,T}
-
-    L = length(J)
-    sind::SVector{L, Int} = SVector{L, Int}(J)
-
-    return Base.getindex(d, I, sind)
-end
-
 function Base.getindex(d::AbstractDataset{D,T},
     ::Colon, j::AbstractVector{Int}) where {D, T}
     return Base.getindex(d, 1:length(d), j)
@@ -82,15 +80,25 @@ function columns end
     quote tuple($(gens...)) end
 end
 
-# Other commonly used functions:
+###########################################################################
+# appending data
+###########################################################################
 Base.append!(d1::AbstractDataset, d2::AbstractDataset) = append!(d1.data, d2.data)
 Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
-@inline dimension(::AbstractDataset{D,T}) where {D,T} = D
-@inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T
-import Base: ==
-==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
-Base.eachcol(ds::AbstractDataset) = (ds[:, i] for i in 1:size(ds, 2))
-Base.eachrow(ds::AbstractDataset) = ds.data
+
+function Base.hcat(d::AbstractDataset{D, T}, x::Vector{<:Real}) where {D, T}
+    L = length(d)
+    L == length(x) || error("dataset and vector must be of same length")
+    data = Vector{SVector{D+1, T}}(undef, L)
+    @inbounds for i in 1:L
+        data[i] = SVector{D+1, T}(d[i]..., x[i])
+    end
+    return Dataset(data)
+end
+
+###########################################################################
+# Concrete implementation
+###########################################################################
 
 """
     Dataset{D, T} <: AbstractDataset{D,T}
@@ -100,6 +108,9 @@ It contains *equally-sized datapoints* of length `D`, represented by `SVector{D,
 When indexed with 1 index, a `dataset` is like a vector of datapoints.
 When indexed with 2 indices it behaves like a matrix that has each of the columns be the
 timeseries of each of the variables.
+
+`Dataset` also supports most sensible operations like `append!, push!, hcat, eachrow`,
+among others.
 
 ## Description of indexing
 In the following let `i, j` be integers,  `typeof(data) <: AbstractDataset`
@@ -133,7 +144,7 @@ Dataset(s::Dataset) = s
 ###########################################################################
 # Dataset(Vectors of stuff)
 ###########################################################################
-Dataset{1, T}(s::AbstractVector{T}) where {T<:Number} =
+Dataset(s::AbstractVector{T}) where {T<:Number} =
 Dataset{1, T}(reinterpret(SVector{1, T}, s))
 
 function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
@@ -151,9 +162,8 @@ end
 
 @generated function _dataset(vecs::Vararg{<:AbstractVector{T},D}) where {D, T}
     gens = [:(vecs[$k][i]) for k=1:D]
-
     quote
-        L = length(vecs[1])
+        L = minimum(length(x) for x in vecs)
         data = Vector{SVector{$D, T}}(undef, L)
         for i in 1:L
             @inbounds data[i] = SVector{$D, T}($(gens...))
@@ -292,7 +302,7 @@ using LinearAlgebra
     svd(d::AbstractDataset) -> U, S, Vtr
 Perform singular value decomposition on the dataset.
 """
-function svd(d::AbstractDataset)
+function LinearAlgebra.svd(d::AbstractDataset)
     F = svd(Matrix(d))
     return F[:U], F[:S], F[:Vt]
 end
@@ -317,3 +327,9 @@ function regularized_timeseries(d::Dataset)
     end
     return xs, means, stds
 end
+
+"""
+    regularize(x::Vector) = (x - mean(x))/std(x)
+"""
+regularize(x::Vector) = regularize!(copy(x))
+regularize!(x::Vector) = (x .= (x .- mean(x))./std(x))
