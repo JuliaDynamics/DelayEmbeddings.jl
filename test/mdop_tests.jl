@@ -1,8 +1,6 @@
-# test mdop_embedding
 using DynamicalSystemsBase
 using DelayEmbeddings
 using Test
-using DelayDiffEq
 using DelimitedFiles
 
 println("\nTesting mdop_embedding.jl...")
@@ -35,9 +33,8 @@ println("\nTesting mdop_embedding.jl...")
 #
 # s = [u[1] for u in sol.u]
 # s = s[4001:end]
-# writedlm("mackey_glass_ts.csv",s)
 
-s = readdlm("mackey_glass_ts.csv")
+s = readdlm(joinpath(tsfolder, "1.csv"))
 s = vec(s)
 Y = Dataset(s)
 
@@ -138,17 +135,17 @@ end
 @testset "estimate τ max (Roessler)" begin
     # For comparison reasons using Travis CI we carry out the integration on a UNIX
     # OS and save the resulting time series
-    # roe = Systems.roessler([0.1;0;0])
-    # sroe = trajectory(roe, 500; dt = 0.05, Ttr = 10.0)
-    # writedlm("roessler_mdop_ts.csv", sroe)
+    # roe = Systems.roessler([1.0, 0, 0]; a=0.2, b=0.2, c=5.7)
+    # sroe = trajectory(roe, 500; dt = 0.05, Ttr = 100.0)
+    # writedlm("2.csv", sroe)
 
-    sroe = readdlm("roessler_mdop_ts.csv")
-    tws = 32:36
+    sroe = readdlm(joinpath(tsfolder, "2.csv"))
+    tws = 25:32
 
-    τ_m, L = @inferred mdop_maximum_delay(sroe[:,2], tws)
-    @test τ_m == 34
-    τ_m, Ls = @inferred mdop_maximum_delay(Dataset(sroe[:,1:2]), tws)
-    @test τ_m == 34
+    τ_m, L = @inferred mdop_maximum_delay(sroe[:, 2], tws)
+    @test τ_m == 26
+    τ_m, Ls = @inferred mdop_maximum_delay(Dataset(sroe[:, 1:2]), tws)
+    @test τ_m == 26
 
     # # reproduce Fig.2 of the paper
     # tws = 1:2:101
