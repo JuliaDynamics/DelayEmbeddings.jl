@@ -1,5 +1,4 @@
 using DelayEmbeddings, DynamicalSystemsBase
-using DifferentialEquations
 using Random
 using Test
 import Peaks
