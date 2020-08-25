@@ -69,12 +69,12 @@ end
 
 function neighborhood(point::AbstractVector, tree,
                       ntype::FixedSizeNeighborhood, n::Int, w::Int = 1)
-    idxs = inrange(tree, point, ntype.ε)
+    idxs = NearestNeighbors.inrange(tree, point, ntype.ε)
     filter!((el) -> abs(el - n) ≥ w, idxs)
     return idxs
 end
 function neighborhood(point::AbstractVector, tree, ntype::FixedSizeNeighborhood)
-    idxs = inrange(tree, point, ntype.ε)
+    idxs = NearestNeighbors.inrange(tree, point, ntype.ε)
     return idxs
 end
 
