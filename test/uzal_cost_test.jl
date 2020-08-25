@@ -44,38 +44,6 @@ println("\nTesting uzal_cost.jl...")
     @test L<-3
 end
 
-@testset "Lorenz system" begin
-    ## Simple Check on Lorenz System
-
-    # For comparison reasons using Travis CI we carry out the integration on a UNIX
-    # OS and save the resulting time series
-    # lo = Systems.lorenz([0, 10.0, 0.0])
-    # tr = trajectory(lo, 10; dt = 0.01, Ttr = 10)
-    # writedlm("lorenz_uzal_1.csv", tr)
-
-    tr = readdlm(joinpath(tsfolder, "3.csv"))
-    tr = Dataset(tr)
-
-    # check Euclidean metric
-    L = uzal_cost(tr;
-        Tw = 60, K= 3, w = 12, samplesize = 1.0,
-        metric = Euclidean()
-    )
-    L_max = -1.8
-    L_min = -2
-    @test L_min < L < L_max
-    @test L ≈ -1.8390494512811177
-
-    # check Maximum metric
-    L = uzal_cost(tr;
-        Tw = Tw, K= 3, w = 12, samplesize = 1.0,
-        metric = Chebyshev()
-    )
-    @test L_min < L < L_max
-    # using BenchmarkTools
-    # @btime uzal_cost($tr; Tw = 60, K = 3, w = 12, samplesize = 1.0, metric = Euclidean())
-end
-
 @testset "Uzal local cost (Lorenz)" begin
     tr = readdlm(joinpath(tsfolder, "3.csv"))
     tr = Dataset(tr)
@@ -253,8 +221,9 @@ end
 
 ## Test Lorenz example as in Fig. 7 in the paper with internal data
 @testset "Lorenz fig. 7." begin
-    lo = Systems.lorenz([1.0, 1.0, 50.0])
-    tr = trajectory(lo, 100; dt = 0.01, Ttr = 10)
+    # lo = Systems.lorenz([0, 10.0, 0.0]; σ=10, ρ=28, β=8/3)
+    # tr = trajectory(lo, 100; dt = 0.01, Ttr = 100)
+    tr = readdlm(joinpath(tsfolder, "4.csv"))
     x = tr[:, 1]
 
     # theiler window
@@ -276,43 +245,37 @@ end
     L = zeros(k_max,trials)
     tw_max = zeros(trials)
 
-    for K = 1:k_max
-        for i = 1:trials
-            tw_max[i] = i*(m-1)
-            Y = embed(x,m,i)
+    for i = 1:trials
+        tw_max[i] = i*(m-1)
+        Y = embed(x,m,i)
+        for K = 1:k_max
             L[K,i] = uzal_cost(Y; Tw=Tw, K=K, w=w, samplesize=SampleSize, metric=metric)
         end
     end
 
-    tau_min = 9
-    tau_max = 11
+    tau_min = 5
+    tau_max = 7
     min1_idx = sortperm(L[1,:])
     min1 = tw_max[min1_idx[1]]
     @test tau_min < min1 < tau_max
     L_max = -2.3
     @test L[1,min1_idx[1]] < L_max
 
-    tau_min = 22
-    tau_max = 25
     min2_idx = sortperm(L[2,:])
     min2 = tw_max[min2_idx[1]]
     @test tau_min < min2 < tau_max
     L_max = -2.0
     @test L[2,min2_idx[1]] < L_max
 
-    tau_min = 19
-    tau_max = 22
     min3_idx = sortperm(L[3,:])
     min3 = tw_max[min3_idx[1]]
-    @test tau_min < min3 < tau_max
+    @test 5 < min3 < 7
     L_max = -1.9
     @test L[3,min3_idx[1]] < L_max
 
-    tau_min = 20
-    tau_max = 24
     min4_idx = sortperm(L[4,:])
     min4 = tw_max[min4_idx[1]]
-    @test tau_min < min4 < tau_max
+    @test 5 < min4 < 7
     L_max = -1.8
     @test L[4,min4_idx[1]] < L_max
 
