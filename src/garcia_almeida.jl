@@ -2,7 +2,6 @@ using Neighborhood
 using NearestNeighbors
 using StatsBase
 using Distances
-import Peaks
 
 export garcia_almeida_embedding
 export n_statistic
