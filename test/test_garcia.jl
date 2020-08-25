@@ -46,7 +46,7 @@ end
     Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embedding(x; τs=0:100,  w = 1, T = 1)
 
     @test size(Y_act,2)==size(Y_act2,2)
-    @test 16 ≤ τ_vals[2] ≤ 18
+    @test 10 ≤ τ_vals[2] ≤ 18
     @test 1 ≤ τ_vals2[2] ≤ 3
     @test FNNs[end]<=0.05
     @test FNNs2[end]<=0.05
