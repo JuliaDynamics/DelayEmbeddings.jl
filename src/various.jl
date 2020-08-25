@@ -19,7 +19,7 @@ function min_pairwise_distance(cts::AbstractMatrix)
     min_d = Inf
     min_pair = (0, 0)
     for p in 1:size(cts, 2)
-        inds, dists = knn(tree, view(cts, :, p), 1, false, i -> i == p)
+        inds, dists = NearestNeighbors.knn(tree, view(cts, :, p), 1, false, i -> i == p)
         ind, dist = inds[1], dists[1]
         if dist < min_d
             min_d = dist
@@ -37,7 +37,7 @@ function min_pairwise_distance(
     min_d = eltype(pts[1])(Inf)
     min_pair = (0, 0)
     for p in 1:length(pts)
-        inds, dists = knn(tree, pts[p], 1, false, i -> i == p)
+        inds, dists = NearestNeighbors.knn(tree, pts[p], 1, false, i -> i == p)
         ind, dist = inds[1], dists[1]
         if dist < min_d
             min_d = dist
