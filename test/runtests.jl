@@ -18,7 +18,7 @@ include("dataset_tests.jl")
 include("embedding_tests.jl")
 include("delaytime_test.jl")
 include("delaycount_test.jl")
-include("test_pecora.jl")
+#include("test_pecora.jl")
 include("uzal_cost_test.jl")
 include("mdop_tests.jl")
 
