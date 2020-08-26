@@ -249,14 +249,13 @@ function get_minima(s::Vector{T}) where {T}
     minimas = Int[]
     N = length(s)
     flag = false
+    first_point = 0
     for i = 2:N-1
         if s[i-1] > s[i] && s[i+1] > s[i]
+            flag = false
             push!(minimas, i)
         end
-        if s[i-1] > s[i] && s[i+1] == s[i]
-            flag = true
-            first_point = i
-        end
+        # handling constant values
         if flag
             if s[i+1] > s[first_point]
                 flag = false
@@ -265,6 +264,14 @@ function get_minima(s::Vector{T}) where {T}
                 flag = false
             end
         end
+        if s[i-1] > s[i] && s[i+1] == s[i]
+            flag = true
+            first_point = i
+        end
+    end
+    # make sure there is no empty vector returned
+    if isempty(minimas)
+        _, minimas = findmin(s)
     end
     return minimas
 end
