@@ -248,9 +248,22 @@ Return the minima of the given time series s
 function get_minima(s::Vector{T}) where {T}
     minimas = Int[]
     N = length(s)
+    flag = false
     for i = 2:N-1
         if s[i-1] > s[i] && s[i+1] > s[i]
             push!(minimas, i)
+        end
+        if s[i-1] > s[i] && s[i+1] == s[i]
+            flag = true
+            first_point = i
+        end
+        if flag
+            if s[i+1] > s[first_point]
+                flag = false
+                push!(minimas, first_point)
+            elseif s[i+1] < s[first_point]
+                flag = false
+            end
         end
     end
     return minimas
