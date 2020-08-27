@@ -252,8 +252,6 @@ function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
             fnns2 +=1
         end
     end
-    display(fnns)
-    display(fnns2)
     if fnns==0
         return 1
     else
