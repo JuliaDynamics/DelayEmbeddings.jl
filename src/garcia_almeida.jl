@@ -203,7 +203,7 @@ function garcia_embedding_cycle!(
     NS[:, counter] = N
 
     # determine the optimal tau value from the N-statistic
-    min_idx = get_minima(N)
+    min_idx = findlocalminima(N)
 
     # store chosen delay (and chosen time series)
     push!(τ_vals, τs[min_idx[1]])
@@ -243,9 +243,11 @@ function garcia_almeida_break_criterion(FNNs, counter, fnn_thres, max_num_of_cyc
 end
 
 """
-Return the minima of the given time series s
+    findlocalminima(s)
+Return the indices of the local minima the timeseries `s`. If none exist,
+return the index of the minimum (as a vector).
 """
-function get_minima(s::Vector{T}) where {T}
+function findlocalminima(s::Vector{T}) where {T}
     minimas = Int[]
     N = length(s)
     flag = false
