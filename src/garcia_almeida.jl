@@ -272,6 +272,8 @@ function get_minima(s::Vector{T}) where {T}
     # make sure there is no empty vector returned
     if isempty(minimas)
         _, minimas = findmin(s)
+        return [minimas]
+    else
+        return minimas
     end
-    return minimas
 end
