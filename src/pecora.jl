@@ -225,9 +225,13 @@ function pecora(
     allts = columns(s)
     # indices of random fiducial points (with valid time range w.r.t. T)
     L = length(vspace)
-    ns = sample(vec(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays))),
-    length(vec(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays)))),
-    replace = false)
+    if samplesize==1
+        ns = vec(1:length(vec(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays)))))
+    else
+        ns = sample(vec(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays))),
+        length(vec(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays)))),
+        replace = false)
+    end
     vs = vspace[ns]
     allNNidxs, allNNdist = all_neighbors(vtree, vs, ns, K, w)
     # prepare things for undersampling statistic
