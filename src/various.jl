@@ -1,4 +1,46 @@
 #####################################################################################
+#                                Minima Maxima                                      #
+#####################################################################################
+"""
+    findlocalminima(s)
+Return the indices of the local minima the timeseries `s`. If none exist,
+return the index of the minimum (as a vector).
+"""
+function findlocalminima(s::Vector{T}) where {T}
+    minimas = Int[]
+    N = length(s)
+    flag = false
+    first_point = 0
+    for i = 2:N-1
+        if s[i-1] > s[i] && s[i+1] > s[i]
+            flag = false
+            push!(minimas, i)
+        end
+        # handling constant values
+        if flag
+            if s[i+1] > s[first_point]
+                flag = false
+                push!(minimas, first_point)
+            elseif s[i+1] < s[first_point]
+                flag = false
+            end
+        end
+        if s[i-1] > s[i] && s[i+1] == s[i]
+            flag = true
+            first_point = i
+        end
+    end
+    # make sure there is no empty vector returned
+    if isempty(minimas)
+        _, minimas = findmin(s)
+        return [minimas]
+    else
+        return minimas
+    end
+end
+
+
+#####################################################################################
 #                                Pairwse Distance                                   #
 #####################################################################################
 using NearestNeighbors, StaticArrays, LinearAlgebra
