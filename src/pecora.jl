@@ -282,7 +282,7 @@ function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, delays, K, 
 end
 
 
-function ε★(x, n, τ, NNidxs, δ_to_ε_amount, Ks)
+function ε★(x, n, τ, NNidxs, δ_to_ε_amount::Dict, Ks::AbstractVector)
     a = x[n+τ] # fiducial point in ε-space
     @inbounds dis = [abs(a - x[i+τ]) for i in NNidxs]
     ε = zeros(length(Ks))
