@@ -219,7 +219,7 @@ function pecora(
     end
     undersampling && metric ≠ Chebyshev() && error("Chebyshev metric required for undersampling")
     vspace = genembed(s, τs, js)
-    vtree = KDTree(vspace.data, metric)
+    vtree = KDTree(vspace.data[1:end-maximum(delays)], metric)
     all_ε★ = zeros(length(delays), length(J))
     all_Γ = copy(all_ε★)
     allts = columns(s)
@@ -263,14 +263,15 @@ columns(s::AbstractVector) = (s, )
 function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, delays, K, α, p)
     avrg_ε★ = zeros(size(delays))
     Ks = [k for k in 8:K]
+    δ_to_ε_amount = get_binomial_table(p, α; trial_range = length(Ks))
     for (ι, τ) in enumerate(delays) # Loop over the different delays
         c = 0
         for (i, n) in enumerate(ns) # Loop over fiducial points
             NNidxs = allNNidxs[i] # indices of k nearest neighbors to v
             # Check if any of the indices of the neighbors falls out of temporal range
-            any(j -> (j+τ > length(x)) | (j+τ < 1), NNidxs) && continue
+            any(j -> (j+τ < 1), NNidxs) && continue
             # If not, calculate minimum ε
-            avrg_ε★[ι] += ε★(x, n, τ, NNidxs, Ks, α, p)
+            avrg_ε★[ι] += ε★(x, n, τ, NNidxs, δ_to_ε_amount, Ks)
             c += 1
         end
         c == 0 && error("Encountered astronomically small chance of all neighbors having "*
@@ -281,12 +282,11 @@ function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, delays, K, 
 end
 
 
-function ε★(x, n, τ, NNidxs, K::AbstractVector, α, p)
-    δ_to_ε_amount = get_binomial_table(p, α; trial_range = length(K))
+function ε★(x, n, τ, NNidxs, δ_to_ε_amount, Ks)
     a = x[n+τ] # fiducial point in ε-space
     @inbounds dis = [abs(a - x[i+τ]) for i in NNidxs]
-    ε = zeros(length(K))
-    for (i, k) in enumerate(K)
+    ε = zeros(length(Ks))
+    for (i, k) in enumerate(Ks)
         sortedds = sort!(dis[1:k]; alg = QuickSort)
         l = δ_to_ε_amount[k]
         ε[i] = sortedds[l]
