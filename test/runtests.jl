@@ -1,4 +1,5 @@
 using DelayEmbeddings
+using StaticArrays
 
 # Download some test timeseries
 repo = "https://raw.githubusercontent.com/JuliaDynamics/ExercisesRepo/master/timeseries"
