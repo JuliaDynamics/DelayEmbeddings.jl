@@ -1,12 +1,15 @@
 #####################################################################################
 #                                Minima Maxima                                      #
 #####################################################################################
+export findlocalminima
+
 """
     findlocalminima(s)
 Return the indices of the local minima the timeseries `s`. If none exist,
 return the index of the minimum (as a vector).
+Starts of plateaus are also considered local minima.
 """
-function findlocalminima(s::Vector{T}) where {T}
+function findlocalminima(s::Vector{T})::Vector{Int} where {T}
     minimas = Int[]
     N = length(s)
     flag = false
@@ -32,8 +35,8 @@ function findlocalminima(s::Vector{T}) where {T}
     end
     # make sure there is no empty vector returned
     if isempty(minimas)
-        _, minimas = findmin(s)
-        return [minimas]
+        _, mini = findmin(s)
+        return [mini]
     else
         return minimas
     end
