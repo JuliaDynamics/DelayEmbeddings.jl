@@ -244,11 +244,12 @@ function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
 
     fnns = 0
     fnns2= 0
+    inverse_r = 1/r
     @inbounds for i = 1:N
-        if NNdistnew[i][1]/NNdist[i][1] > r && NNdist[i][1] < (1/r)
+        if NNdistnew[i][1]/NNdist[i][1] > r && NNdist[i][1] < inverse_r
             fnns +=1
         end
-        if NNdist[i][1] < (1/r)
+        if NNdist[i][1] < inverse_r
             fnns2 +=1
         end
     end
