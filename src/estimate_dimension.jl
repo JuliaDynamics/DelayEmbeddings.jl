@@ -240,34 +240,24 @@ set to 2.
 """
 function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
     @assert length(NNdist) == length(NNdistnew) "Both input vectors need to store the same number of distances."
+    N = length(NNdist)
 
-    # convert array of arrays into simple vectors, since we only look at K=1
-    NN_old = zeros(length(NNdist))
-    NN_new = zeros(length(NNdistnew))
-    @inbounds for i = 1:length(NNdist)
-        NN_old[i]=NNdist[i][1]
-        NN_new[i]=NNdistnew[i][1]
+    fnns = 0
+    fnns2= 0
+    inverse_r = 1/r
+    @inbounds for i = 1:N
+        if NNdistnew[i][1]/NNdist[i][1] > r && NNdist[i][1] < inverse_r
+            fnns +=1
+        end
+        if NNdist[i][1] < inverse_r
+            fnns2 +=1
+        end
     end
-
-    # first ratio
-    ratio1 = 1/r    # since we input only z-standardized data with unit
-    # construct statistic
-    ratio2 = NN_new./NN_old
-
-    cond1 = ratio2 .> r
-    cond2 = NN_old .< ratio1
-
-    fnns = sum(cond1.*cond2)
-    fnns2 = sum(NN_old .< ratio1)
-
-    # store fraction of valid nearest neighbors
-    if fnns2 == 0
-        FNN = NaN;
+    if fnns==0
+        return 1
     else
-        FNN = fnns/fnns2
+        return fnns/fnns2
     end
-
-    return FNN
 end
 
 
