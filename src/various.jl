@@ -1,4 +1,49 @@
 #####################################################################################
+#                                Minima Maxima                                      #
+#####################################################################################
+export findlocalminima
+
+"""
+    findlocalminima(s)
+Return the indices of the local minima the timeseries `s`. If none exist,
+return the index of the minimum (as a vector).
+Starts of plateaus are also considered local minima.
+"""
+function findlocalminima(s::Vector{T})::Vector{Int} where {T}
+    minimas = Int[]
+    N = length(s)
+    flag = false
+    first_point = 0
+    for i = 2:N-1
+        if s[i-1] > s[i] && s[i+1] > s[i]
+            flag = false
+            push!(minimas, i)
+        end
+        # handling constant values
+        if flag
+            if s[i+1] > s[first_point]
+                flag = false
+                push!(minimas, first_point)
+            elseif s[i+1] < s[first_point]
+                flag = false
+            end
+        end
+        if s[i-1] > s[i] && s[i+1] == s[i]
+            flag = true
+            first_point = i
+        end
+    end
+    # make sure there is no empty vector returned
+    if isempty(minimas)
+        _, mini = findmin(s)
+        return [mini]
+    else
+        return minimas
+    end
+end
+
+
+#####################################################################################
 #                                Pairwse Distance                                   #
 #####################################################################################
 using NearestNeighbors, StaticArrays, LinearAlgebra
@@ -80,4 +125,29 @@ function orthonormal end
 @inline function orthonormal(D::Int, k::Int)
     k > D && throw(ArgumentError("k must be ≤ D"))
     q = qr(rand(SMatrix{D, k})).Q
+end
+
+
+"""
+    hcat_lagged_values(Y, s::Vector, τ::Int) -> Z
+Add the `τ` lagged values of the timeseries `s` as additional component to `Y`
+(`Vector` or `Dataset`), in order to form a higher embedded
+dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
+"""
+function hcat_lagged_values(Y::Dataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
+    N = length(Y)
+    @assert N ≤ length(s)
+    M = N - τ
+    data = Vector{SVector{D+1, T}}(undef, M)
+    @inbounds for i in 1:M
+        data[i] = SVector{D+1, T}(Y[i]..., s[i+τ])
+    end
+    return Dataset{D+1, T}(data)
+end
+
+function hcat_lagged_values(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
+    N = length(Y)
+    @assert N ≤ length(s)
+    M = N - τ
+    return Dataset(view(Y, 1:M), view(s, τ+1:N))
 end

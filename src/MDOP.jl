@@ -205,32 +205,6 @@ end
 
 
 """
-    hcat_lagged_values(Y, s::Vector, τ::Int) -> Z
-Add the `τ` lagged values of the timeseries `s` as additional component to `Y`
-(`Vector` or `Dataset`), in order to form a higher embedded
-dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
-"""
-function hcat_lagged_values(Y::Dataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
-    N = length(Y)
-    @assert N ≤ length(s)
-    M = N - τ
-    data = Vector{SVector{D+1, T}}(undef, M)
-    @inbounds for i in 1:M
-        data[i] = SVector{D+1, T}(Y[i]..., s[i+τ])
-    end
-    return Dataset{D+1, T}(data)
-end
-
-function hcat_lagged_values(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
-    N = length(Y)
-    @assert N ≤ length(s)
-    M = N - τ
-    return Dataset(view(s, 1:M), view(s, τ+1:N))
-end
-
-
-
-"""
     mdop_maximum_delay(s, tw = 1:50, samplesize = 1.0)) -> τ_max, L
 Compute an upper bound for the search of optimal delays, when using `mdop_embedding`
 [`mdop_embedding`](@ref) or `beta_statistic` [`beta_statistic`](@ref).

@@ -1,7 +1,8 @@
 using DelayEmbeddings
+using StaticArrays
 
 # Download some test timeseries
-repo = "https://github.com/JuliaDynamics/ExercisesRepo/tree/master/timeseries"
+repo = "https://raw.githubusercontent.com/JuliaDynamics/ExercisesRepo/master/timeseries"
 tsfolder = joinpath(@__DIR__, "timeseries")
 todownload = ["$n.csv" for n in 1:4]
 
@@ -18,9 +19,10 @@ include("dataset_tests.jl")
 include("embedding_tests.jl")
 include("delaytime_test.jl")
 include("delaycount_test.jl")
-#include("test_pecora.jl")
-#include("uzal_cost_test.jl")
-#include("mdop_tests.jl")
+include("test_pecora.jl")
+include("uzal_cost_test.jl")
+include("mdop_tests.jl")
+include("test_garcia.jl")
 
 ti = time() - ti
 println("\nTest took total time of:")

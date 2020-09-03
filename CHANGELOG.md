@@ -1,5 +1,12 @@
+# v1.10.0
+* New method (Garcia & Almeida) for unified delay coordinates embeddings.
+* Inner function `findlocalminima`, that can be used on cycle-by-cycle optimal embedding creation.
+
 # v1.9.0
 * New `uzal_cost_local`: Local version of `uzal_cost` function.
+* Chetan Nichkawde method for unified delay coordinates embedding.
+* New `hcat` function for delay coordinates construction: `hcat_lagged_values`
+
 # v1.8.0
 * New cost function for testing "goodness" of a delay embedding: `uzal_cost` from Uzal et. al.
 # v1.7.0
