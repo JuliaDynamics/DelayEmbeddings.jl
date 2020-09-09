@@ -170,5 +170,45 @@ end
     # ylabel!("L")
 end
 
+@testset "mdop_embedding multivariate" begin
+    # For comparison reasons using Travis CI we carry out the integration on a UNIX
+    # OS and save the resulting time series
+    # roe = Systems.roessler([1.0, 0, 0]; a=0.2, b=0.2, c=5.7)
+    # sroe = trajectory(roe, 500; dt = 0.05, Ttr = 100.0)
+    # writedlm("2.csv", sroe)
+
+    sroe = readdlm(joinpath(tsfolder, "2.csv"))
+    tra = Dataset(sroe)
+    w1 = estimate_delay(sroe[:,1], "mi_min")
+    w2 = estimate_delay(sroe[:,2], "mi_min")
+
+    theiler = w2
+    taus = 0:26
+    mc = 10
+
+    Y, τ_vals, ts_vals, FNNs, betas =  mdop_embedding(sroe[:,1]; τs = taus, w = theiler, max_num_of_cycles = mc)
+
+    max_idx, ts_number = @inferred DelayEmbeddings.choose_optimal_tau2(betas)
+    @test ts_number == 1
+    @test taus[max_idx] == τ_vals[2]
+
+    Y2, τ_vals2, ts_vals2, FNNs2, betas2 = mdop_embedding(tra; τs = taus, w = theiler, max_num_of_cycles = mc)
+    ttra = regularize(tra)
+    b1 = DelayEmbeddings.beta_statistic(Dataset(ttra[:,ts_vals2[1]]), ttra[:,1], taus, theiler)
+    b2 = DelayEmbeddings.beta_statistic(Dataset(ttra[:,ts_vals2[1]]), ttra[:,2], taus, theiler)
+    b3 = DelayEmbeddings.beta_statistic(Dataset(ttra[:,ts_vals2[1]]), ttra[:,3], taus, theiler)
+
+    @test betas2[1][:,1] == b1
+    @test betas2[1][:,2] == b2
+    @test betas2[1][:,3] == b3
+
+    @test size(Y2,2) == 3
+    @test τ_vals2[1] == τ_vals2[2] == 0
+    @test τ_vals2[3] == maximum(taus)
+
+    @test ts_vals2[2] == ts_vals2[3] == 2
+    @test ts_vals2[1] == 3
+
+end
 
 end
