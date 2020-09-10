@@ -62,7 +62,7 @@ returns the `N`-statistic `NS` for each embedding cycle as an `Array` of
 function garcia_almeida_embedding(s::Vector{F}; τs = 0:50 , w::Int = 1,
     r1::Real = 10, r2::Real = 2, fnn_thres::Real = 0.05,
     T::Int = 1, metric = Euclidean(), max_num_of_cycles = 50) where {F<:Real}
-    display("new1")
+
     @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
     s_orig = s
@@ -114,7 +114,6 @@ function garcia_almeida_embedding(Y::Dataset{D, F}; τs = 0:50 , w::Int = 1,
     r1::Real = 10, r2::Real = 2, fnn_thres::Real = 0.05,
     T::Int = 1, metric = Euclidean(), max_num_of_cycles = 50) where {D, F<:Real}
 
-    display("new")
     @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
     Y_orig = Y
@@ -380,7 +379,7 @@ This function chooses the optimal τ value as the 1st minimum of the 1st minima
 of the N-statistics. It returns the index of this 1st minimum as well as the
 time series number corresponding to that 1st minimum of the 1st minima.
 """
-function choose_optimal_tau2(Ns::Array{T, 2}) where {T}
+function choose_optimal_tau2_garcia(Ns::Array{T, 2}) where {T}
     NN = size(Ns,2)
     min_idx = zeros(Int, NN)
     for i = 1:NN
