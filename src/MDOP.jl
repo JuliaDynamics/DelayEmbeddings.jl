@@ -183,68 +183,97 @@ function mdop_multivariate_embedding_cycle!(
     M = size(Ys,2)
     # in the 1st cycle we have to check all (size(Y,2)^2 combinations
     if counter == 1
-        βs = zeros(length(τs), M*M)
-        beta_counter = 1
-        for ts = 1:M
-            for ts2 = 1:M
-                βs[:,beta_counter] = beta_statistic(Dataset(Ys[:,ts]), Ys[:,ts2], τs, w)
-                beta_counter += 1
-            end
-        end
-        # determine the optimal tau value from the β-statistic
-        τ_opt, ts_opt1, ts_opt2 = choose_optimal_tau1(βs, M)
-        # store chosen delay, time series and according β-statistic
-        push!(τ_vals, τs[τ_opt])
-        push!(ts_vals, ts_opt1)
-        push!(ts_vals, ts_opt2)
-        βS[counter] = βs[:,(ts_vals[counter]-1)*M+1:(ts_vals[counter]-1)*M+M]
-
-        # create phase space vector for this embedding cycle
-        Y_act = DelayEmbeddings.hcat_lagged_values(Ys[:,ts_vals[counter]],
-                                    Ys[:,ts_vals[counter+1]],τ_vals[counter+1])
-
-        # compute nearest neighbor distances in the first embedding dimension for
-        # FNN statistic
-        Y_old = Dataset(Ys[:,ts_vals[counter]])
-        vtree = KDTree(Y_old, metric)
-        _, NNdist_old = all_neighbors(vtree, Y_old, 1:length(Y_old), 1, w)
-
-        vtree = KDTree(Y_act, metric)
-        _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
-
-        # compute FNN-statistic and store vals, while also
-        # truncating distance-vector to the "new" length of the actual embedding vector
-        fnns = fnn_embedding_cycle(view(NNdist_old, 1:length(Y_act)), NNdist_new, r)
-        push!(FNNs,fnns)
+        Y_act, NNdist_new = first_embedding_cycle_MDOP!(M, Ys, τs, w, τ_vals,
+                                                ts_vals, βS, metric, FNNs, r)
 
     # in all other cycles we just have to check (size(Y,2)) combinations
     else
-        βs = zeros(length(τs), M)
-        for ts = 1:M
-            βs[:,ts] = beta_statistic(Y_act, Ys[:,ts], τs, w)
-        end
 
-        # determine the optimal tau value from the β-statistic
-        τ_opt, ts_opt = choose_optimal_tau2(βs)
-        # store chosen delay, time series and according β-statistic
-        push!(τ_vals, τs[τ_opt])
-        push!(ts_vals, ts_opt)
-        βS[counter] = βs
-
-        # create phase space vector for this embedding cycle
-        Y_act = DelayEmbeddings.hcat_lagged_values(Y_act,
-                                    Ys[:,ts_vals[counter+1]],τ_vals[counter+1])
-        vtree = KDTree(Y_act, metric)
-        _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
-
-        # compute FNN-statistic and store vals, while also
-        # truncating distance-vector to the "new" length of the actual embedding vector
-        fnns = fnn_embedding_cycle(view(NNdist_old, 1:length(Y_act)), NNdist_new, r)
-        push!(FNNs,fnns)
-
+        Y_act, NNdist_new = embedding_cycle_MDOP!(Y_act, counter, NNdist_old, M, Ys, τs, w,
+                                                τ_vals, ts_vals, βS, metric,
+                                                FNNs, r)
     end
     return Y_act, NNdist_new
 end
+
+"""
+Computes the actual reconstruction vectors `Y_act` and the according nearest
+neighbour distances `NNdist_new` for the very first embedding cycle of the
+multivariate MDOP-embedding procedure.
+"""
+function first_embedding_cycle_MDOP!(M, Ys, τs, w, τ_vals,
+                                        ts_vals, βS, metric, FNNs, r)
+    counter = 1
+    βs = zeros(length(τs), M*M)
+    beta_counter = 1
+    for ts = 1:M
+        for ts2 = 1:M
+            βs[:,beta_counter] = beta_statistic(Dataset(Ys[:,ts]), Ys[:,ts2], τs, w)
+            beta_counter += 1
+        end
+    end
+    # determine the optimal tau value from the β-statistic
+    τ_opt, ts_opt1, ts_opt2 = choose_optimal_tau1(βs, M)
+    # store chosen delay, time series and according β-statistic
+    push!(τ_vals, τs[τ_opt])
+    push!(ts_vals, ts_opt1)
+    push!(ts_vals, ts_opt2)
+    βS[counter] = βs[:,(ts_vals[counter]-1)*M+1:(ts_vals[counter]-1)*M+M]
+
+    # create phase space vector for this embedding cycle
+    Y_act = DelayEmbeddings.hcat_lagged_values(Ys[:,ts_vals[counter]],
+                                Ys[:,ts_vals[counter+1]],τ_vals[counter+1])
+
+    # compute nearest neighbor distances in the first embedding dimension for
+    # FNN statistic
+    Y_old = Dataset(Ys[:,ts_vals[counter]])
+    vtree = KDTree(Y_old, metric)
+    _, NNdist_old = all_neighbors(vtree, Y_old, 1:length(Y_old), 1, w)
+
+    vtree = KDTree(Y_act, metric)
+    _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
+
+    # compute FNN-statistic and store vals, while also
+    # truncating distance-vector to the "new" length of the actual embedding vector
+    fnns = fnn_embedding_cycle(view(NNdist_old, 1:length(Y_act)), NNdist_new, r)
+    push!(FNNs,fnns)
+
+    return Y_act, NNdist_new
+end
+
+"""
+Computes the actual reconstruction vectors `Y_act` and the according nearest
+neighbour distances `NNdist_new` for every embedding cycle of the multivariate
+MDOP-embedding procedure, but the first one.
+"""
+function embedding_cycle_MDOP!(Y_act, counter, NNdist_old, M, Ys, τs, w, τ_vals,
+                                        ts_vals, βS, metric, FNNs, r)
+    βs = zeros(length(τs), M)
+    for ts = 1:M
+        βs[:,ts] = beta_statistic(Y_act, Ys[:,ts], τs, w)
+    end
+
+    # determine the optimal tau value from the β-statistic
+    τ_opt, ts_opt = choose_optimal_tau2(βs)
+    # store chosen delay, time series and according β-statistic
+    push!(τ_vals, τs[τ_opt])
+    push!(ts_vals, ts_opt)
+    βS[counter] = βs
+
+    # create phase space vector for this embedding cycle
+    Y_act = DelayEmbeddings.hcat_lagged_values(Y_act,
+                                Ys[:,ts_vals[counter+1]],τ_vals[counter+1])
+    vtree = KDTree(Y_act, metric)
+    _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
+
+    # compute FNN-statistic and store vals, while also
+    # truncating distance-vector to the "new" length of the actual embedding vector
+    fnns = fnn_embedding_cycle(view(NNdist_old, 1:length(Y_act)), NNdist_new, r)
+    push!(FNNs,fnns)
+
+    return Y_act, NNdist_new
+end
+
 
 """
 This function chooses the optimal τ value as the maximum of the β-statistics
