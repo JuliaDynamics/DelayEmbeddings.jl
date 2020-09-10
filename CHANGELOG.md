@@ -1,3 +1,7 @@
+# v1.11.0
+* New methods (Garcia & Almeida and Nichkawde/MDOP) for unified delay coordinates
+* embeddings now available for multivariate input data.
+
 # v1.10.0
 * New method (Garcia & Almeida) for unified delay coordinates embeddings.
 * Inner function `findlocalminima`, that can be used on cycle-by-cycle optimal embedding creation.
