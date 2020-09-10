@@ -8,7 +8,7 @@ println("\nTesting garcia_almeida.jl...")
 
 lo = Systems.lorenz()
 
-tr = trajectory(lo, 60; dt = 0.01, Ttr = 10)
+tr = trajectory(lo, 80; dt = 0.01, Ttr = 10)
 
 x = tr[:, 1]
 Y = Dataset(x)
@@ -49,11 +49,12 @@ end
     Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embedding(x; τs=0:100,  w = 17, T = 17)
     Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embedding(x; τs=0:100,  w = 1, T = 1)
 
-    @test size(Y_act,2)==size(Y_act2,2)
+    @test size(Y_act,2) == 2
+    @test size(Y_act2,2) == 3
     @test 10 ≤ τ_vals[2] ≤ 18
     @test 1 ≤ τ_vals2[2] ≤ 3
     @test FNNs[end]<=0.05
-    @test FNNs2[end]<=0.05
+    @test FNNs2[end]>FNNs2[end-1]
 
     # using Plots
     # plot3d(Y_act[:,1],Y_act[:,2],Y_act[:,3], marker=2, camera = (6, 4))
@@ -69,10 +70,9 @@ end
     Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embedding(tr; τs=0:100,  w = 1, T = 1)
 
     @test size(Y_act,2) == size(Y_act2,2) == 3
-    @test ts_vals[1] == ts_vals2[1] == 1
-    @test ts_vals[2] == ts_vals2[2] == 2
-    @test ts_vals[3] == ts_vals2[3] == 3
-    @test τ_vals[2] == τ_vals2[2] == 1
+    @test ts_vals[1] == ts_vals2[1] == ts_vals2[2] == ts_vals2[3] ==1
+    @test ts_vals[2] == 2
+    @test ts_vals[3] == 3
     @test 10 ≤ τ_vals[3] ≤ 18
     @test 1 ≤ τ_vals2[3] ≤ 3
 
@@ -84,12 +84,9 @@ end
     N , _ = n_statistic(tra, tra[:,1], w=17, T=17, τs = taus)
     N2 , _ = n_statistic(tra, tra[:,2], w=17, T=17, τs = taus)
 
-    minima_idx = findlocalminima(N)
-    minima_idx2 = findlocalminima(N2)
-    minis = taus[minima_idx]
-    minis2= taus[minima_idx2]
+    _, minis2 = findmin(N2)
 
-    @test 20 ≤ minis2[1] ≤ 30
+    @test 20 ≤ taus[minis2] ≤ 30
 
     # using Plots
     # NN = hcat(N,N2)
