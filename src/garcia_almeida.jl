@@ -65,6 +65,7 @@ function garcia_almeida_embedding(s::Vector{F}; τs = 0:50 , w::Int = 1,
 
     @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
+    s_orig = s
     s = regularize(s) # especially important for fnn-computation
     # define actual phase space trajectory
     Y_act = Dataset(s)
@@ -98,7 +99,60 @@ function garcia_almeida_embedding(s::Vector{F}; τs = 0:50 , w::Int = 1,
         NNdist_old = NNdist_new
     end
 
-    return Y_act[:,1:counter-1], τ_vals[1:counter-1], ts_vals[1:counter-1], FNNs[1:counter-1], NS[:,1:counter-1]
+    # construct final reconstruction vector
+    Y_final = s_orig
+    for i = 2:length(τ_vals[1:counter-1])
+        Y_final = DelayEmbeddings.hcat_lagged_values(Y_final,s_orig,τ_vals[i])
+    end
+
+    return Y_final, τ_vals[1:counter-1], ts_vals[1:counter-1], FNNs, NS[:,1:counter-1]
+
+end
+
+
+function garcia_almeida_embedding(Y::Dataset{D, F}; τs = 0:50 , w::Int = 1,
+    r1::Real = 10, r2::Real = 2, fnn_thres::Real = 0.05,
+    T::Int = 1, metric = Euclidean(), max_num_of_cycles = 50) where {D, F<:Real}
+
+    @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
+    @assert all(x -> x ≥ 0, τs)
+    Y_orig = Y
+    Y = regularize(Y) # especially important for fnn-computation
+    # define actual phase space trajectory and NN-distances
+    Y_act = []
+    NNdist_old = []
+
+    # set a flag, in order to tell the while loop when to stop. Each loop
+    # stands for encountering a new embedding dimension
+    flag, counter = true, 1
+
+    # preallocate output variables
+    τ_vals = Int64[0]
+    ts_vals = Int64[1]
+    FNNs = Float64[]
+    NS = fill(zeros(F, length(τs), size(Y,2)), 1, max_num_of_cycles)
+
+    # loop over increasing embedding dimensions until some break criterion will
+    # tell the loop to stop/break
+    while flag
+        Y_act, NNdist_new = garcia_multivariate_embedding_cycle!(
+            Y_act, flag, Y, τs, w, counter, NS, τ_vals, metric, r1, r2, T,
+            FNNs, fnn_thres, ts_vals, NNdist_old
+        )
+
+        flag = garcia_almeida_break_criterion(FNNs, counter, fnn_thres, max_num_of_cycles)
+        counter += 1
+        # for the next embedding cycle save the distances of NN for this dimension
+        NNdist_old = NNdist_new
+    end
+
+    # construct final reconstruction vector
+    Y_final = Y_orig[:,ts_vals[1]]
+    for i = 2:length(τ_vals[1:counter-1])
+        Y_final = DelayEmbeddings.hcat_lagged_values(Y_final,Y_orig[:,ts_vals[i]],τ_vals[i])
+    end
+
+    return Y_final, τ_vals[1:counter-1], ts_vals[1:counter-1], FNNs, NS[:,1:counter-1]
 
 end
 
@@ -195,10 +249,10 @@ end
 # not only for clarity of source code but also to introduce a function barrier
 # for the type instability of `Y → Y_act`
 function garcia_embedding_cycle!(
-    Y, flag, s, τs, w, counter, NS, τ_vals, metric, r1, r2, T,
+    Y_act, flag, s, τs, w, counter, NS, τ_vals, metric, r1, r2, T,
     FNNs, fnn_thres, ts_vals, NNdist_old)
 
-    N, NNdistances = n_statistic(Y, s; τs = τs , r = r1,
+    N, NNdistances = n_statistic(Y_act, s; τs = τs , r = r1,
         T = T, w = w, metric = metric)
     NS[:, counter] = N
 
@@ -210,7 +264,7 @@ function garcia_embedding_cycle!(
     push!(ts_vals, 1)
 
     # create phase space vector for this embedding cycle
-    Y_act = DelayEmbeddings.hcat_lagged_values(Y,s,τ_vals[counter+1])
+    Y_act = DelayEmbeddings.hcat_lagged_values(Y_act,s,τ_vals[counter+1])
     vtree = KDTree(Y_act, metric)
     allNNidxs, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
 
@@ -219,6 +273,123 @@ function garcia_embedding_cycle!(
     fnns = fnn_embedding_cycle(view(NNdist_old, 1:length(Y_act)), NNdist_new, r2)
     push!(FNNs,fnns)
     return Y_act, NNdist_new
+end
+
+
+function garcia_multivariate_embedding_cycle!(
+    Y_act, flag, Ys, τs, w, counter, NS, τ_vals, metric, r1, r2, T,
+    FNNs, fnn_thres, ts_vals, NNdist_old
+    )
+
+    M = size(Ys,2)
+    # in the 1st cycle we have to check all (size(Y,2)^2 combinations
+    if counter == 1
+        Ns = zeros(length(τs), M*M)
+        n_counter = 1
+        for ts = 1:M
+            for ts2 = 1:M
+                Ns[:,n_counter], _ = n_statistic(Dataset(Ys[:,ts]), Ys[:,ts2];
+                                                τs = τs , r = r1, T = T, w = w,
+                                                metric = metric)
+                n_counter += 1
+            end
+        end
+        # determine the optimal tau value from the N-statistic
+        τ_opt, ts_opt1, ts_opt2 = choose_optimal_tau1_garcia(Ns, M)
+        # store chosen delay, time series and according N-statistic
+        push!(τ_vals, τs[τ_opt])
+        push!(ts_vals, ts_opt1)
+        push!(ts_vals, ts_opt2)
+        NS[counter] = Ns[:,(ts_vals[counter]-1)*M+1:(ts_vals[counter]-1)*M+M]
+
+        # create phase space vector for this embedding cycle
+        Y_act = DelayEmbeddings.hcat_lagged_values(Ys[:,ts_vals[counter]],
+                                    Ys[:,ts_vals[counter+1]],τ_vals[counter+1])
+
+        # compute nearest neighbor distances in the first embedding dimension for
+        # FNN statistic
+        Y_old = Dataset(Ys[:,ts_vals[counter]])
+        vtree = KDTree(Y_old, metric)
+        _, NNdist_old = all_neighbors(vtree, Y_old, 1:length(Y_old), 1, w)
+
+        vtree = KDTree(Y_act, metric)
+        _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
+
+        # compute FNN-statistic and store vals, while also
+        # truncating distance-vector to the "new" length of the actual embedding vector
+        fnns = fnn_embedding_cycle(view(NNdist_old, 1:length(Y_act)), NNdist_new, r2)
+        push!(FNNs,fnns)
+
+    # in all other cycles we just have to check (size(Y,2)) combinations
+    else
+        Ns = zeros(length(τs), M)
+        for ts = 1:M
+            Ns[:,ts], _ = n_statistic(Y_act, Ys[:,ts]; τs = τs , r = r1, T = T,
+                                        w = w, metric = metric)
+        end
+
+        # determine the optimal tau value from the N-statistic
+        τ_opt, ts_opt = choose_optimal_tau2_garcia(Ns)
+        # store chosen delay, time series and according n-statistic
+        push!(τ_vals, τs[τ_opt])
+        push!(ts_vals, ts_opt)
+        NS[counter] = Ns
+
+        # create phase space vector for this embedding cycle
+        Y_act = DelayEmbeddings.hcat_lagged_values(Y_act,
+                                    Ys[:,ts_vals[counter+1]],τ_vals[counter+1])
+        vtree = KDTree(Y_act, metric)
+        _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
+
+        # compute FNN-statistic and store vals, while also
+        # truncating distance-vector to the "new" length of the actual embedding vector
+        fnns = fnn_embedding_cycle(view(NNdist_old, 1:length(Y_act)), NNdist_new, r2)
+        push!(FNNs,fnns)
+
+    end
+    return Y_act, NNdist_new
+end
+
+
+"""
+This function chooses the optimal τ value as the 1st minimum of all the
+N-statistics 1st minima. It returns the index of this 1st minimum as well as the
+time series number corresponding to that 1st minimum of all 1st minima. In this
+first embedding cycle it also returns the time series number, which act as Y_act.
+"""
+function choose_optimal_tau1_garcia(Ns::Array{T, 2}, M::Int) where {T}
+    NN = size(Ns,2)
+    min_idx = zeros(Int, NN)
+    for i = 1:NN
+        # determine optimal tau value and minimum vals from all N-statistic's
+        minimas = findlocalminima(Ns[:,i])
+        min_idx[i] = minimas[1]
+    end
+    # take the 1st of all 1st minimas
+    _, idx = findmin(min_idx)
+    # determine the first time series and the according second one
+    a = idx/M
+    ts_1 = Int(ceil(a))
+    ts_2 = idx-M*(ts_1-1)
+    return min_idx[idx], ts_1, ts_2
+end
+
+"""
+This function chooses the optimal τ value as the 1st minimum of the 1st minima
+of the N-statistics. It returns the index of this 1st minimum as well as the
+time series number corresponding to that 1st minimum of the 1st minima.
+"""
+function choose_optimal_tau2(Ns::Array{T, 2}) where {T}
+    NN = size(Ns,2)
+    min_idx = zeros(Int, NN)
+    for i = 1:NN
+        # determine optimal tau value and minimum vals from all N-statistic's
+        minimas = findlocalminima(Ns[:,i])
+        min_idx[i] = minimas[1]
+    end
+    # take the 1st of all 1st minimas
+    _, idx = findmin(min_idx)
+    return min_idx[idx], idx
 end
 
 
