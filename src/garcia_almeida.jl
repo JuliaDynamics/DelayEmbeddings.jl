@@ -165,7 +165,7 @@ end
 ## core: Garcia-Almeida-method for one arbitrary embedding cycle
 
 """
-    n_statistic(Y, s; kwargs...) → N, d_E1 (`Array`, `Array of Arrays`)
+    n_statistic(Y, s; kwargs...) → N, d_E1
 Perform one embedding cycle according to the method proposed in [^Garcia2005a]
 for a given phase space trajectory `Y` (of type `Dataset`) and a time series `s
 (of type `Vector`). Return the proposed N-Statistic `N` and all nearest
