@@ -56,6 +56,9 @@ because there is simply just one time series to choose from. The function also
 returns the `N`-statistic `NS` for each embedding cycle as an `Array` of
 `Vector`s.
 
+Notice that we were *not* able to reproduce the figures from the papers with our
+implementation (which nevertheless we believe is the correct one).
+
 [^Garcia2005a]: Garcia, S. P., Almeida, J. S. (2005). [Nearest neighbor embedding with different time delays. Physical Review E 71, 037204](https://doi.org/10.1103/PhysRevE.71.037204).
 [^Garcia2005b]: Garcia, S. P., Almeida, J. S. (2005). [Multivariate phase space reconstruction by nearest neighbor embedding with different time delays. Physical Review E 72, 027205](https://doi.org/10.1103/PhysRevE.72.027205).
 """
