@@ -82,6 +82,8 @@ KDTree(D::AbstractDataset, metric::Metric = Euclidean()) = KDTree(D.data, metric
 
 
 # TODO: This must use the new Neighborhood.jl
+# TODO: Function returns 0-indices and -Inf values, when w is too high compared
+#       to the length of vtree. This should be fixed, i.e. throw an error
 """
     all_neighbors(vtree, vs, ns, K, w)
 Return the `maximum(K)`-th nearest neighbors for all input points `vs`, with indices `ns` in
