@@ -149,6 +149,7 @@ Dataset{1, T}(reinterpret(SVector{1, T}, s))
 
 function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
     D = length(v[1])
+    D > 100 && @warn "You are attempting to make a Dataset of dimensions > 100"
     L = length(v)
     data = Vector{SVector{D, T}}(undef, L)
     for i in 1:length(v)
@@ -162,6 +163,7 @@ end
 
 @generated function _dataset(vecs::Vararg{<:AbstractVector{T},D}) where {D, T}
     gens = [:(vecs[$k][i]) for k=1:D]
+    D > 100 && @warn "You are attempting to make a Dataset of dimensions > 100"
     quote
         L = minimum(length(x) for x in vecs)
         data = Vector{SVector{$D, T}}(undef, L)
@@ -193,6 +195,7 @@ Base.Matrix(d::AbstractDataset{D,T}) where {D, T} = Matrix{T}(d)
 
 function Dataset(mat::AbstractMatrix{T}) where {T}
     N, D = size(mat)
+    D > 100 && @warn "You are attempting to make a Dataset of dimensions > 100"
     D > N && @warn "You are attempting to make a Dataset of a matrix with more columns than rows."
     Dataset{D,T}(reshape(reinterpret(SVector{D,T}, vec(transpose(mat))), (N,)))
 end
