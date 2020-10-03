@@ -303,3 +303,163 @@ function stochastic_indicator(s::AbstractVector{T},τ, γs=1:4) where T # E2, eq
     end
     return E2s
 end
+
+
+"""
+    standard_embedding_hegger(s::Vector; kwargs...) → `Y`, `τ`
+Compute the reconstructed trajectory from a time series using the standard time
+delay embedding. The delay `τ` is taken as the 1st minimum of the mutual
+information [`estimate_dimension`](@ref) and the embedding dimension `m` is
+estimated by using an FNN method from [^Hegger1999] [`fnn_uniform_hegger`](@ref).
+Return the reconstructed trajectory `Y` and the delay `τ`.
+
+Keyword arguments:
+
+*`fnn_thres = 0.05`: a threshold defining at which fraction of FNNs the search
+    should break.
+* The `method` can be one of the following:
+* `"ac_zero"` : first delay at which the auto-correlation function becomes <0.
+* `"ac_min"` : delay of first minimum of the auto-correlation function.
+* `"mi_min"` : delay of first minimum of mutual information of `s` with itself
+  (shifted for various `τs`). <- Default
+
+[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
+"""
+function standard_embedding_hegger(s::Vector{T}; method::String = "mi_min",
+                                            fnn_thres::Real = 0.05) where {T}
+    @assert method=="ac_zero" || method=="mi_min" || method=="ac_min"
+    "The absolute correlation function has elements that are = 0. "*
+    "We can't fit an exponential to it. Please choose another method."
+
+    τ = estimate_delay(s, method)
+    _, _, Y = fnn_uniform_hegger(s, τ; fnn_thres = fnn_thres)
+    return Y, τ
+end
+
+
+"""
+    standard_embedding_cao(s::Vector; kwargs...) → `Y`, `τ`
+Compute the reconstructed trajectory from a time series using the standard time
+delay embedding. The delay `τ` is taken as the 1st minimum of the mutual
+information [`estimate_dimension`](@ref) and the embedding dimension `m` is
+estimated by using an FNN method from Cao [`estimate_dimension`](@ref), with the
+threshold parameter `cao_thres`.
+Return the reconstructed trajectory `Y` and the delay `τ`.
+
+Keyword arguments:
+*`cao_thres = 0.05`: This threshold determines the tolerable deviation of the
+    proposed statistic from the optimal value of 1, for breaking the algorithm.
+*`m_max = 10`: The maximum embedding dimension, which is encountered by the
+    algorithm.
+* The `method` can be one of the following:
+* `"ac_zero"` : first delay at which the auto-correlation function becomes <0.
+* `"ac_min"` : delay of first minimum of the auto-correlation function.
+* `"mi_min"` : delay of first minimum of mutual information of `s` with itself
+  (shifted for various `τs`). <- Default
+
+[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
+"""
+function standard_embedding_cao(s::Vector{T}; cao_thres::Real = 0.05,
+                        method::String = "mi_min", m_max::Int = 10) where {T}
+    @assert method=="ac_zero" || method=="mi_min" || method=="ac_min"
+    "The absolute correlation function has elements that are = 0. "*
+    "We can't fit an exponential to it. Please choose another method."
+
+    τ = estimate_delay(s, method)
+    rat = estimate_dimension(s, τ, 1:m_max, "afnn")
+    for i = 1:m_max
+        if abs(1-rat[i]) < cao_thres
+            global m = i
+            break
+        end
+    end
+    try
+        if m > 1
+            global Y = embed(s, m, τ)
+        else
+            global Y = s
+        end
+    catch
+        global Y = s
+    end
+    return Y, τ
+end
+
+
+"""
+    fnn_uniform_hegger(s::Vector, τ::Int; kwargs...) →  `m`, `FNNs`, `Y`
+Compute and return the optimal embedding dimension `m` for the time series `s`
+and a uniform time delay `τ` after [^Hegger1999]. Return the optimal `m` and the
+corresponding reconstruction vector `Y` according to that `m` and the input `τ`.
+The optimal `m` is chosen, when the fraction of `FNNs` falls below the threshold
+`fnn_thres` or when fraction of FNN's increases.
+
+Keyword argument:
+*`fnn_thres = 0.05`: Threshold, which defines the tolerable fraction of FNN's
+    for which the algorithm breaks.
+*`max_dimension = 10`: The maximum dimension which is encountered by the
+    algorithm and after which it breaks, if the breaking criterion has not been
+    met yet.
+*`r = 2`: Obligatory threshold, which determines the maximum tolerable spreading
+    of trajectories in the reconstruction space.
+*`metric = Euclidean`: The norm used for distance computations.
+*`w = 1` = The Theiler window, which excludes temporally correlated points from
+    the nearest neighbor search.
+
+[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
+"""
+function fnn_uniform_hegger(s::Vector{T}, τ::Int; max_dimension::Int = 10,
+            r::Real = 2, w::Int = 1, fnn_thres::Real = 0.05, metric = Euclidean()) where {T}
+    @assert max_dimension > 0
+    s = (s .- mean(s)) ./ std(s)
+    Y_act = s
+
+    vtree = KDTree(Dataset(s), metric)
+    _, NNdist_old = DelayEmbeddings.all_neighbors(vtree, Dataset(s), 1:length(s), 1, w)
+
+    FNNs = zeros(max_dimension)
+    for m = 2:max_dimension+1
+        Y_act = DelayEmbeddings.hcat_lagged_values(Y_act, s, m*τ)
+        Y_act = regularize(Y_act)
+        vtree = KDTree(Y_act, metric)
+        _, NNdist_new = DelayEmbeddings.all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
+
+        FNNs[m-1] = DelayEmbeddings.fnn_embedding_cycle(view(NNdist_old,
+                                            1:length(Y_act)), NNdist_new, r)
+
+        flag = fnn_break_criterion(FNNs[1:m-1], fnn_thres)
+        if flag
+            global bm = m
+            break
+        else
+            global bm = m
+        end
+
+        NNdist_old = NNdist_new
+    end
+
+    if bm>2
+        Y_final = embed(s, bm-1, τ)
+    else
+        Y_final = s
+    end
+    return bm, FNNs[1:bm-1], Y_final
+end
+
+"""
+Determines the break criterion for the Hegger-FNN-estimation
+"""
+function fnn_break_criterion(FNNs, fnn_thres)
+    flag = false
+    if FNNs[end] ≤ fnn_thres
+        flag = true
+        println("Algorithm stopped due to sufficiently small FNNs. "*
+                "Valid embedding achieved ✓.")
+    end
+    if length(FNNs) > 1 && FNNs[end] > FNNs[end-1]
+        flag = true
+        println("Algorithm stopped due to rising FNNs. "*
+                "Valid embedding achieved ✓.")
+    end
+    return flag
+end
