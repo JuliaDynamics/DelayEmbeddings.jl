@@ -12,7 +12,7 @@ end
 Compute the reconstructed trajectory from a time series using the standard time
 delay embedding. The delay `τ` is taken as the 1st minimum of the mutual
 information [`estimate_dimension`](@ref) and the embedding dimension `m` is
-estimated by using an FNN method from [^Hegger1999] [`fnn_uniform_hegger`](@ref).
+estimated by using an FNN method from [^Hegger1999] [`ifnn`](@ref).
 Return the reconstructed trajectory `Y` and the delay `τ`.
 
 Keyword arguments:
@@ -34,7 +34,7 @@ function standard_embedding_hegger(s::Vector{T}; method::String = "mi_min",
     "We can't fit an exponential to it. Please choose another method."
 
     τ = estimate_delay(s, method)
-    _, _, Y = fnn_uniform_hegger(s, τ; fnn_thres = fnn_thres)
+    _, _, Y = ifnn(s, τ; fnn_thres = fnn_thres)
     return Y, τ
 end
 

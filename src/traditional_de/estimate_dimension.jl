@@ -1,3 +1,11 @@
+#=
+In this file a bunch of methods are collected that allow estimating the appropriate
+embedding dimension in the scenario of traditional delay embeddings, where the delay
+time is estimated first, and then the embedding dimension, while only constant delay
+time is allowed.
+
+All methods in this file are based on the idea of "false nearest neighbors".
+=#
 using NearestNeighbors, Statistics, Distances
 
 export estimate_dimension, stochastic_indicator
@@ -15,6 +23,9 @@ for each `γ ∈ γs` based on the "nearest neighbors" in the embedded time seri
 
 The quantity that is calculated depends on the algorithm defined by the string `method`:
 
+* `"ifnn"` is the "Improved False Nearest Neighbors" from Hegger & Kantz[^Hegger1999],
+    which gives the fraction of false nearest neighbors. This fraction goes to 0
+    after the optimal value of `γ`.
 * `"afnn"` (default) is Cao's "Averaged False Nearest Neighbors" method[^Cao1997], which
     gives a ratio of distances between nearest neighbors. This ratio saturates
     around `1.0` near the optimal value of `γ` (see [`afnn`](@ref)).
@@ -26,7 +37,7 @@ The quantity that is calculated depends on the algorithm defined by the string `
 * `"f1nn"` is Krakovská's "False First Nearest Neighbors" method[^Krakovská2015], which
     gives the ratio of pairs of points that cease to be "nearest neighbors"
     when the dimension increases. This number drops down to zero near the
-    optimal value of `γ` (see [`f1nn`](@ref)).
+    optimal value of `γ` (see [`f1nn`](@ref)). This is the worse method of all.
 
 `"afnn"` and `"f1nn"` also support the `metric` keyword, which can be any of
 `Cityblock(), Euclidean(), Chebyshev()`. This metric is used both
@@ -42,16 +53,21 @@ neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref
 [^Kennel1992]: M. Kennel *et al.*, [Phys. Review A **45**(6), (1992)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.45.3403).
 
 [^Krakovská2015]: Anna Krakovská *et al.*, [J. Complex Sys. 932750 (2015)](https://doi.org/10.1155/2015/932750)
+
+[^Hegger1999]: Hegger & Kantz, [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
 function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn";
     metric = Euclidean(), kwargs...)
-
     if method == "afnn"
         return afnn(s, τ, γs, metric)
+    elseif method == "ifnn"
+        return ifnn(s, τ, γs; kwargs...)
     elseif method == "fnn"
         return fnn(s, τ, γs; kwargs...)
     elseif method == "f1nn"
         return f1nn(s, τ, γs, metric)
+    else
+        error("Unrecognized method.")
     end
 end
 
@@ -278,7 +294,7 @@ end
 #                               IFNN (Hegger & Kantz)                               #
 #####################################################################################
 """
-    fnn_uniform_hegger(s::Vector, τ::Int; kwargs...) →  `m`, `FNNs`, `Y`
+    ifnn(s::Vector, τ::Int; kwargs...) →  `m`, `FNNs`, `Y`
 Compute and return the optimal embedding dimension `m` for the time series `s`
 and a uniform time delay `τ` after [^Hegger1999]. Return the optimal `m` and the
 corresponding reconstruction vector `Y` according to that `m` and the input `τ`.
@@ -297,9 +313,9 @@ Keyword argument:
 *`w = 1` = The Theiler window, which excludes temporally correlated points from
     the nearest neighbor search.
 
-[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
+[^Hegger1999]: Hegger & Kantz, [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
-function fnn_uniform_hegger(s::Vector{T}, τ::Int; max_dimension::Int = 10,
+function ifnn(s::Vector{T}, τ::Int; max_dimension::Int = 10,
             r::Real = 2, w::Int = 1, fnn_thres::Real = 0.05, metric = Euclidean()) where {T}
     @assert max_dimension > 0
     s = (s .- mean(s)) ./ std(s)
@@ -364,7 +380,6 @@ neighbor for all considered fiducial points and `NNdistnew` is storing the
 distances of the nearest neighbor for each fiducial point in one embedding
 dimension higher using a given `τ`. The obligatory threshold `r` is by default
 set to 2.
-[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
 function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
     @assert length(NNdist) == length(NNdistnew) "Both input vectors need to store the same number of distances."
