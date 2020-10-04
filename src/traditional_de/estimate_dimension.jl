@@ -3,9 +3,6 @@ using NearestNeighbors, Statistics, Distances
 export estimate_dimension, stochastic_indicator
 export Euclidean, Chebyshev, Cityblock
 
-#####################################################################################
-#                                Estimate Dimension                                 #
-#####################################################################################
 """
     estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn"; kwargs...)
 
@@ -58,7 +55,9 @@ function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afn
     end
 end
 
-
+#####################################################################################
+#                                Cao's method                                       #
+#####################################################################################
 """
     afnn(s::AbstractVector, τ:Int, γs = 1:5, metric=Euclidean())
 
@@ -122,6 +121,53 @@ _increase_distance(δ, s, i::Int, j::Int, γ::Int, τ::Int, ::Euclidean) =
 _increase_distance(δ, s, i::Int, j::Int, γ::Int, τ::Int, ::Cityblock) =
     δ + abs(s[i+γ*τ+τ] - s[j+γ*τ+τ])
 
+
+"""
+    stochastic_indicator(s::AbstractVector, τ:Int, γs = 1:4) -> E₂s
+
+Compute an estimator for apparent randomness in a reconstruction with `γs` temporal
+neighbors.
+
+## Description
+Given the scalar timeseries `s` and the embedding delay `τ` compute the
+values of `E₂` for each `γ ∈ γs`, according to Cao's Method (eq. 5 of [^Cao1997]).
+
+Use this function to confirm that the
+input signal is not random and validate the results of [`estimate_dimension`](@ref).
+In the case of random signals, it should be `E₂ ≈ 1 ∀ γ`.
+"""
+function stochastic_indicator(s::AbstractVector{T},τ, γs=1:4) where T # E2, equation (5)
+    #This function tries to tell the difference between deterministic
+    #and stochastic signals
+    #Calculate E* for Dimension γ+1
+    E2s = Float64[]
+    for γ ∈ γs
+        Rγ1 = reconstruct(s,γ+1,τ)
+        tree1 = KDTree(Rγ1[1:end-1-τ])
+        method = FixedMassNeighborhood(2)
+
+        Es1 = 0.
+        nind = (x = neighborhood(Rγ1[1:end-τ], tree1, method); [ind[1] for ind in x])
+        for  (i,j) ∈ enumerate(nind)
+            Es1 += abs(Rγ1[i+τ][end] - Rγ1[j+τ][end]) / length(Rγ1)
+        end
+
+        #Calculate E* for Dimension γ
+        Rγ = reconstruct(s,γ,τ)
+        tree2 = KDTree(Rγ[1:end-1-τ])
+        Es2 = 0.
+        nind = (x = neighborhood(Rγ[1:end-τ], tree2, method); [ind[1] for ind in x])
+        for  (i,j) ∈ enumerate(nind)
+            Es2 += abs(Rγ[i+τ][end] - Rγ[j+τ][end]) / length(Rγ)
+        end
+        push!(E2s, Es1/Es2)
+    end
+    return E2s
+end
+
+#####################################################################################
+#                                FNN / F1NN                                         #
+#####################################################################################
 """
     fnn(s::AbstractVector, τ:Int, γs = 1:5; rtol=10.0, atol=2.0)
 
@@ -227,83 +273,10 @@ function _compare_first_nn(s, γ::Int, τ::Int, Rγ::Dataset{D,T}, metric) where
     return (nf1nn, Rγ1)
 end
 
-"""
-    fnn_embedding_cycle(NNdist, NNdistnew, r=2) -> FNNs
-Compute the amount of false nearest neighbors `FNNs`, when adding another component
-to a given (vector-) time series. This new component is the `τ`-lagged version
-of a univariate time series. `NNdist` is storing the distances of the nearest
-neighbor for all considered fiducial points and `NNdistnew` is storing the
-distances of the nearest neighbor for each fiducial point in one embedding
-dimension higher using a given `τ`. The obligatory threshold `r` is by default
-set to 2.
-[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
-"""
-function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
-    @assert length(NNdist) == length(NNdistnew) "Both input vectors need to store the same number of distances."
-    N = length(NNdist)
 
-    fnns = 0
-    fnns2= 0
-    inverse_r = 1/r
-    @inbounds for i = 1:N
-        if NNdistnew[i][1]/NNdist[i][1] > r && NNdist[i][1] < inverse_r
-            fnns +=1
-        end
-        if NNdist[i][1] < inverse_r
-            fnns2 +=1
-        end
-    end
-    if fnns==0
-        return 1
-    else
-        return fnns/fnns2
-    end
-end
-
-
-"""
-    stochastic_indicator(s::AbstractVector, τ:Int, γs = 1:4) -> E₂s
-
-Compute an estimator for apparent randomness in a reconstruction with `γs` temporal
-neighbors.
-
-## Description
-Given the scalar timeseries `s` and the embedding delay `τ` compute the
-values of `E₂` for each `γ ∈ γs`, according to Cao's Method (eq. 5 of [^Cao1997]).
-
-Use this function to confirm that the
-input signal is not random and validate the results of [`estimate_dimension`](@ref).
-In the case of random signals, it should be `E₂ ≈ 1 ∀ γ`.
-"""
-function stochastic_indicator(s::AbstractVector{T},τ, γs=1:4) where T # E2, equation (5)
-    #This function tries to tell the difference between deterministic
-    #and stochastic signals
-    #Calculate E* for Dimension γ+1
-    E2s = Float64[]
-    for γ ∈ γs
-        Rγ1 = reconstruct(s,γ+1,τ)
-        tree1 = KDTree(Rγ1[1:end-1-τ])
-        method = FixedMassNeighborhood(2)
-
-        Es1 = 0.
-        nind = (x = neighborhood(Rγ1[1:end-τ], tree1, method); [ind[1] for ind in x])
-        for  (i,j) ∈ enumerate(nind)
-            Es1 += abs(Rγ1[i+τ][end] - Rγ1[j+τ][end]) / length(Rγ1)
-        end
-
-        #Calculate E* for Dimension γ
-        Rγ = reconstruct(s,γ,τ)
-        tree2 = KDTree(Rγ[1:end-1-τ])
-        Es2 = 0.
-        nind = (x = neighborhood(Rγ[1:end-τ], tree2, method); [ind[1] for ind in x])
-        for  (i,j) ∈ enumerate(nind)
-            Es2 += abs(Rγ[i+τ][end] - Rγ[j+τ][end]) / length(Rγ)
-        end
-        push!(E2s, Es1/Es2)
-    end
-    return E2s
-end
-
+#####################################################################################
+#                               IFNN (Hegger & Kantz)                               #
+#####################################################################################
 """
     fnn_uniform_hegger(s::Vector, τ::Int; kwargs...) →  `m`, `FNNs`, `Y`
 Compute and return the optimal embedding dimension `m` for the time series `s`
@@ -380,4 +353,37 @@ function fnn_break_criterion(FNNs, fnn_thres)
                 "Valid embedding dimension reached ✓.")
     end
     return flag
+end
+
+"""
+    fnn_embedding_cycle(NNdist, NNdistnew, r=2) -> FNNs
+Compute the amount of false nearest neighbors `FNNs`, when adding another component
+to a given (vector-) time series. This new component is the `τ`-lagged version
+of a univariate time series. `NNdist` is storing the distances of the nearest
+neighbor for all considered fiducial points and `NNdistnew` is storing the
+distances of the nearest neighbor for each fiducial point in one embedding
+dimension higher using a given `τ`. The obligatory threshold `r` is by default
+set to 2.
+[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
+"""
+function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
+    @assert length(NNdist) == length(NNdistnew) "Both input vectors need to store the same number of distances."
+    N = length(NNdist)
+
+    fnns = 0
+    fnns2= 0
+    inverse_r = 1/r
+    @inbounds for i = 1:N
+        if NNdistnew[i][1]/NNdist[i][1] > r && NNdist[i][1] < inverse_r
+            fnns +=1
+        end
+        if NNdist[i][1] < inverse_r
+            fnns2 +=1
+        end
+    end
+    if fnns==0
+        return 1
+    else
+        return fnns/fnns2
+    end
 end
