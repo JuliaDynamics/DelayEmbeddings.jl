@@ -1,3 +1,11 @@
+function optimal_traditional_de(s::AbstractVector, method::String;
+    delay::String = "mi_min", τs = 1:min(100, length(s)), kwargs...)
+
+    τ = estimate_delay(s, delay, τs; kwargs...)
+    # Code here that automatically does cao/hegger stuff
+
+end
+
 
 """
     standard_embedding_hegger(s::Vector; kwargs...) → `Y`, `τ`
@@ -17,7 +25,7 @@ Keyword arguments:
 * `"mi_min"` : delay of first minimum of mutual information of `s` with itself
   (shifted for various `τs`). <- Default
 
-[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
+[^Hegger1999]: Hegger and Kantz (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
 function standard_embedding_hegger(s::Vector{T}; method::String = "mi_min",
                                             fnn_thres::Real = 0.05) where {T}
@@ -51,7 +59,7 @@ Keyword arguments:
 * `"mi_min"` : delay of first minimum of mutual information of `s` with itself
   (shifted for various `τs`). <- Default
 
-[^Hegger1999]: Hegger, Rainer and Kantz, Holger (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
+[^Hegger1999]: Hegger and Kantz (1999). [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
 function standard_embedding_cao(s::Vector{T}; cao_thres::Real = 0.05,
                         method::String = "mi_min", m_max::Int = 10) where {T}

@@ -5,7 +5,7 @@ export estimate_delay, exponential_decay_fit, autocor
 #                               Estimate Delay Times                                #
 #####################################################################################
 """
-    estimate_delay(s, method::String [, τs = 1:2:100]; kwargs...) -> τ
+    estimate_delay(s, method::String [, τs = 1:100]; kwargs...) -> τ
 
 Estimate an optimal delay to be used in [`reconstruct`](@ref) or [`embed`](@ref).
 The `method` can be one of the following:
@@ -28,7 +28,7 @@ The method `mi_min` is significantly more accurate than the others and also retu
 good results for most timeseries. It is however the slowest method (but still quite fast!).
 """
 function estimate_delay(x::AbstractVector, method::String,
-    τs = 1:2:min(100, length(x)); kwargs...)
+    τs = 1:min(100, length(x)); kwargs...)
 
     issorted(τs) || error("`τs` must be sorted")
 
