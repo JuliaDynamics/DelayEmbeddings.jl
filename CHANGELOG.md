@@ -1,6 +1,7 @@
 # v1.11.0
 * Possible delay times in `estimate_delay` are now `1:100` for increased accuracy.
 * New method for univariate non-unified delay embedding by Hegger, Kantz
+* It is now possible to `embed` in one dimension (which just returns the vector as a Dataset)
 
 # v1.10.0
 * New methods (Garcia & Almeida and Nichkawde/MDOP) for unified delay coordinates
