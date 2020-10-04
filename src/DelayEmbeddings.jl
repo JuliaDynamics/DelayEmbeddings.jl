@@ -11,6 +11,7 @@ include("neighborhoods.jl")
 
 include("traditional_de/estimate_delay.jl")
 include("traditional_de/estimate_dimension.jl")
+include("traditional_de/automated.jl")
 
 include("unified_de/pecora.jl")
 include("unified_de/uzal_cost.jl")

@@ -453,13 +453,13 @@ function fnn_break_criterion(FNNs, fnn_thres)
     flag = false
     if FNNs[end] ≤ fnn_thres
         flag = true
-        println("Algorithm stopped due to sufficiently small FNNs. "*
-                "Valid embedding achieved ✓.")
+        println("Hegger-FNN algorithm stopped due to sufficiently small FNNs. "*
+                "Valid embedding dimension reached ✓.")
     end
     if length(FNNs) > 1 && FNNs[end] > FNNs[end-1]
         flag = true
-        println("Algorithm stopped due to rising FNNs. "*
-                "Valid embedding achieved ✓.")
+        println("Hegger-FNN algorithm stopped due to rising FNNs. "*
+                "Valid embedding dimension reached ✓.")
     end
     return flag
 end
