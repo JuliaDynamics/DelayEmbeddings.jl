@@ -61,20 +61,13 @@ function standard_embedding_cao(s::Vector{T}; cao_thres::Real = 0.05,
 
     τ = estimate_delay(s, method)
     rat = estimate_dimension(s, τ, 1:m_max, "afnn")
+    m, Y = 0, nothing
     for i = 1:m_max
         if abs(1-rat[i]) < cao_thres
-            global m = i
+            m = i
             break
         end
     end
-    try
-        if m > 1
-            global Y = embed(s, m, τ)
-        else
-            global Y = s
-        end
-    catch
-        global Y = s
-    end
+    Y =  m > 1 ? embed(s, m, τ) : s
     return Y, τ
 end
