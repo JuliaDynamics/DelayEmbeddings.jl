@@ -9,13 +9,10 @@ On s one performs a d-dimensional embedding, that uses a combination of d timese
 I.e. input is `s, τs, js`, with `js, τs` being tuples.
 
 ## 1. Core loop given a specific input embedding
-We have a d-dimensional embedding, whose each entry is an arbitrary choice out of
-the available timeseries (if we have multiple input timeseries, otherwise they are all the
-same) and each entry is also defined with respect to an arbitrary delay.
-
+We have a d-dimensional embedding.
 Define a radius δ around point v in ℝᵈ space (d-dimensional embedding). k points are inside
 the δ-ball (with respect to some metric) around v. For simplicity, the time index of
-v is t0. The other poinds inside the δ_ball have indices i (with several i).
+v is t0. The other points inside the δ_ball have indices i (with several i).
 
 We want to check if we can add an additional dimension to the embedding, using the j-th
 timeseries. We check with continuity statistic of Pecora et al.
@@ -24,7 +21,7 @@ let x(t+τ) ≡ s_j(t+τ) be this extra dimension we add into the embedding. Out
 k points in the δ-ball, we count l of them that land into a range ε around x.  Notice that
 "points" is a confusing term that should not be used interchange-bly. Here in truth we
 refer to **indices** not points. Because of delay embedding, all points are mapped 1-to-1
-to a unique time index. We count the x points with the same time indices ti, if they
+to a unique time index. We count the points with the same time indices ti, if they
 are around the original x point with index t0.
 
 Now, if l ≥ δ_to_ε_amount[k] (where δ_to_ε_amount a dictionary defined below), we can
