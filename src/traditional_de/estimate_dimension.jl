@@ -58,6 +58,10 @@ neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref
 """
 function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn";
     metric = Euclidean(), kwargs...)
+    @warn """
+    Using `estimate_dimension` is deprecated in favor of either calling `afnn, fnn, ...`
+    directly or using the function `optimal_traditional_de`
+    """
     if method == "afnn"
         return afnn(s, τ, γs, metric)
     elseif method == "ifnn"
