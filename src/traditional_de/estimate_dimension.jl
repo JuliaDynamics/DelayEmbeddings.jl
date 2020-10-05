@@ -98,7 +98,7 @@ find `γ` for which the value `E₁` saturates at some value around 1.
 
 *Note: This method does not work for datasets with perfectly periodic signals.*
 
-See also: [`estimate_dimension`](@ref), [`fnn`](@ref), [`f1nn`](@ref).
+See also: [`optimal_traditional_de`](@ref).
 """
 function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Euclidean()) where {T}
     E1s = zeros(length(γs))
@@ -189,9 +189,9 @@ end
 #                                FNN / F1NN                                         #
 #####################################################################################
 """
-    fnn(s::AbstractVector, τ:Int, γs = 1:5; rtol=10.0, atol=2.0)
+    fnn(s::AbstractVector, τ:Int, γs = 1:5; rtol=10.0, atol=2.0) → FNNs
 
-Calculate the number of "false nearest neighbors" (FNN) of the datasets created
+Calculate the number of "false nearest neighbors" (FNNs) of the datasets created
 from `s` with a sequence of `τ`-delayed temporal neighbors.
 
 ## Description
@@ -208,7 +208,7 @@ The returned value is a vector with the number of FNN for each `γ ∈ γs`. The
 optimal value for `γ` is found at the point where the number of FNN approaches
 zero.
 
-See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`f1nn`](@ref).
+See also: [`optimal_traditional_de`](@ref).
 """
 function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10.0, atol=2.0)
     rtol2 = rtol^2
@@ -253,7 +253,7 @@ The returned value is a vector with the ratio between the number of FFNN and
 the number of points in the dataset for each `γ ∈ γs`. The optimal value for `γ`
 is found at the point where this ratio approaches zero.
 
-See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`fnn`](@ref).
+See also: [`optimal_traditional_de`](@ref).
 """
 function f1nn(s::AbstractVector, τ::Int, γs = 1:5, metric = Euclidean())
     f1nn_ratio = zeros(length(γs))
@@ -317,7 +317,7 @@ Keyword argument:
 *`w = 1` = The Theiler window, which excludes temporally correlated points from
     the nearest neighbor search.
 
-[^Hegger1999]: Hegger & Kantz, [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
+See also: [`optimal_traditional_de`](@ref).
 """
 function ifnn(s::Vector{T}, τ::Int; max_dimension::Int = 10,
             r::Real = 2, w::Int = 1, fnn_thres::Real = 0.05, metric = Euclidean()) where {T}
