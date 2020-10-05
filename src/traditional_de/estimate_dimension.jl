@@ -204,7 +204,7 @@ The returned value is a vector with the number of FNN for each `γ ∈ γs`. The
 optimal value for `γ` is found at the point where the number of FNN approaches
 zero.
 
-See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`f1nn`](@ref).
+See also: [`estimate_dimension`](@ref), [`afnn`](@ref), [`f1nn`](@ref), [`ifnn`](@ref).
 """
 function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10.0, atol=2.0)
     rtol2 = rtol^2
@@ -234,7 +234,7 @@ function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10.0, atol=2.0)
 end
 
 """
-    f1nn(s::AbstractVector, τ:Int, γs = 1:5, metric = Euclidean())
+    f1nn(s::AbstractVector, τ::Int, γs = 1:5, metric = Euclidean())
 
 Calculate the ratio of "false first nearest neighbors" (FFNN) of the datasets created
 from `s` with a sequence of `τ`-delayed temporal neighbors.
@@ -294,19 +294,11 @@ end
 #                               IFNN (Hegger & Kantz)                               #
 #####################################################################################
 """
-    ifnn(s::Vector, τ::Int; kwargs...) →  `m`, `FNNs`, `Y`
-Compute and return the optimal embedding dimension `m` for the time series `s`
-and a uniform time delay `τ` after [^Hegger1999]. Return the optimal `m` and the
-corresponding reconstruction vector `Y` according to that `m` and the input `τ`.
-The optimal `m` is chosen, when the fraction of `FNNs` falls below the threshold
-`fnn_thres` or when fraction of FNN's increases.
+    ifnn(s::Vector, τ::Int, γs = 1:5; kwargs...) → `FNNs`
+Compute and return the `FNNs`-statistic for the time series `s` and a uniform
+time delay `τ` for dimensions `γs` after [^Hegger1999].
 
-Keyword argument:
-*`fnn_thres = 0.05`: Threshold, which defines the tolerable fraction of FNN's
-    for which the algorithm breaks.
-*`max_dimension = 10`: The maximum dimension which is encountered by the
-    algorithm and after which it breaks, if the breaking criterion has not been
-    met yet.
+Keyword arguments:
 *`r = 2`: Obligatory threshold, which determines the maximum tolerable spreading
     of trajectories in the reconstruction space.
 *`metric = Euclidean`: The norm used for distance computations.
@@ -315,61 +307,32 @@ Keyword argument:
 
 [^Hegger1999]: Hegger & Kantz, [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
-function ifnn(s::Vector{T}, τ::Int; max_dimension::Int = 10,
-            r::Real = 2, w::Int = 1, fnn_thres::Real = 0.05, metric = Euclidean()) where {T}
-    @assert max_dimension > 0
+function ifnn(s::Vector{T}, τ::Int, γs = 1:10;
+            r::Real = 2, w::Int = 1, metric = Euclidean()) where {T}
+    @assert all(x -> x ≥ 0, γs)
+
     s = (s .- mean(s)) ./ std(s)
     Y_act = s
 
     vtree = KDTree(Dataset(s), metric)
     _, NNdist_old = DelayEmbeddings.all_neighbors(vtree, Dataset(s), 1:length(s), 1, w)
 
-    FNNs = zeros(max_dimension)
+    FNNs = zeros(length(γs))
     bm = 0
-    for m = 2:max_dimension+1
-        Y_act = DelayEmbeddings.hcat_lagged_values(Y_act, s, m*τ)
+    for (i, γ) ∈ enumerate(γs)
+        Y_act = DelayEmbeddings.hcat_lagged_values(Y_act, s, (γ+1)*τ)
         Y_act = regularize(Y_act)
         vtree = KDTree(Y_act, metric)
         _, NNdist_new = DelayEmbeddings.all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
 
-        FNNs[m-1] = DelayEmbeddings.fnn_embedding_cycle(view(NNdist_old,
+        FNNs[i] = DelayEmbeddings.fnn_embedding_cycle(view(NNdist_old,
                                             1:length(Y_act)), NNdist_new, r)
 
-        flag = fnn_break_criterion(FNNs[1:m-1], fnn_thres)
-        if flag
-            bm = m
-            break
-        else
-            bm = m
-        end
         NNdist_old = NNdist_new
     end
-
-    if bm>2
-        Y_final = embed(s, bm-1, τ)
-    else
-        Y_final = s
-    end
-    return bm, FNNs[1:bm-1], Y_final
+    return FNNs
 end
 
-"""
-Determines the break criterion for the Hegger-FNN-estimation
-"""
-function fnn_break_criterion(FNNs, fnn_thres)
-    flag = false
-    if FNNs[end] ≤ fnn_thres
-        flag = true
-        println("Hegger-FNN algorithm stopped due to sufficiently small FNNs. "*
-                "Valid embedding dimension reached ✓.")
-    end
-    if length(FNNs) > 1 && FNNs[end] > FNNs[end-1]
-        flag = true
-        println("Hegger-FNN algorithm stopped due to rising FNNs. "*
-                "Valid embedding dimension reached ✓.")
-    end
-    return flag
-end
 
 """
     fnn_embedding_cycle(NNdist, NNdistnew, r=2) -> FNNs
