@@ -23,9 +23,6 @@ for each `γ ∈ γs` based on the "nearest neighbors" in the embedded time seri
 
 The quantity that is calculated depends on the algorithm defined by the string `method`:
 
-* `"ifnn"` is the "Improved False Nearest Neighbors" from Hegger & Kantz[^Hegger1999],
-    which gives the fraction of false nearest neighbors. This fraction goes to 0
-    after the optimal value of `γ`.
 * `"afnn"` (default) is Cao's "Averaged False Nearest Neighbors" method[^Cao1997], which
     gives a ratio of distances between nearest neighbors. This ratio saturates
     around `1.0` near the optimal value of `γ` (see [`afnn`](@ref)).
@@ -53,8 +50,6 @@ neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref
 [^Kennel1992]: M. Kennel *et al.*, [Phys. Review A **45**(6), (1992)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.45.3403).
 
 [^Krakovská2015]: Anna Krakovská *et al.*, [J. Complex Sys. 932750 (2015)](https://doi.org/10.1155/2015/932750)
-
-[^Hegger1999]: Hegger & Kantz, [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
 function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn";
     metric = Euclidean(), kwargs...)
@@ -68,8 +63,6 @@ function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afn
         return ifnn(s, τ, γs; kwargs...)
     elseif method == "fnn"
         return fnn(s, τ, γs; kwargs...)
-    elseif method == "f1nn"
-        return f1nn(s, τ, γs, metric)
     else
         error("Unrecognized method.")
     end
