@@ -4,13 +4,13 @@ export optimal_traditional_de
 # appropriate functin instead of here.
 
 """
-    optimal_traditional_de(s, method = "ifnn", dmethod = "mi_min"; kwargs...) → 𝒟, τ
+    optimal_traditional_de(s, dmethod = "mi_min", method = "ifnn"; kwargs...) → 𝒟, τ, x
 
 Produce an optimal delay embedding `𝒟` of the given timeseries `s` by
 using the traditional approach of first finding an optimal (and constant) delay time using
 [`estimate_delay`](@ref) with the given `dmethod`, and then an optimal embedding dimension.
-Return the embedding `𝒟` and the optimal delay time `τ` (the optimal embedding dimension
-is just `size(𝒟, 2)`).
+Return the embedding `𝒟` and the optimal delay time `τ` (the optimal embedding dimension `d`
+is just `size(𝒟, 2)`) and the actual statistic `x` used to estimate optimal `d`.
 
 For estimating the dimension we use the given `method`, which can be:
 
@@ -48,12 +48,11 @@ Cao's method (eqs. (2, 3) of [1]). Defaults to `Euclidean()` (note that [1] used
 """
 function optimal_traditional_de(s::AbstractVector, delaymethod::String= "mi_min",
     dimensionmethod::String = "afnn"; thres::Real = 0.05, dmax::Int = 10,
-    w::Int =1, rtol=10.0, atol=2.0, )
+    w::Int=1, rtol=10.0, atol=2.0, τs = 1:100)
 
-    @assert delaymethod=="ac_zero" || delaymethod=="mi_min" || delaymethod=="ac_min"
-    @assert dimensionmethod=="afnn" || dimensionmethod=="fnn" || dimensionmethod=="ifnn" || dimensionmethod=="f1nn"
+    @assert dimensionmethod ∈ ("afnn", "fnn", "ifnn", "f1nn")
 
-    τ = estimate_delay(s, delaymethod)
+    τ = estimate_delay(s, delaymethod, τs)
 
     m, Y = 0, nothing
 
