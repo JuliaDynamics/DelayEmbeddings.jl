@@ -2,6 +2,10 @@
 * Possible delay times in `estimate_delay` are now `1:100` for increased accuracy.
 * New method for univariate non-unified delay embedding by Hegger, Kantz
 * It is now possible to `embed` in one dimension (which just returns the vector as a Dataset)
+* New function `optimal_traditional_de` for automated delay embeddings
+
+## Deprecations
+* Using `estimate_dimension` is deprecated in favor of either calling `afnn, fnn, ...` directly or using the function `optimal_traditional_de`
 
 # v1.10.0
 * New methods (Garcia & Almeida and Nichkawde/MDOP) for unified delay coordinates
