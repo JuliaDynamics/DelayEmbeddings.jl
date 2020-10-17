@@ -93,7 +93,7 @@ find `γ` for which the value `E₁` saturates at some value around 1.
 
 *Note: This method does not work for datasets with perfectly periodic signals.*
 
-See also: [`optimal_traditional_de`](@ref).
+See also: [`optimal_traditional_de`](@ref) and [`stochastic_indicator`](@ref).
 """
 function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Euclidean()) where {T}
     E1s = zeros(length(γs))
@@ -296,6 +296,7 @@ end
     ifnn(s::Vector, τ::Int, γs = 1:5; kwargs...) → `FNNs`
 Compute and return the `FNNs`-statistic for the time series `s` and a uniform
 time delay `τ` for dimensions `γs` after [^Hegger1999].
+This fraction goes to 0 after the optimal embedding dimension.
 
 Keyword arguments:
 *`r = 2`: Obligatory threshold, which determines the maximum tolerable spreading

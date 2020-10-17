@@ -1,8 +1,5 @@
 export optimal_traditional_de
 
-# TODO: Perhaps what should happen with each quantitity should be documented at the
-# appropriate functin instead of here.
-
 """
     optimal_traditional_de(s, dmethod = "mi_min", method = "afnn"; kwargs...) → 𝒟, τ, x
 
@@ -15,26 +12,18 @@ is just `size(𝒟, 2)`) and the actual statistic `x` used to estimate optimal `
 For estimating the dimension we use the given `method`, which can be:
 
 * `"afnn"` (default) is Cao's "Averaged False Nearest Neighbors" method[^Cao1997], which
-    gives a ratio of distances between nearest neighbors. This ratio saturates
-    around `1.0` near the optimal value of `γ` (see [`afnn`](@ref)).
+    gives a ratio of distances between nearest neighbors.
 * `"ifnn"` is the "Improved False Nearest Neighbors" from Hegger & Kantz[^Hegger1999],
-    which gives the fraction of false nearest neighbors. This fraction goes to 0
-    after the optimal embedding dimension.
+    which gives the fraction of false nearest neighbors.
 * `"fnn"` is Kennel's "False Nearest Neighbors" method[^Kennel1992], which gives the
     number of points that cease to be "nearest neighbors" when the dimension
-    increases. This number drops down to zero near the optimal value of `γ`.
-    This method accepts the keyword arguments `rtol` and `atol`, which stand
-    for the "tolerances" required by Kennel's algorithm (see [`fnn`](@ref)).
+    increases.
 * `"f1nn"` is Krakovská's "False First Nearest Neighbors" method[^Krakovská2015], which
     gives the ratio of pairs of points that cease to be "nearest neighbors"
-    when the dimension increases. This number drops down to zero near the
-    optimal embedding dimension (see [`f1nn`](@ref)). This is the worse method.
+    when the dimension increases. This is the worse method.
 
-`"afnn"` and `"f1nn"` also support the `metric` keyword, which can be any of
-`Cityblock(), Euclidean(), Chebyshev()`. This metric is used both
-for computing the nearest neighbors (`KDTree`s) as well as the distances necessary for
-Cao's method (eqs. (2, 3) of [1]). Defaults to `Euclidean()` (note that [1] used
-`Chebyshev`).
+For more details, see individual methods: [`afnn`](@ref), [`ifnn`](@ref),
+[`fnn`](@ref), [`f1nn`](@ref).
 
 ## Keywords
 All keywords are propagated to the low level functions like `afnn` (except `τs`).
