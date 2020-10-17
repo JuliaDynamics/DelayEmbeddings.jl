@@ -59,12 +59,12 @@ function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afn
     """
     if method == "afnn"
         return afnn(s, τ, γs, metric)
-    elseif method == "ifnn"
-        return ifnn(s, τ, γs; kwargs...)
     elseif method == "fnn"
         return fnn(s, τ, γs; kwargs...)
+    elseif method == "f1nn"
+        return f1nn(s, τ, γs, metric)
     else
-        error("Unrecognized method.")
+        error("unrecognized method")
     end
 end
 
