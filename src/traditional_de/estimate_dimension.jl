@@ -55,12 +55,14 @@ function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afn
     metric = Euclidean(), kwargs...)
     @warn """
     Using `estimate_dimension` is deprecated in favor of either calling `afnn, fnn, ...`
-    directly or using the function `optimal_traditional_de`
+    directly or using the function `optimal_traditional_de`.
     """
     if method == "afnn"
         return afnn(s, τ, γs, metric)
     elseif method == "fnn"
         return fnn(s, τ, γs; kwargs...)
+    elseif method == "ifnn"
+        return ifnn(s, τ, γs; kwargs...)
     elseif method == "f1nn"
         return f1nn(s, τ, γs, metric)
     else
@@ -149,7 +151,7 @@ Use this function to confirm that the
 input signal is not random and validate the results of [`estimate_dimension`](@ref).
 In the case of random signals, it should be `E₂ ≈ 1 ∀ γ`.
 """
-function stochastic_indicator(s::AbstractVector{T},τ, γs=1:4) where T # E2, equation (5)
+function stochastic_indicator(s::AbstractVector{T}, τ, γs=1:4) where T # E2, equation (5)
     #This function tries to tell the difference between deterministic
     #and stochastic signals
     #Calculate E* for Dimension γ+1

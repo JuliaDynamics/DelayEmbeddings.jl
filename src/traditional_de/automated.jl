@@ -4,7 +4,7 @@ export optimal_traditional_de
 # appropriate functin instead of here.
 
 """
-    optimal_traditional_de(s, dmethod = "mi_min", method = "ifnn"; kwargs...) → 𝒟, τ, x
+    optimal_traditional_de(s, dmethod = "mi_min", method = "afnn"; kwargs...) → 𝒟, τ, x
 
 Produce an optimal delay embedding `𝒟` of the given timeseries `s` by
 using the traditional approach of first finding an optimal (and constant) delay time using
@@ -14,12 +14,12 @@ is just `size(𝒟, 2)`) and the actual statistic `x` used to estimate optimal `
 
 For estimating the dimension we use the given `method`, which can be:
 
-* `"ifnn"` is the "Improved False Nearest Neighbors" from Hegger & Kantz[^Hegger1999],
-    which gives the fraction of false nearest neighbors. This fraction goes to 0
-    after the optimal embedding dimension. This is the best method.
 * `"afnn"` (default) is Cao's "Averaged False Nearest Neighbors" method[^Cao1997], which
     gives a ratio of distances between nearest neighbors. This ratio saturates
     around `1.0` near the optimal value of `γ` (see [`afnn`](@ref)).
+* `"ifnn"` is the "Improved False Nearest Neighbors" from Hegger & Kantz[^Hegger1999],
+    which gives the fraction of false nearest neighbors. This fraction goes to 0
+    after the optimal embedding dimension.
 * `"fnn"` is Kennel's "False Nearest Neighbors" method[^Kennel1992], which gives the
     number of points that cease to be "nearest neighbors" when the dimension
     increases. This number drops down to zero near the optimal value of `γ`.
@@ -37,6 +37,10 @@ Cao's method (eqs. (2, 3) of [1]). Defaults to `Euclidean()` (note that [1] used
 `Chebyshev`).
 
 ## Keywords
+```
+thres::Real = 0.05, dmax::Int = 10,
+w::Int=1, rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean()
+```
 
 [^Cao1997]: Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
 
@@ -48,31 +52,27 @@ Cao's method (eqs. (2, 3) of [1]). Defaults to `Euclidean()` (note that [1] used
 """
 function optimal_traditional_de(s::AbstractVector, delaymethod::String= "mi_min",
     dimensionmethod::String = "afnn"; thres::Real = 0.05, dmax::Int = 10,
-    w::Int=1, rtol=10.0, atol=2.0, τs = 1:100)
+    w::Int=1, rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean())
 
     @assert dimensionmethod ∈ ("afnn", "fnn", "ifnn", "f1nn")
 
     τ = estimate_delay(s, delaymethod, τs)
+    γs = 1:dmax-1 # TODO: This must be updated to just dimension only
 
-    m, Y = 0, nothing
-
-    if dimensionmethod=="ifnn"
-        dimension_statistic = estimate_dimension(s, τ, γs = 1:dmax, method = dimensionmethod; r = r, w = w)
+    if dimensionmethod=="afnn"
+        dimension_statistic = estimate_dimension(s, τ, γs, dimensionmethod)
+        Y, τ = cao_embed(s, τ, dimension_statistic, thres)
+        E2 = stochastic_indicator(s, τ, γs)
+        flag = is_stochastic(E2, thres)
+        flag && println("Stochastic signal, valid embedding NOT achieved ⨉.")
+    elseif dimensionmethod=="ifnn"
+        dimension_statistic = estimate_dimension(s, τ, γs)
         Y, τ = fnn_embed(s, τ, dimension_statistic, thres)
     elseif dimensionmethod=="fnn"
-        dimension_statistic = estimate_dimension(s, τ, γs = 1:dmax, method = dimensionmethod; rtol = rtol, atol = atol)
+        dimension_statistic = estimate_dimension(s, τ, γs, dimensionmethod; rtol = rtol, atol = atol)
         Y, τ = fnn_embed(s, τ, dimension_statistic, thres)
-    elseif dimensionmethod=="afnn"
-        dimension_statistic = estimate_dimension(s, τ, γs = 1:dmax, method = dimensionmethod)
-        Y, τ = cao_embed(s, τ, dimension_statistic, thres)
-        E2 = stochastic_indicator(s, τ, γs = 1:dmax)
-        flag = is_stochastic(E2, thres)
-        if flag
-            println("Stochastic signal."*
-                    "Valid embedding NOT achieved ⨉.")
-        end
     elseif dimensionmethod=="f1nn"
-        dimension_statistic = estimate_dimension(s, τ, γs = 1:dmax, method = dimensionmethod)
+        dimension_statistic = estimate_dimension(s, τ, γs, dimensionmethod)
         Y, τ = fnn_embed(s, τ, dimension_statistic, thres)
     end
     return Y, τ, dimension_statistic
