@@ -9,6 +9,7 @@ All methods in this file are based on the idea of "false nearest neighbors".
 using NearestNeighbors, Statistics, Distances
 
 export estimate_dimension, stochastic_indicator
+export afnn, fnn, ifnn, f1nn
 export Euclidean, Chebyshev, Cityblock
 
 """

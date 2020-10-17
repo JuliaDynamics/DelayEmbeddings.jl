@@ -29,7 +29,7 @@ For more details, see individual methods: [`afnn`](@ref), [`ifnn`](@ref),
 All keywords are propagated to the low level functions like `afnn` (except `τs`).
 ```
 thres::Real = 0.05, dmax::Int = 10, w::Int=1, rtol=10.0, atol=2.0, τs = 1:100,
-metric = Euclidean(), r=2.0, w=1
+metric = Euclidean(), r::Real=2.0
 ```
 
 [^Cao1997]: Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
@@ -43,7 +43,7 @@ metric = Euclidean(), r=2.0, w=1
 function optimal_traditional_de(s::AbstractVector, delaymethod::String= "mi_min",
         dimensionmethod::String = "afnn";
         thres::Real = 0.05, dmax::Int = 10, w::Int=1, rtol=10.0, atol=2.0, τs = 1:100,
-        metric = Euclidean(), r=2.0, w=1
+        metric = Euclidean(), r::Real=2.0
     )
 
     @assert dimensionmethod ∈ ("afnn", "fnn", "ifnn", "f1nn")
