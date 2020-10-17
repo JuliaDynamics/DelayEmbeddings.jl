@@ -314,18 +314,19 @@ function ifnn(s::Vector{T}, τ::Int, γs = 1:10;
     Y_act = s
 
     vtree = KDTree(Dataset(s), metric)
-    _, NNdist_old = DelayEmbeddings.all_neighbors(vtree, Dataset(s), 1:length(s), 1, w)
+    _, NNdist_old = all_neighbors(vtree, Dataset(s), 1:length(s), 1, w)
 
     FNNs = zeros(length(γs))
     bm = 0
     for (i, γ) ∈ enumerate(γs)
-        Y_act = DelayEmbeddings.hcat_lagged_values(Y_act, s, (γ+1)*τ)
+        Y_act = hcat_lagged_values(Y_act, s, (γ+1)*τ)
         Y_act = regularize(Y_act)
         vtree = KDTree(Y_act, metric)
-        _, NNdist_new = DelayEmbeddings.all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
+        _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
 
-        FNNs[i] = DelayEmbeddings.fnn_embedding_cycle(view(NNdist_old,
-                                            1:length(Y_act)), NNdist_new, r)
+        FNNs[i] = fnn_embedding_cycle(
+            view(NNdist_old, 1:length(Y_act)), NNdist_new, r
+        )
 
         NNdist_old = NNdist_new
     end
