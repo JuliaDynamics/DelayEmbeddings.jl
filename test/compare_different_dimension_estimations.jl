@@ -1,7 +1,9 @@
-using DelayEmbeddings, DynamicalSystems, PyPlot
+using DelayEmbeddings, DynamicalSystemsBase, PyPlot
 
+pygui(true)
 # Generate the first timeseries (use a bunch of different systems)
-ds = Systems.lorenz96(5; F = 8.0)
+#ds = Systems.lorenz96(5; F = 8.0)
+ds = Systems.lorenz()
 tr = trajectory(ds, 1000.0; Ttr = 100.0, dt = 0.05)
 s = tr[:, 1]
 τ = estimate_delay(s, "mi_min")
@@ -18,8 +20,6 @@ for (i, f) in enumerate(fs)
     @show f, x
     if f == afnn
         x .= 1 .- x
-    elseif f == fnn
-        any(!iszero(x)) && (x ./= maximum(x))
     end
     axs[1].plot(dims, x, label = string(f); color = "C$(i)")
     axs[2].plot(dims[1:end-1], diff(x); color = "C$(i)")

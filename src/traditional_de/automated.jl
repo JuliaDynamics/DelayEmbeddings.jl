@@ -48,7 +48,7 @@ function optimal_traditional_de(s::AbstractVector, delaymethod::String= "mi_min"
 
     @assert dimensionmethod ∈ ("afnn", "fnn", "ifnn", "f1nn")
     τ = estimate_delay(s, delaymethod, τs)
-    γs = 1:dmax-1 # TODO: This must be updated to dimension in 2.0
+    γs = 0:dmax-1 # TODO: This must be updated to dimension in 2.0
 
     if dimensionmethod=="afnn"
         dimension_statistic = afnn(s, τ, γs, metric)
@@ -72,7 +72,7 @@ end
 
 """
 Helper function for selecting the appropriate embedding dimension from the
-statistic when using Kennel', Hegger's or Krakovskas's method.
+statistic when using Kennel's, Hegger's or Krakovskas's method.
 """
 function fnn_embed(s::Vector{T}, τ::Int, rat::Vector, thres::Real) where {T}
     @assert length(rat) > 1
@@ -97,7 +97,7 @@ function fnn_embed(s::Vector{T}, τ::Int, rat::Vector, thres::Real) where {T}
         println("Algorithm stopped due to sufficiently small FNNs. "*
                 "Valid embedding achieved ✓.")
         if flag
-            println("Algorithm stopped due to FNNs. "*
+            println("Algorithm stopped due to increasing FNNs. "*
                     "Double-check the FNN-statistic.")
         end
     end

@@ -229,6 +229,7 @@ function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10.0, atol=2.0)
                 nfnn[k] += 1
             end
         end
+        nfnn[k] /= length(nind)
     end
     return nfnn
 end
@@ -294,10 +295,12 @@ end
 #                               IFNN (Hegger & Kantz)                               #
 #####################################################################################
 """
-    ifnn(s::Vector, τ::Int, γs = 1:5; kwargs...) → `FNNs`
+    ifnn(s::Vector, τ::Int, γs = 0:10; kwargs...) → `FNNs`
 Compute and return the `FNNs`-statistic for the time series `s` and a uniform
-time delay `τ` for dimensions `γs` after [^Hegger1999].
-This fraction goes to 0 after the optimal embedding dimension.
+time delay `τ` for an extra amount of delayed entries `γs` after [^Hegger1999].
+In this notation `γ ∈ γs = d-1`, if `d` is the embedding dimension. This fraction
+tends to 0 when the optimal embedding dimension with an appropriate lag is
+reached.
 
 Keyword arguments:
 *`r = 2`: Obligatory threshold, which determines the maximum tolerable spreading
@@ -308,20 +311,20 @@ Keyword arguments:
 
 See also: [`optimal_traditional_de`](@ref).
 """
-function ifnn(s::Vector{T}, τ::Int, γs = 1:10;
+function ifnn(s::Vector{T}, τ::Int, γs = 0:10;
             r::Real = 2, w::Int = 1, metric = Euclidean()) where {T}
     @assert all(x -> x ≥ 0, γs)
 
     s = (s .- mean(s)) ./ std(s)
-    Y_act = s
+    Y_act = reconstruct(s[1:end-τ],γs[1],τ)
 
-    vtree = KDTree(Dataset(s), metric)
-    _, NNdist_old = all_neighbors(vtree, Dataset(s), 1:length(s), 1, w)
+    vtree = KDTree(Y_act, metric)
+    _, NNdist_old = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
 
     FNNs = zeros(length(γs))
     bm = 0
     for (i, γ) ∈ enumerate(γs)
-        Y_act = hcat_lagged_values(Y_act, s, (γ+1)*τ)
+        Y_act = reconstruct(s[1:end-τ],γ+1,τ)
         Y_act = regularize(Y_act)
         vtree = KDTree(Y_act, metric)
         _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
@@ -349,7 +352,6 @@ set to 2.
 function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
     @assert length(NNdist) == length(NNdistnew) "Both input vectors need to store the same number of distances."
     N = length(NNdist)
-
     fnns = 0
     fnns2= 0
     inverse_r = 1/r
