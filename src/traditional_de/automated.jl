@@ -39,7 +39,7 @@ from `dmethod` as follows: For Cao's method the optimal dimension is reached,
 when the slope of the `E₁`-statistic (output from `"afnn"`) falls below the
 threshold `slope_thres` (Default is .05) and the according stochastic test turns
 out to be false, i.e. when the `E₂`-statistic is not "equal" to 1 for all en-
-countered dimensions. The treat `E₂`-values as equal to 1, when `1-E₂ ≤ fnn_thres`.
+countered dimensions. We treat `E₂`-values as equal to 1, when `1-E₂ ≤ fnn_thres`.
 For all the other methods we return the optimal embedding dimension
 when the corresponding FNN-statistic (output from `"ifnn"`, `"fnn"` or `"f1nn"`)
 falls below the fnn-threshold `fnn_thres` (Default is .05) AND the slope of the
