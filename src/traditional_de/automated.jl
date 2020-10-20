@@ -1,12 +1,12 @@
 export optimal_traditional_de
 
 """
-    optimal_traditional_de(s, dmethod = "mi_min", method = "afnn"; kwargs...) → 𝒟, τ, x
+    optimal_traditional_de(s, method = "afnn", dmethod = "mi_min"; kwargs...) → 𝒟, τ, x
 
 Produce an optimal delay embedding `𝒟` of the given timeseries `s` by
 using the traditional approach of first finding an optimal (and constant) delay
 time using [`estimate_delay`](@ref) with the given `dmethod`, and then an optimal
-embedding dimension. Return the embedding `𝒟` and the optimal delay time `τ`
+embedding dimension. Return the embedding `𝒟`, the optimal delay time `τ`
 (the optimal embedding dimension `d` is just `size(𝒟, 2)`) and the actual
 statistic `x` used to estimate optimal `d`.
 
@@ -21,7 +21,7 @@ For estimating the dimension we use the given `method`, which can be:
     increases.
 * `"f1nn"` is Krakovská's "False First Nearest Neighbors" method[^Krakovská2015],
     which gives the ratio of pairs of points that cease to be "nearest neighbors"
-    when the dimension increases. This is the worse method.
+    when the dimension increases.
 
 For more details, see individual methods: [`afnn`](@ref), [`ifnn`](@ref),
 [`fnn`](@ref), [`f1nn`](@ref).
@@ -52,6 +52,8 @@ statistic falls below the threshold `slope_thres`. Note that with noise
 contaminated time series, one might need to adjust `fnn_thres` according to the
 noise level.
 
+See also the file `test/compare_different_dimension_estimations.jl` for a comparison.
+
 [^Cao1997]: Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
 
 [^Kennel1992]: M. Kennel *et al.*, [Phys. Review A **45**(6), (1992)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.45.3403).
@@ -60,8 +62,8 @@ noise level.
 
 [^Hegger1999]: Hegger & Kantz, [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
-function optimal_traditional_de(s::AbstractVector, delaymethod::String= "mi_min",
-        dimensionmethod::String = "afnn";
+function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "afnn",
+        delaymethod::String= "mi_min";
         fnn_thres::Real = 0.05, slope_thres::Real = .05, dmax::Int = 10, w::Int=1,
         rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean(), r::Real=2.0
     )

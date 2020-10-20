@@ -72,5 +72,4 @@ for names in dict_keys
     axs[2].set_xlabel("dimension")
     axs[2].set_ylabel("local slope")
     axs[1].set_title(names)
-
 end
