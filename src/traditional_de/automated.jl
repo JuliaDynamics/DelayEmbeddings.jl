@@ -26,6 +26,11 @@ For estimating the dimension we use the given `method`, which can be:
 For more details, see individual methods: [`afnn`](@ref), [`ifnn`](@ref),
 [`fnn`](@ref), [`f1nn`](@ref).
 
+!!! warn "Careful in automated methods"
+    While this method is automated if you want to be **really sure** of the results,
+    you should directly calculate the statistic and plot its values versus the
+    dimensions.
+
 ## Keywords
 All keywords are propagated to the low level functions like `afnn` (except `τs`).
 ```
@@ -94,7 +99,7 @@ function fnn_embed(s::Vector{T}, τ::Int, rat::Vector, fnn_thres::Real,
     @assert length(rat) > 1
     y = abs.(diff(rat))
     flag = false
-    m, Y = 0, nothing
+    m = 0
     for i = 2:length(rat)
         if rat[i] ≤ fnn_thres && y[i-1] ≤ slope_thres
             m = i
@@ -106,11 +111,9 @@ function fnn_embed(s::Vector{T}, τ::Int, rat::Vector, fnn_thres::Real,
         end
     end
     if m == length(rat) || m == 0
-        Y = s
         println("Sufficiently small FNNs NOT reached."*
                 "Valid embedding NOT achieved ⨉.")
     else
-        Y =  m > 1 ? embed(s, m, τ) : s
         println("Algorithm stopped due to sufficiently small FNNs. "*
                 "Valid embedding achieved ✓.")
         if flag
@@ -118,6 +121,7 @@ function fnn_embed(s::Vector{T}, τ::Int, rat::Vector, fnn_thres::Real,
                     "Double-check the FNN-statistic.")
         end
     end
+    Y = embed(s, max(1, m), τ) # you can embed in 1 dimension in latest version
     return Y, τ
 end
 
@@ -127,7 +131,7 @@ Helper function for selecting the appropriate embedding dimension from the
 statistic when using Cao's method.
 """
 function cao_embed(s::Vector{T}, τ::Int, rat::Vector, thres::Real) where {T}
-    m, Y = 0, nothing
+    m = 0
     y = abs.(diff(rat))
     for i = 1:length(rat)-1
         if y[i] ≤ thres
@@ -136,7 +140,6 @@ function cao_embed(s::Vector{T}, τ::Int, rat::Vector, thres::Real) where {T}
         end
     end
     if m == 0
-        Y = s
         println("NO convergence of E₁-statistic."*
                 "Valid embedding NOT achieved ⨉.")
     else
@@ -144,6 +147,7 @@ function cao_embed(s::Vector{T}, τ::Int, rat::Vector, thres::Real) where {T}
         println("Algorithm stopped due to convergence of E₁-statistic. "*
                 "Valid embedding achieved ✓.")
     end
+    Y = embed(s, max(1, m), τ) # you can embed in 1 dimension in latest version
     return Y, τ
 end
 

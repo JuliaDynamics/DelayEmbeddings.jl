@@ -3,6 +3,7 @@
 * New method for univariate non-unified delay embedding by Hegger, Kantz
 * It is now possible to `embed` in one dimension (which just returns the vector as a Dataset)
 * New function `optimal_traditional_de` for automated delay embeddings
+* `afnn, ifnn, fnn, f1nn` are part of public API now.
 
 ## Deprecations
 * Using `estimate_dimension` is deprecated in favor of either calling `afnn, fnn, ...` directly or using the function `optimal_traditional_de`
