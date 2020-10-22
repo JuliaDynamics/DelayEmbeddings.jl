@@ -100,11 +100,11 @@ end
 
 function fiducial_pairwise_dist_sqrd(fiducials, v, metric)
     pd = zero(eltype(fiducials[1]))
-    pd += 2evaluate(metric, v, v)^2
+    pd += evaluate(metric, v, v)^2
     for (i, v1) in enumerate(fiducials)
-        pd += 2evaluate(metric, v1, v)^2
+        pd += evaluate(metric, v1, v)^2
         for j in i+1:length(fiducials)
-            @inbounds pd += 2evaluate(metric, v1, fiducials[j])^2
+            @inbounds pd += evaluate(metric, v1, fiducials[j])^2
         end
     end
     return sum(pd)
