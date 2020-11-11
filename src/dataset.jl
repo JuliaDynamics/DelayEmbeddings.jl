@@ -4,11 +4,15 @@ using Base.Iterators: flatten
 import RecipesBase
 
 export Dataset, AbstractDataset, minima, maxima
-export minmaxima, columns, regularize
+export minmaxima, columns, regularize, dimension
 
 abstract type AbstractDataset{D, T} end
 
-@inline dimension(::AbstractDataset{D,T}) where {D,T} = D
+"""
+    dimension(thing) -> D
+Return the dimension of the `thing`, in the sense of state-space dimensionality.
+"""
+dimension(::AbstractDataset{D,T}) where {D,T} = D
 @inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T
 import Base: ==
 ==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
