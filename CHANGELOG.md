@@ -1,3 +1,7 @@
+# v1.11.0
+* Dropped RecipesBase
+* Now exports `dimension` (there was a problem where we have forgotten to export `dimension` from here, and `DynamicalSystemsBase` was overwritting it)
+
 # v1.10.0
 * New methods (Garcia & Almeida and Nichkawde/MDOP) for unified delay coordinates
   now available for multivariate input data.
