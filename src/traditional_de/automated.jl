@@ -82,9 +82,9 @@ function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "af
     γs = ds .- 1 # TODO: This must be updated to dimension in 2.0
 
     if dimensionmethod=="afnn"
-        dimension_statistic = afnn(s, τ, γs, metric)
+        dimension_statistic = afnn(s, τ, ds, metric)
         Y, τ = cao_embed(s, τ, dimension_statistic, slope_thres)
-        E2 = stochastic_indicator(s, τ, γs)
+        E2 = stochastic_indicator(s, τ, ds)
         flag = is_stochastic(E2, fnn_thres)
         flag && println("Stochastic signal, valid embedding NOT achieved ⨉.")
     elseif dimensionmethod=="fnn"

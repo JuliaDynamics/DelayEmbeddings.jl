@@ -10,13 +10,38 @@ using NearestNeighbors, Statistics, Distances
 
 export estimate_dimension, stochastic_indicator
 export afnn, fnn, ifnn, f1nn
+export delay_afnn, delay_fnn, delay_ifnn, delay_f1nn
 export Euclidean, Chebyshev, Cityblock
+
+for f in (:afnn, :fnn, :ifnn, :f1nn)
+    q = quote
+        function $(f)(s, τ, γs = 1:6, args...; kwargs...)
+            dep = """
+            function `$($(f))` is deprecated because it uses "γ" (amount of temporal
+            neighbors in delay vector) and `reconstruct`. These syntaxes are being phased
+            out in favor of `embed` and using `d` directly, the embedding dimension.
+
+            Use instead `$($(Symbol(:delay_, f)))` and replace given `γs` with `γs.+1`.
+            """
+            @warn dep
+            return $(Symbol(:delay_, f))(s, τ, γs .+ 1, args...; kwargs...)
+        end
+    end
+    @eval $q
+end
+
+# fnn(s::AbstractVector, τ:Int, γs = 1:5; rtol=10.0, atol=2.0) → FNNs
+# afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Euclidean()) where {T}
+# f1nn(s::AbstractVector, τ::Int, γs = 1:5, metric = Euclidean())
+# ifnn(s::Vector{T}, τ::Int, γs = 0:10;
+#             r::Real = 2, w::Int = 1, metric = Euclidean()) where {T}
+
 
 #####################################################################################
 #                                Cao's method                                       #
 #####################################################################################
 """
-    afnn(s::AbstractVector, τ:Int, γs = 1:5, metric=Euclidean())
+    delay_afnn(s::AbstractVector, τ:Int, ds = 2:6, metric=Euclidean()) → E₁
 
 Compute the parameter E₁ of Cao's "averaged false nearest neighbors" method for
 determining the minimum embedding dimension of the time series `s`, with
@@ -24,49 +49,48 @@ a sequence of `τ`-delayed temporal neighbors.
 
 ## Description
 Given the scalar timeseries `s` and the embedding delay `τ` compute the
-values of `E₁` for each `γ ∈ γs`, according to Cao's Method (eq. 3 of [1]).
+values of `E₁` for each embedding dimension `d ∈ ds`, according to Cao's Method (eq. 3).
 
 This quantity is a ratio of the averaged distances between the nearest neighbors
 of the reconstructed time series, which quantifies the increment of those
-distances when the number of temporal neighbors changes from `γ` to `γ+1`.
+distances when the embedding dimension changes from `d` to `d+1`.
 
-Return the vector of all computed `E₁`s. To estimate a good value for `γ` from this,
-find `γ` for which the value `E₁` saturates at some value around 1.
+Return the vector of all computed `E₁`s. To estimate a good value for `d` from this,
+find `d` for which the value `E₁` saturates at some value around 1.
 
 *Note: This method does not work for datasets with perfectly periodic signals.*
 
 See also: [`optimal_traditional_de`](@ref) and [`stochastic_indicator`](@ref).
 """
-function afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Euclidean()) where {T}
-    E1s = zeros(length(γs))
+function delay_afnn(s::AbstractVector{T}, τ::Int, ds = 2:6, metric=Euclidean()) where {T}
+    E1s = zeros(length(ds))
     aafter = 0.0
-    aprev = _average_a(s, γs[1], τ, metric)
-    for (i, γ) ∈ enumerate(γs)
-        aafter = _average_a(s, γ+1, τ, metric)
+    aprev = _average_a(s, ds[1], τ, metric)
+    for (i, d) ∈ enumerate(ds)
+        aafter = _average_a(s, d+1, τ, metric)
         E1s[i] = aafter/aprev
         aprev = aafter
     end
     return E1s
 end
-# then use function `saturation_point(γs, E1s)` from ChaosTools
 
 # TODO: This algorithm needs to be re-written on Neighborhood.jl.
-function _average_a(s::AbstractVector{T},γ,τ,metric) where {T}
+function _average_a(s::AbstractVector{T},d,τ,metric) where {T}
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
-    Rγ = reconstruct(s[1:end-τ],γ,τ)
-    tree2 = KDTree(Rγ, metric)
-    nind = (x = NearestNeighbors.knn(tree2, Rγ.data, 2)[1]; [ind[1] for ind in x])
+    Rd = embed(s[1:end-τ],d,τ)
+    tree2 = KDTree(Rd, metric)
+    nind = (x = NearestNeighbors.knn(tree2, Rd.data, 2)[1]; [ind[1] for ind in x])
     e = 0.0
     @inbounds for (i,j) ∈ enumerate(nind)
-        δ = evaluate(metric, Rγ[i], Rγ[j])
+        δ = evaluate(metric, Rd[i], Rd[j])
         #If Rγ[i] and Rγ[j] are still identical, choose the next nearest neighbor
         if δ == 0.0
-            j = NearestNeighbors.knn(tree2, Rγ[i], 3, true)[1][end]
-            δ = evaluate(metric, Rγ[i], Rγ[j])
+            j = NearestNeighbors.knn(tree2, Rd[i], 3, true)[1][end]
+            δ = evaluate(metric, Rd[i], Rd[j])
         end
-        e += _increase_distance(δ,s,i,j,γ,τ,metric)/δ
+        e += _increase_distance(δ,s,i,j,d-1,τ,metric)/δ
     end
-    return e / (length(Rγ)-1)
+    return e / (length(Rd)-1)
 end
 
 # Function to increase the distance (p-norm) between two points `(i,j)` of
@@ -79,27 +103,34 @@ _increase_distance(δ, s, i::Int, j::Int, γ::Int, τ::Int, ::Cityblock) =
     δ + abs(s[i+γ*τ+τ] - s[j+γ*τ+τ])
 
 
-"""
-    stochastic_indicator(s::AbstractVector, τ:Int, γs = 1:4) -> E₂s
+function stochastic_indicator(s::AbstractVector{T}, τ) where T # E2, equation (5)
+    @warn """
+    The third argument of `stochastic_indicator` is now a range of embedding dimensions
+    `d` instead of temporal entries `γ`, and `ds = γs .+ 1`.
+    """
+    stochastic_indicator(s, τ, 2:5)
+end
 
-Compute an estimator for apparent randomness in a reconstruction with `γs` temporal
-neighbors.
+"""
+    stochastic_indicator(s::AbstractVector, τ:Int, ds = 2:5) -> E₂s
+
+Compute an estimator for apparent randomness in a delay embedding with `ds` dimensions.
 
 ## Description
 Given the scalar timeseries `s` and the embedding delay `τ` compute the
-values of `E₂` for each `γ ∈ γs`, according to Cao's Method (eq. 5 of [^Cao1997]).
+values of `E₂` for each `d ∈ ds`, according to Cao's Method (eq. 5 of [^Cao1997]).
 
 Use this function to confirm that the
 input signal is not random and validate the results of [`estimate_dimension`](@ref).
-In the case of random signals, it should be `E₂ ≈ 1 ∀ γ`.
+In the case of random signals, it should be `E₂ ≈ 1 ∀ d`.
 """
-function stochastic_indicator(s::AbstractVector{T}, τ, γs=1:4) where T # E2, equation (5)
+function stochastic_indicator(s::AbstractVector{T}, τ, ds) where T # E2, equation (5)
     #This function tries to tell the difference between deterministic
     #and stochastic signals
     #Calculate E* for Dimension γ+1
     E2s = Float64[]
     for γ ∈ γs
-        Rγ1 = reconstruct(s,γ+1,τ)
+        Rγ1 = embed(s,d+1,τ)
         tree1 = KDTree(Rγ1[1:end-1-τ])
         method = FixedMassNeighborhood(2)
 
@@ -110,7 +141,7 @@ function stochastic_indicator(s::AbstractVector{T}, τ, γs=1:4) where T # E2, e
         end
 
         #Calculate E* for Dimension γ
-        Rγ = reconstruct(s,γ,τ)
+        Rγ = embed(s,d,τ)
         tree2 = KDTree(Rγ[1:end-1-τ])
         Es2 = 0.
         nind = (x = neighborhood(Rγ[1:end-τ], tree2, method); [ind[1] for ind in x])
