@@ -128,7 +128,7 @@ function fnn_embed(s::Vector{T}, τ::Int, rat::Vector, fnn_thres::Real,
         end
     end
     if m == length(rat) || m == 0
-        println("Sufficiently small FNNs NOT reached."*
+        println("Sufficiently small FNNs NOT reached. "*
                 "Valid embedding NOT achieved ⨉.")
     else
         println("Algorithm stopped due to sufficiently small FNNs. "*
@@ -151,13 +151,13 @@ function cao_embed(s::Vector{T}, τ::Int, rat::Vector, thres::Real) where {T}
     m = 0
     y = abs.(diff(rat))
     for i = 1:length(rat)-1
-        if y[i] ≤ thres
+        if y[i] ≤ thres && rat[i] > 0.5
             m = i
             break
         end
     end
     if m == 0
-        println("NO convergence of E₁-statistic."*
+        println("NO convergence of E₁-statistic. "*
                 "Valid embedding NOT achieved ⨉.")
     else
         Y =  m > 1 ? embed(s, m, τ) : s
