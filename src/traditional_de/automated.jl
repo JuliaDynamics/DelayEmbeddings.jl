@@ -1,16 +1,19 @@
 export optimal_traditional_de
 
 """
-    optimal_traditional_de(s, method = "afnn", dmethod = "mi_min"; kwargs...) → 𝒟, τ, x
+    optimal_traditional_de(s, method = "afnn", dmethod = "mi_min"; kwargs...) → 𝒟, τ, E
 
 Produce an optimal delay embedding `𝒟` of the given timeseries `s` by
 using the traditional approach of first finding an optimal (and constant) delay
 time using [`estimate_delay`](@ref) with the given `dmethod`, and then an optimal
-embedding dimension. Return the embedding `𝒟`, the optimal delay time `τ`
+embedding dimension, by calculating an appropriate statistic for each dimension `d ∈ 1:dmax`.
+Return the embedding `𝒟`, the optimal delay time `τ`
 (the optimal embedding dimension `d` is just `size(𝒟, 2)`) and the actual
-statistic `x` used to estimate optimal `d`.
+statistic `E` used to estimate optimal `d`.
 
-For estimating the dimension we use the given `method`, which can be:
+Notice that `E` is a function of the embedding dimension, which ranges from 1 to `dmax`.
+
+For calculating `E` to estimate the dimension we use the given `method` which can be:
 
 * `"afnn"` (default) is Cao's "Averaged False Nearest Neighbors" method[^Cao1997],
     which gives a ratio of distances between nearest neighbors.
@@ -75,25 +78,29 @@ function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "af
         rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean(), r::Real=2.0,
     )
 
+    # TODO: This function needs to be reworked to use dimensions 2:dmax.
+    # starting with dimension 1:dmax is pointless, because 1 can **never** be
+    # a proper embedding dimension!!!
+
     @assert dimensionmethod ∈ ("afnn", "fnn", "ifnn", "f1nn")
     τ = estimate_delay(s, delaymethod, τs)
     ds = 1:dmax
     γs = ds .- 1 # TODO: This must be updated to dimension in 2.0
 
     if dimensionmethod=="afnn"
-        dimension_statistic = afnn(s, τ, ds, metric)
+        dimension_statistic = delay_afnn(s, τ, ds, metric)
         Y, τ = cao_embed(s, τ, dimension_statistic, slope_thres)
         E2 = stochastic_indicator(s, τ, ds)
         flag = is_stochastic(E2, fnn_thres)
         flag && println("Stochastic signal, valid embedding NOT achieved ⨉.")
     elseif dimensionmethod=="fnn"
-        dimension_statistic = fnn(s, τ, ds; rtol, atol)
+        dimension_statistic = delay_fnn(s, τ, ds; rtol, atol)
         Y, τ = fnn_embed(s, τ, dimension_statistic, fnn_thres, slope_thres)
     elseif dimensionmethod=="ifnn"
         dimension_statistic = ifnn(s, τ, γs; r, w, metric)
         Y, τ = fnn_embed(s, τ, dimension_statistic, fnn_thres, slope_thres)
     elseif dimensionmethod=="f1nn"
-        dimension_statistic = f1nn(s, τ, γs, metric)
+        dimension_statistic = delay_f1nn(s, τ, ds, metric)
         Y, τ = fnn_embed(s, τ, dimension_statistic, fnn_thres, slope_thres)
     end
     return Y, τ, dimension_statistic

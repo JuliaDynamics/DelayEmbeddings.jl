@@ -13,6 +13,7 @@ export afnn, fnn, ifnn, f1nn
 export delay_afnn, delay_fnn, delay_ifnn, delay_f1nn
 export Euclidean, Chebyshev, Cityblock
 
+# Deprecations for new syntax and for removing `reconstruct`.
 for f in (:afnn, :fnn, :ifnn, :f1nn)
     q = quote
         function $(f)(s, τ, γs = 1:6, args...; kwargs...)
@@ -130,7 +131,7 @@ function stochastic_indicator(s::AbstractVector{T}, τ, ds) where T # E2, equati
     #and stochastic signals
     #Calculate E* for Dimension γ+1
     E2s = Float64[]
-    for γ ∈ γs
+    for d ∈ ds
         Rγ1 = embed(s,d+1,τ)
         tree1 = KDTree(Rγ1[1:end-1-τ])
         method = FixedMassNeighborhood(2)
@@ -141,7 +142,7 @@ function stochastic_indicator(s::AbstractVector{T}, τ, ds) where T # E2, equati
             Es1 += abs(Rγ1[i+τ][end] - Rγ1[j+τ][end]) / length(Rγ1)
         end
 
-        #Calculate E* for Dimension γ
+        #Calculate E* for Dimension d
         Rγ = embed(s,d,τ)
         tree2 = KDTree(Rγ[1:end-1-τ])
         Es2 = 0.
@@ -208,32 +209,32 @@ function delay_fnn(s::AbstractVector, τ::Int, ds = 2:6; rtol=10.0, atol=2.0)
 end
 
 """
-    f1nn(s::AbstractVector, τ::Int, γs = 1:5, metric = Euclidean())
+    delay_f1nn(s::AbstractVector, τ::Int, ds = 2:6, metric = Euclidean())
 
 Calculate the ratio of "false first nearest neighbors" (FFNN) of the datasets created
-from `s` with a sequence of `τ`-delayed temporal neighbors.
+from `s` with `embed(s, d, τ) for d ∈ ds`.
 
 ## Description
-Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ`,
+Given a dataset made by `embed(s, d, τ)`
 the "false first nearest neighbors" (FFNN) are the pairs of points that are nearest to
-each other at dimension `γ` that cease to be nearest neighbors at dimension
-`γ+1`.
+each other at dimension `d` that cease to be nearest neighbors at dimension
+`d+1`.
 
 The returned value is a vector with the ratio between the number of FFNN and
-the number of points in the dataset for each `γ ∈ γs`. The optimal value for `γ`
+the number of points in the dataset for each `d ∈ ds`. The optimal value for `d`
 is found at the point where this ratio approaches zero.
 
 See also: [`optimal_traditional_de`](@ref).
 """
-function f1nn(s::AbstractVector, τ::Int, γs = 1:5, metric = Euclidean())
-    f1nn_ratio = zeros(length(γs))
+function delay_f1nn(s::AbstractVector, τ::Int, ds = 2:6, metric = Euclidean())
+    f1nn_ratio = zeros(length(ds))
     γ_prev = 0 # to recall what γ has been analyzed before
-    Rγ = reconstruct(s[1:end-τ],γs[1],τ) # this is for the first iteration
-    for (i, γ) ∈ enumerate(γs)
+    Rγ = embed(s[1:end-τ],ds[1],τ) # this is for the first iteration
+    for (i, γ) ∈ enumerate(ds)
         if i>1 && γ!=γ_prev+1
             # Re-calculate the series with γ delayed dims if γ does not follow
             # the dimension of the previous iteration
-            Rγ = reconstruct(s[1:end-τ],γ,τ)
+            Rγ = embed(s[1:end-τ],γ,τ)
         end
         (nf1nn, Rγ) = _compare_first_nn(s,γ,τ,Rγ,metric)
         f1nn_ratio[i] = nf1nn/length(Rγ)
@@ -248,7 +249,7 @@ function _compare_first_nn(s, γ::Int, τ::Int, Rγ::Dataset{D,T}, metric) where
     # This function compares the first nearest neighbors of `s`
     # embedded with Dimensions `γ` and `γ+1` (the former given as input)
     tree = KDTree(Rγ,metric)
-    Rγ1 = reconstruct(s,γ+1,τ)
+    Rγ1 = embed(s,γ+1,τ)
     tree1 = KDTree(Rγ1,metric)
     nf1nn = 0
     # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k`
