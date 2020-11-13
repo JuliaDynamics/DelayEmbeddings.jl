@@ -28,7 +28,7 @@ s_lorenz = data[:,1]
     @test 3 ≤ size(𝒟, 2) ≤ 5
 
     𝒟, τ, x = optimal_traditional_de(s_lorenz, "afnn")
-    @test 3 ≤ size(𝒟, 2) ≤ 5
+    @test 5 ≤ size(𝒟, 2) ≤ 8
 
     #Test against random signal
     E2s = DelayEmbeddings.stochastic_indicator(rand(10000), 1, 1:5)
@@ -43,7 +43,7 @@ end
     @test 3 ≤ size(𝒟, 2) ≤ 5
 
     𝒟, τ, x = optimal_traditional_de(s_lorenz, "fnn")
-    @test 3 ≤ size(𝒟, 2) ≤ 5
+    @test 5 ≤ size(𝒟, 2) ≤ 8
 end
 
 @testset "ifnn method" begin
@@ -57,7 +57,7 @@ end
     @test 3 ≤ size(𝒟, 2) ≤ 5
 
     𝒟, τ, x = optimal_traditional_de(s_lorenz, "ifnn")
-    @test 3 ≤ size(𝒟, 2) ≤ 5
+    @test 5 ≤ size(𝒟, 2) ≤ 8
 end
 
 end
