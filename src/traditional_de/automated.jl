@@ -23,8 +23,8 @@ For estimating the dimension we use the given `method`, which can be:
     which gives the ratio of pairs of points that cease to be "nearest neighbors"
     when the dimension increases.
 
-For more details, see individual methods: [`afnn`](@ref), [`ifnn`](@ref),
-[`fnn`](@ref), [`f1nn`](@ref).
+For more details, see individual methods: [`delay_afnn`](@ref), [`delay_ifnn`](@ref),
+[`delay_fnn`](@ref), [`delay_f1nn`](@ref).
 The special keywords `` denote for which possible embedding
 dimensions should the statistics be computed for.
 
@@ -36,11 +36,10 @@ dimensions should the statistics be computed for.
 ## Keywords
 The keywords
 ```
-τs = 1:100, dmax = 10, ds = 1:dmax
+τs = 1:100, dmax = 10
 ```
-denote which delay times and embedding dimensions to consider when calculating
-optimal embedding time and dimension.
-All remaining keywords are propagated to the low level functions:
+denote which delay times and embedding dimensions `ds ∈ 1:dmax` to consider when calculating
+optimal embedding. All remaining keywords are propagated to the low level functions:
 ```
 fnn_thres::Real = 0.05, slope_thres::Real= 0.2, w::Int=1,
 rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean(), r::Real=2.0
@@ -74,11 +73,11 @@ function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "af
         delaymethod::String= "mi_min";
         fnn_thres::Real = 0.05, slope_thres::Real = .05, dmax::Int = 10, w::Int=1,
         rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean(), r::Real=2.0,
-        ds = 1:dmax,
     )
 
     @assert dimensionmethod ∈ ("afnn", "fnn", "ifnn", "f1nn")
     τ = estimate_delay(s, delaymethod, τs)
+    ds = 1:dmax
     γs = ds .- 1 # TODO: This must be updated to dimension in 2.0
 
     if dimensionmethod=="afnn"
@@ -88,7 +87,7 @@ function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "af
         flag = is_stochastic(E2, fnn_thres)
         flag && println("Stochastic signal, valid embedding NOT achieved ⨉.")
     elseif dimensionmethod=="fnn"
-        dimension_statistic = fnn(s, τ, γs; rtol, atol)
+        dimension_statistic = fnn(s, τ, ds; rtol, atol)
         Y, τ = fnn_embed(s, τ, dimension_statistic, fnn_thres, slope_thres)
     elseif dimensionmethod=="ifnn"
         dimension_statistic = ifnn(s, τ, γs; r, w, metric)

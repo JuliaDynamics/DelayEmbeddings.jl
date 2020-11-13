@@ -49,7 +49,8 @@ a sequence of `τ`-delayed temporal neighbors.
 
 ## Description
 Given the scalar timeseries `s` and the embedding delay `τ` compute the
-values of `E₁` for each embedding dimension `d ∈ ds`, according to Cao's Method (eq. 3).
+values of `E₁` for each embedding dimension `d ∈ ds`, according to Cao's Method
+(eq. 3 of[^Cao1997]).
 
 This quantity is a ratio of the averaged distances between the nearest neighbors
 of the reconstructed time series, which quantifies the increment of those
@@ -157,15 +158,15 @@ end
 #                                FNN / F1NN                                         #
 #####################################################################################
 """
-    fnn(s::AbstractVector, τ:Int, γs = 1:5; rtol=10.0, atol=2.0) → FNNs
+    delay_fnn(s::AbstractVector, τ:Int, ds = 2:6; rtol=10.0, atol=2.0) → FNNs
 
 Calculate the number of "false nearest neighbors" (FNNs) of the datasets created
-from `s` with a sequence of `τ`-delayed temporal neighbors.
+from `s` with `embed(s, d, τ) for d ∈ ds`.
 
 ## Description
-Given a dataset made by embedding `s` with `γ` temporal neighbors and delay `τ`,
+Given a dataset made by `embed(s, d, τ)`
 the "false nearest neighbors" (FNN) are the pairs of points that are nearest to
-each other at dimension `γ`, but are separated at dimension `γ+1`. Kennel's
+each other at dimension `d`, but are separated at dimension `d+1`. Kennel's
 criteria for detecting FNN are based on a threshold for the relative increment
 of the distance between the nearest neighbors (`rtol`, eq. 4 in[^Kennel1992]), and
 another threshold for the ratio between the increased distance and the
@@ -178,12 +179,12 @@ zero.
 
 See also: [`optimal_traditional_de`](@ref).
 """
-function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10.0, atol=2.0)
+function delay_fnn(s::AbstractVector, τ::Int, ds = 2:6; rtol=10.0, atol=2.0)
     rtol2 = rtol^2
     Ra = std(s, corrected=false)
-    nfnn = zeros(length(γs))
-    @inbounds for (k, γ) ∈ enumerate(γs)
-        y = reconstruct(s[1:end-τ],γ,τ)
+    nfnn = zeros(length(ds))
+    @inbounds for (k, d) ∈ enumerate(ds)
+        y = embed(s[1:end-τ],d,τ)
         tree = KDTree(y)
         nind = (x = NearestNeighbors.knn(tree, y.data, 2)[1]; [ind[1] for ind in x])
         for (i,j) ∈ enumerate(nind)
@@ -194,7 +195,7 @@ function fnn(s::AbstractVector, τ::Int, γs = 1:5; rtol=10.0, atol=2.0)
                 j = NearestNeighbors.knn(tree, y[i], 3, true)[1][end]
                 δ = norm(y[i]-y[j])
             end
-            δ1 = _increase_distance(δ,s,i,j,γ,τ,Euclidean())
+            δ1 = _increase_distance(δ,s,i,j,d-1,τ,Euclidean())
             cond_1 = ((δ1/δ)^2 - 1 > rtol2) # equation (4) of Kennel
             cond_2 = (δ1/Ra > atol)         # equation (5) of Kennel
             if cond_1 | cond_2
