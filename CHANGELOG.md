@@ -1,9 +1,11 @@
-# v1.11.0
-* Possible delay times in `estimate_delay` are now `1:100` for increased accuracy.
+# v1.12.0
+* Possible delay times in `optimal_traditional_de` are now `1:100` for increased accuracy.
 * New method for univariate non-unified delay embedding by Hegger, Kantz
 * It is now possible to `embed` in one dimension (which just returns the vector as a Dataset)
 * New function `optimal_traditional_de` for automated delay embeddings
-* `afnn, ifnn, fnn, f1nn` are part of public API now.
+* `delay_afnn, delay_ifnn, delay_fnn, delay_f1nn` are part of public API now.
+* The argument `γs` and the function `reconstruct` is starting to be phased out in
+  favor of `ds` and `embed`.
 
 ## Deprecations
 * Using `estimate_dimension` is deprecated in favor of either calling `afnn, fnn, ...` directly or using the function `optimal_traditional_de`
