@@ -97,7 +97,7 @@ function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "af
         dimension_statistic = delay_fnn(s, τ, ds; rtol, atol)
         Y, τ = fnn_embed(s, τ, dimension_statistic, fnn_thres, slope_thres)
     elseif dimensionmethod=="ifnn"
-        dimension_statistic = ifnn(s, τ, γs; r, w, metric)
+        dimension_statistic = delay_ifnn(s, τ, ds; r, w, metric)
         Y, τ = fnn_embed(s, τ, dimension_statistic, fnn_thres, slope_thres)
     elseif dimensionmethod=="f1nn"
         dimension_statistic = delay_f1nn(s, τ, ds, metric)

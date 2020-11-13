@@ -269,14 +269,14 @@ end
 #                               IFNN (Hegger & Kantz)                               #
 #####################################################################################
 """
-    ifnn(s::Vector, τ::Int, γs = 0:10; kwargs...) → `FNNs`
+    delay_ifnn(s::Vector, τ::Int, ds = 1:10; kwargs...) → `FNNs`
 Compute and return the `FNNs`-statistic for the time series `s` and a uniform
-time delay `τ` for an extra amount of delayed entries `γs` after [^Hegger1999].
+time delay `τ` and embedding dimensions `ds` after [^Hegger1999].
 In this notation `γ ∈ γs = d-1`, if `d` is the embedding dimension. This fraction
 tends to 0 when the optimal embedding dimension with an appropriate lag is
 reached.
 
-Keyword arguments:
+## Keywords
 *`r = 2`: Obligatory threshold, which determines the maximum tolerable spreading
     of trajectories in the reconstruction space.
 *`metric = Euclidean`: The norm used for distance computations.
@@ -285,20 +285,19 @@ Keyword arguments:
 
 See also: [`optimal_traditional_de`](@ref).
 """
-function ifnn(s::Vector{T}, τ::Int, γs = 0:10;
+function delay_ifnn(s::AbstractVector{T}, τ::Int, ds = 1:10;
             r::Real = 2, w::Int = 1, metric = Euclidean()) where {T}
-    @assert all(x -> x ≥ 0, γs)
-
+    @assert all(x -> x ≥ 0, ds)
     s = (s .- mean(s)) ./ std(s)
-    Y_act = reconstruct(s[1:end-τ],γs[1],τ)
+    Y_act = embed(s[1:end-τ],ds[1],τ)
 
     vtree = KDTree(Y_act, metric)
     _, NNdist_old = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
 
-    FNNs = zeros(length(γs))
+    FNNs = zeros(length(ds))
     bm = 0
-    for (i, γ) ∈ enumerate(γs)
-        Y_act = reconstruct(s[1:end-τ],γ+1,τ)
+    for (i, d) ∈ enumerate(ds)
+        Y_act = embed(s[1:end-τ],d+1,τ)
         Y_act = regularize(Y_act)
         vtree = KDTree(Y_act, metric)
         _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
