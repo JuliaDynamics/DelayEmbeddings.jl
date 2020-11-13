@@ -1,14 +1,18 @@
 using StaticArrays, LinearAlgebra
 using Base.Iterators: flatten
 
-import RecipesBase
-
+export Dataset, AbstractDataset, minima, maxima
+export minmaxima, columns, regularize, dimension
 export Dataset, AbstractDataset, SVector, minima, maxima
 export minmaxima, columns, regularize
 
 abstract type AbstractDataset{D, T} end
 
-@inline dimension(::AbstractDataset{D,T}) where {D,T} = D
+"""
+    dimension(thing) -> D
+Return the dimension of the `thing`, in the sense of state-space dimensionality.
+"""
+dimension(::AbstractDataset{D,T}) where {D,T} = D
 @inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T
 import Base: ==
 ==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
@@ -224,14 +228,6 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", d::AbstractDataset) = print(io, matstring(d))
 Base.show(io::IO, d::AbstractDataset) = print(io, summary(d))
-
-#####################################################################################
-#                                     Plotting                                      #
-#####################################################################################
-
-# Support the plotting of Datasets-as-Matrices
-RecipesBase.@recipe f(::Type{T}, vals::T) where {T<:AbstractDataset} = Matrix(vals)
-
 
 #####################################################################################
 #                                 Minima and Maxima                                 #
