@@ -25,6 +25,8 @@ For estimating the dimension we use the given `method`, which can be:
 
 For more details, see individual methods: [`afnn`](@ref), [`ifnn`](@ref),
 [`fnn`](@ref), [`f1nn`](@ref).
+The special keywords `` denote for which possible embedding
+dimensions should the statistics be computed for.
 
 !!! warn "Careful in automated methods"
     While this method is automated if you want to be **really sure** of the results,
@@ -32,9 +34,15 @@ For more details, see individual methods: [`afnn`](@ref), [`ifnn`](@ref),
     dimensions.
 
 ## Keywords
-All keywords are propagated to the low level functions like `afnn` (except `τs`).
+The keywords
 ```
-fnn_thres::Real = 0.05, slope_thres::Real= 0.2, dmax::Int = 10, w::Int=1,
+τs = 1:100, dmax = 10, ds = 1:dmax
+```
+denote which delay times and embedding dimensions to consider when calculating
+optimal embedding time and dimension.
+All remaining keywords are propagated to the low level functions:
+```
+fnn_thres::Real = 0.05, slope_thres::Real= 0.2, w::Int=1,
 rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean(), r::Real=2.0
 ```
 
@@ -65,12 +73,13 @@ See also the file `test/compare_different_dimension_estimations.jl` for a compar
 function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "afnn",
         delaymethod::String= "mi_min";
         fnn_thres::Real = 0.05, slope_thres::Real = .05, dmax::Int = 10, w::Int=1,
-        rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean(), r::Real=2.0
+        rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean(), r::Real=2.0,
+        ds = 1:dmax,
     )
 
     @assert dimensionmethod ∈ ("afnn", "fnn", "ifnn", "f1nn")
     τ = estimate_delay(s, delaymethod, τs)
-    γs = 0:dmax-1 # TODO: This must be updated to dimension in 2.0
+    γs = ds .- 1 # TODO: This must be updated to dimension in 2.0
 
     if dimensionmethod=="afnn"
         dimension_statistic = afnn(s, τ, γs, metric)
