@@ -6,6 +6,7 @@
 * `delay_afnn, delay_ifnn, delay_fnn, delay_f1nn` are part of public API now.
 * The argument `γs` and the function `reconstruct` is starting to be phased out in
   favor of `ds` and `embed`.
+* Multi-timeseries via `reconstruct` or `embed` is deprecated in favor of using `genembed`.
 
 ## Deprecations
 * Using `estimate_dimension` is deprecated in favor of either calling `afnn, fnn, ...` directly or using the function `optimal_traditional_de`

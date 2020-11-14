@@ -198,6 +198,8 @@ end
 
 @inline MTDelayEmbedding(γ, τ, B) = MTDelayEmbedding(Val{γ}(), τ, Val{B}())
 @inline function MTDelayEmbedding(::Val{γ}, τ::Int, ::Val{B}) where {γ, B}
+    @warn "Multi-timeseries delay embedding via `reconstruct` is deprecated in favor of "*
+    "using `genembed` directly."
     X = γ*B
     idxs = SMatrix{γ,B,Int,X}([k*τ for k in 1:γ, j in 1:B])
     return MTDelayEmbedding{γ, B, X}(idxs)
