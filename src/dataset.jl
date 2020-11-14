@@ -1,7 +1,7 @@
 using StaticArrays, LinearAlgebra
 using Base.Iterators: flatten
 
-export Dataset, AbstractDataset, minima, maxima
+export Dataset, AbstractDataset, SVector, minima, maxima
 export minmaxima, columns, regularize, dimension
 
 abstract type AbstractDataset{D, T} end
@@ -101,7 +101,6 @@ end
 ###########################################################################
 # Concrete implementation
 ###########################################################################
-
 """
     Dataset{D, T} <: AbstractDataset{D,T}
 A dedicated interface for datasets.
@@ -146,8 +145,7 @@ Dataset(s::Dataset) = s
 ###########################################################################
 # Dataset(Vectors of stuff)
 ###########################################################################
-Dataset(s::AbstractVector{T}) where {T<:Number} =
-Dataset{1, T}(reinterpret(SVector{1, T}, s))
+Dataset(s::AbstractVector{T}) where {T} = Dataset(SVector.(s))
 
 function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
     D = length(v[1])

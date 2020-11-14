@@ -6,14 +6,16 @@ module DelayEmbeddings
 
 include("dataset.jl")
 include("embeddings.jl")
-include("various.jl")
+include("utils.jl")
 include("neighborhoods.jl")
 
-include("estimate_delay.jl")
-include("estimate_dimension.jl")
-include("pecora.jl")
-include("uzal_cost.jl")
-include("MDOP.jl")
-include("garcia_almeida.jl")
+include("traditional_de/estimate_delay.jl")
+include("traditional_de/estimate_dimension.jl")
+include("traditional_de/automated.jl")
+
+include("unified_de/pecora.jl")
+include("unified_de/uzal_cost.jl")
+include("unified_de/MDOP.jl")
+include("unified_de/garcia_almeida.jl")
 
 end

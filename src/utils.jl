@@ -43,6 +43,44 @@ function findlocalminima(s::Vector{T})::Vector{Int} where {T}
 end
 
 
+"""
+    findlocalextrema(y) -> max_ind, min_ind
+Find the local extrema of given array `y`, by scanning point-by-point. Return the
+indices of the maxima (`max_ind`) and the indices of the minima (`min_ind`).
+"""
+function findlocalextrema(y)
+    @inbounds begin
+        l = length(y)
+        i = 1
+        maxargs = Int[]
+        minargs = Int[]
+        if y[1] > y[2]
+            push!(maxargs, 1)
+        elseif y[1] < y[2]
+            push!(minargs, 1)
+        end
+
+        for i in 2:l-1
+            left = i-1
+            right = i+1
+            if  y[left] < y[i] > y[right]
+                push!(maxargs, i)
+            elseif y[left] > y[i] < y[right]
+                push!(minargs, i)
+            end
+        end
+
+        if y[l] > y[l-1]
+            push!(maxargs, l)
+        elseif y[l] < y[l-1]
+            push!(minargs, l)
+        end
+        return maxargs, minargs
+    end
+end
+
+@deprecate localextrema findlocalextrema
+
 #####################################################################################
 #                                Pairwse Distance                                   #
 #####################################################################################

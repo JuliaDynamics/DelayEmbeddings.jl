@@ -5,7 +5,7 @@ export estimate_delay, exponential_decay_fit, autocor
 #                               Estimate Delay Times                                #
 #####################################################################################
 """
-    estimate_delay(s, method::String [, τs = 1:2:100]; kwargs...) -> τ
+    estimate_delay(s, method::String [, τs = 1:100]; kwargs...) -> τ
 
 Estimate an optimal delay to be used in [`reconstruct`](@ref) or [`embed`](@ref).
 The `method` can be one of the following:
@@ -28,7 +28,7 @@ The method `mi_min` is significantly more accurate than the others and also retu
 good results for most timeseries. It is however the slowest method (but still quite fast!).
 """
 function estimate_delay(x::AbstractVector, method::String,
-    τs = 1:2:min(100, length(x)); kwargs...)
+    τs = 1:min(100, length(x)); kwargs...)
 
     issorted(τs) || error("`τs` must be sorted")
 
@@ -59,7 +59,7 @@ function estimate_delay(x::AbstractVector, method::String,
         return round(Int,τ)
     elseif method=="exp_extrema"
         c = autocor(x, τs; demean=true)
-        max_ind, min_ind = localextrema(c)
+        max_ind, min_ind = findlocalextrema(c)
         idxs = sort!(append!(max_ind, min_ind))
         ca = abs.(c[idxs])
         τa = τs[idxs]
@@ -115,44 +115,9 @@ function exponential_decay_fit(X, Y, weight = :equal)
     end
 end
 
-"""
-    localextrema(y) -> max_ind, min_ind
-Find the local extrema of given array `y`, by scanning point-by-point. Return the
-indices of the maxima (`max_ind`) and the indices of the minima (`min_ind`).
-"""
-function localextrema(y)
-    @inbounds begin
-        l = length(y)
-        i = 1
-        maxargs = Int[]
-        minargs = Int[]
-        if y[1] > y[2]
-            push!(maxargs, 1)
-        elseif y[1] < y[2]
-            push!(minargs, 1)
-        end
-
-        for i in 2:l-1
-            left = i-1
-            right = i+1
-            if  y[left] < y[i] > y[right]
-                push!(maxargs, i)
-            elseif y[left] > y[i] < y[right]
-                push!(minargs, i)
-            end
-        end
-
-        if y[l] > y[l-1]
-            push!(maxargs, l)
-        elseif y[l] < y[l-1]
-            push!(minargs, l)
-        end
-        return maxargs, minargs
-    end
-end
 
 #####################################################################################
-#                               Estimate Delay Times                                #
+#                               Mutual information                                  #
 #####################################################################################
 export mutualinformation
 """
