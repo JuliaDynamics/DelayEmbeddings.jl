@@ -89,19 +89,19 @@ function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "af
 
     if dimensionmethod=="afnn"
         dimension_statistic = delay_afnn(s, τ, ds, metric)
-        Y, τ = cao_embed(s, τ, dimension_statistic, slope_thres)
+        Y, τ = find_cao_optimal(s, τ, dimension_statistic, slope_thres)
         E2 = stochastic_indicator(s, τ, ds)
         flag = is_stochastic(E2, fnn_thres)
         flag && println("Stochastic signal, valid embedding NOT achieved ⨉.")
     elseif dimensionmethod=="fnn"
         dimension_statistic = delay_fnn(s, τ, ds; rtol, atol)
-        Y, τ = fnn_embed(s, τ, dimension_statistic, fnn_thres, slope_thres)
+        Y, τ = find_fnn_optimal(s, τ, dimension_statistic, fnn_thres, slope_thres)
     elseif dimensionmethod=="ifnn"
         dimension_statistic = delay_ifnn(s, τ, ds; r, w, metric)
-        Y, τ = fnn_embed(s, τ, dimension_statistic, fnn_thres, slope_thres)
+        Y, τ = find_fnn_optimal(s, τ, dimension_statistic, fnn_thres, slope_thres)
     elseif dimensionmethod=="f1nn"
         dimension_statistic = delay_f1nn(s, τ, ds, metric)
-        Y, τ = fnn_embed(s, τ, dimension_statistic, fnn_thres, slope_thres)
+        Y, τ = find_fnn_optimal(s, τ, dimension_statistic, fnn_thres, slope_thres)
     end
     return Y, τ, dimension_statistic
 end
@@ -111,7 +111,7 @@ end
 Helper function for selecting the appropriate embedding dimension from the
 statistic when using Kennel's, Hegger's or Krakovskas's method.
 """
-function fnn_embed(s::Vector{T}, τ::Int, rat::Vector, fnn_thres::Real,
+function find_fnn_optimal(s::Vector{T}, τ::Int, rat::Vector, fnn_thres::Real,
                                                     slope_thres::Real) where {T}
     @assert length(rat) > 1
     y = abs.(diff(rat))
@@ -146,7 +146,7 @@ end
 Helper function for selecting the appropriate embedding dimension from the
 statistic when using Cao's method.
 """
-function cao_embed(s::Vector{T}, τ::Int, rat::Vector, thres::Real) where {T}
+function find_cao_optimal(s::Vector{T}, τ::Int, rat::Vector, thres::Real) where {T}
     m = 0
     y = abs.(diff(rat))
     for i = 1:length(rat)-1
