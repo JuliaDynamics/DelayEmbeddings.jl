@@ -130,13 +130,12 @@ function fnn_embed(s::Vector{T}, τ::Int, rat::Vector, fnn_thres::Real,
     if m == length(rat) || m == 0
         println("Sufficiently small FNNs NOT reached. "*
                 "Valid embedding NOT achieved ⨉.")
+    elseif flag
+        println("Algorithm stopped due to increasing FNNs. "*
+        "Double-check the FNN-statistic.")
     else
         println("Algorithm stopped due to sufficiently small FNNs. "*
                 "Valid embedding achieved ✓.")
-        if flag
-            println("Algorithm stopped due to increasing FNNs. "*
-                    "Double-check the FNN-statistic.")
-        end
     end
     Y = embed(s, max(1, m), τ) # you can embed in 1 dimension in latest version
     return Y, τ
