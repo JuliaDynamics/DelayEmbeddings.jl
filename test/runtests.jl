@@ -13,7 +13,7 @@ end
 
 ti = time()
 
-const diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
+diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
 
 include("dataset_tests.jl")
 include("embedding_tests.jl")

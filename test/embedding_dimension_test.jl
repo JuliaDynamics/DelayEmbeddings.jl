@@ -16,12 +16,10 @@ data = trajectory(lo,5000.0;dt=0.05, Ttr = 100.0, diffeq...)
 s_lorenz = data[:,1]
 
 @testset "Caos method" begin
-    E1s = afnn(s_sin, τ, γs) # call afnn directly
-    @test E1s[1] > 0.9 # should already converge for dimension 2
-
     𝒟, τ, x = optimal_traditional_de(s_roessler, "afnn")
     @test 3 ≤ size(𝒟, 2) ≤ 5
-    E2s = DelayEmbeddings.stochastic_indicator(s_roessler, τ, γs)
+
+    E2s = DelayEmbeddings.stochastic_indicator(s_roessler, τ, 1:6)
     @test minimum(E2s) < 0.3
 
     𝒟, τ, x = optimal_traditional_de(s_roessler, "afnn"; metric = Chebyshev())
@@ -48,7 +46,7 @@ end
 
 @testset "ifnn method" begin
     𝒟, τ, x = optimal_traditional_de(s_sin, "ifnn")
-    @test 1 ≤ size(𝒟, 2) ≤ 3
+    @test 1 ≤ size(𝒟, 2) ≤ 4
 
     𝒟, τ, x = optimal_traditional_de(s_roessler, "ifnn")
     @test 3 ≤ size(𝒟, 2) ≤ 5
