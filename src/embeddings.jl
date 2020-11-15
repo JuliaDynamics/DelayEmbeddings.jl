@@ -57,7 +57,7 @@ end
 
 # This is the version with weights
 @generated function (r::DelayEmbedding{γ})(s::AbstractArray{T}, i) where {γ, T, R<:Real}
-    gens = [:(r.hs[$k]*(s[i + r.delays[$k]])) for k=1:γ]
+    gens = [:(r.h[$k]*(s[i + r.delays[$k]])) for k=1:γ]
     quote
         @_inline_meta
         @inbounds return SVector{$γ+1,T}(s[i], $(gens...))
@@ -114,15 +114,15 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 
 """
 function embed(s::AbstractVector{T}, d, τ, h::H = nothing) where {T, H}
-    if d == 0
+    if d == 1
         return Dataset(s)
     end
     htype = H <: Union{Nothing, Real} ? H : eltype(H)
     de::DelayEmbedding{d-1, htype} = DelayEmbedding(d-1, τ, h)
-    return reconstruct(s, de)
+    return embed(s, de)
 end
 
-@inline function reconstruct(s::AbstractVector{T}, de::DelayEmbedding{γ}) where {T, γ}
+@inline function embed(s::AbstractVector{T}, de::DelayEmbedding{γ}) where {T, γ}
     r = τrange(s, de)
     data = Vector{SVector{γ+1, T}}(undef, length(r))
     @inbounds for i in r
@@ -187,6 +187,8 @@ end
 end
 @inline function MTDelayEmbedding(
     ::Val{γ}, τ::AbstractMatrix{<:Integer}, ::Val{B}) where {γ, B}
+    @warn "Multi-timeseries delay embedding via `reconstruct` is deprecated in favor of "*
+    "using `genembed` directly."
     X = γ*B
     γ != size(τ)[1] && throw(ArgumentError(
     "`size(τ)[1]` must equal the number of spatial neighbors."
@@ -204,6 +206,8 @@ end
 @generated function (r::MTDelayEmbedding{γ, B, X})(
     s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
     i) where {γ, A, B, T, M, X}
+    @warn "Multi-timeseries delay embedding via `reconstruct` is deprecated in favor of "*
+    "using `genembed` directly."
     typeof(s) <: SizedArray && @warn "Using SizedArrays is deprecated. Use Dataset instead."
     gensprev = [:(s[i, $d]) for d=1:B]
     gens = [:(s[i + r.delays[$k, $d], $d]) for k=1:γ for d=1:B]

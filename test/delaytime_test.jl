@@ -4,6 +4,7 @@ using DynamicalSystemsBase, Test
 println("\nTesting delay estimation...")
 
 testval = (val, vmin, vmax) -> @test vmin ≤ val ≤ vmax
+diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
 
 @testset "Estimate Delay" begin
     # test exponential decay fit
