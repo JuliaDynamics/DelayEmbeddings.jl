@@ -95,14 +95,14 @@ then the ``n``-th entry is
 The reconstructed dataset can have same
 invariant quantities (like e.g. lyapunov exponents) with the original system
 that the timeseries were recorded from, for proper `γ` and `τ`.
-This is known as the Takens embedding theorem [1, 2].
+This is known as the Takens embedding theorem [^Takens1981] [^Sauer1991].
 The case of different delay times allows reconstructing systems with many time scales,
-see [3].
+see[^Judd1998].
 
 *Notice* - The dimension of the returned dataset (i.e. embedding dimension) is `γ+1`!
 
 If `w` (a "weight") is provided as an extra argument, then the entries
-of the embedded vector are further weighted with ``w^\\gamma``, like so
+of the embedded vector are further weighted with ``w^\\gamma``[^Farmer1988]
 ```math
 (s(n), w*s(n+\\tau), w^2*s(n+2\\tau), \\dots,w^\\gamma * s(n+γ\\tau))
 ```
@@ -125,12 +125,15 @@ then we have
 *Notice* - The dimension of the returned dataset is `(γ+1)*B`!
 
 ## References
-[1] : F. Takens, *Detecting Strange Attractors in Turbulence — Dynamical
+[^Takens1981] : F. Takens, *Detecting Strange Attractors in Turbulence — Dynamical
 Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 
-[2] : T. Sauer *et al.*, J. Stat. Phys. **65**, pp 579 (1991)
+[^Sauer1991] : T. Sauer *et al.*, J. Stat. Phys. **65**, pp 579 (1991)
 
-[3] : K. Judd & A. Mees, [Physica D **120**, pp 273 (1998)](https://www.sciencedirect.com/science/article/pii/S0167278997001188)
+[^Judd1998]: K. Judd & A. Mees, [Physica D **120**, pp 273 (1998)](https://www.sciencedirect.com/science/article/pii/S0167278997001188)
+
+[^Farmer1988]: Farmer & Sidorowich, [Exploiting Chaos to Predict the Future and Reduce Noise"](http://www.nzdl.org/gsdlmod?e=d-00000-00---off-0cltbibZz-e--00-1----0-10-0---0---0direct-10---4-------0-1l--11-en-50---20-home---00-3-1-00-0--4--0--0-0-11-10-0utfZz-8-00&a=d&cl=CL3.16&d=HASH013b29ffe107dba1e52f1a0c_1245)
+
 """
 function reconstruct(s::AbstractVector{T}, γ, τ) where {T}
     if γ == 0
