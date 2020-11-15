@@ -10,35 +10,41 @@ export WeightedDelayEmbedding, AbstractEmbedding
 abstract type AbstractEmbedding end
 
 """
-    DelayEmbedding(γ, τ) → `embedding`
-Return a delay coordinates embedding structure to be used as a functor,
+    DelayEmbedding(γ, τ, h = nothing) → `embedding`
+Return a delay coordinates embedding structure to be used as a function-like-object,
 given a timeseries and some index. Calling
 ```julia
 embedding(s, n)
 ```
 will create the `n`-th delay vector of the embedded space, which has `γ`
-temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
+temporal neighbors with delay(s) `τ`.
+`γ` is the embedding dimension minus 1, `τ` is the delay time(s) while `h` are
+extra weights, as in [`embed`](@ref) for more.
 
 **Be very careful when choosing `n`, because `@inbounds` is used internally.**
 Use [`τrange`](@ref)!
 """
-struct DelayEmbedding{γ} <: AbstractEmbedding
+struct DelayEmbedding{γ, H} <: AbstractEmbedding
     delays::SVector{γ, Int}
+    h::H
 end
-
-@inline DelayEmbedding(γ, τ) = DelayEmbedding(Val{γ}(), τ)
-@inline function DelayEmbedding(::Val{γ}, τ::Int) where {γ}
+@inline DelayEmbedding(γ, τ, h = nothing) = DelayEmbedding(Val{γ}(), τ, h)
+@inline function DelayEmbedding(a::Val{γ}, τ::Int, h::H) where {γ, H}
     idxs = [k*τ for k in 1:γ]
-    return DelayEmbedding{γ}(SVector{γ, Int}(idxs...))
+    hs = hweights(γ, h)
+    return DelayEmbedding{γ, typeof(hs)}(SVector{γ, Int}(idxs...), hs)
 end
-@inline function DelayEmbedding(::Val{γ}, τ::AbstractVector) where {γ}
+@inline function DelayEmbedding(::Val{γ}, τ::AbstractVector, h::H) where {γ, H}
     γ != length(τ) && throw(ArgumentError(
-    "Delay time vector length must equal the number of temporal neighbors."
+        "Delay time vector length must equal the embedding dimension minus 1."
     ))
-    return DelayEmbedding{γ}(SVector{γ, Int}(τ...))
+    hs = hweights(γ, h)
+    return DelayEmbedding{γ}(SVector{γ, Int}(τ...), hs)
 end
+hweights(a::Val{γ}, h::T) where {γ, T<:Real} = SVector{γ, T}([h^a for a in 1:γ]...)
+hweights(a::Val{γ}, h::AbstractVector) where {γ} = SVector{γ}(h)
 
-@generated function (r::DelayEmbedding{γ})(s::AbstractArray{T}, i) where {γ, T}
+@generated function (r::DelayEmbedding{γ, Nothing})(s::AbstractArray{T}, i) where {γ, T}
     gens = [:(s[i + r.delays[$k]]) for k=1:γ]
     quote
         @_inline_meta
@@ -46,30 +52,18 @@ end
     end
 end
 
-export WeightedDelayEmbedding
-"""
-    WeightedDelayEmbedding(γ, τ, w) → `embedding`
-Similar with [`DelayEmbedding`](@ref), but the entries of the
-embedded vector are further weighted with `w^γ`.
-See [`reconstruct`](@ref) for more.
-"""
-struct WeightedDelayEmbedding{γ, T<:Real} <: AbstractEmbedding
-    delays::SVector{γ, Int}
-    w::T
-end
-
-@inline WeightedDelayEmbedding(γ, τ, w) = WeightedDelayEmbedding(Val{γ}(), τ, w)
-@inline function WeightedDelayEmbedding(::Val{γ}, τ::Int, w::T) where {γ, T}
-    idxs = [k*τ for k in 1:γ]
-    return WeightedDelayEmbedding{γ, T}(SVector{γ, Int}(idxs...), w)
-end
-
-@generated function (r::WeightedDelayEmbedding{γ, T})(s::AbstractArray{X}, i) where {γ, T, X}
-    gens = [:(r.w^($k) * s[i + r.delays[$k]]) for k=1:γ]
+# This is the version with weights
+@generated function (r::DelayEmbedding{γ})(s::AbstractArray{T}, i) where {γ, T, R<:Real}
+    gens = [:(r.hs[$k]*(s[i + r.delays[$k]])) for k=1:γ]
     quote
         @_inline_meta
-        @inbounds return SVector{$γ+1,X}(s[i], $(gens...))
+        @inbounds return SVector{$γ+1,T}(s[i], $(gens...))
     end
+end
+
+function WeightedDelayEmbedding(γ, τ, w)
+    @warn "`WeightedDelayEmbedding` is deprecated in favor of `DelayEmbedding`."
+    return DelayEmbedding(γ, τ, w)
 end
 
 """
