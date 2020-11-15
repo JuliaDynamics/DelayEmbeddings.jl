@@ -26,23 +26,26 @@ Use [`τrange`](@ref)!
 """
 struct DelayEmbedding{γ, H} <: AbstractEmbedding
     delays::SVector{γ, Int}
-    h::H
+    h::SVector{γ, H}
 end
 @inline DelayEmbedding(γ, τ, h = nothing) = DelayEmbedding(Val{γ}(), τ, h)
-@inline function DelayEmbedding(a::Val{γ}, τ::Int, h::H) where {γ, H}
+@inline function DelayEmbedding(g::Val{γ}, τ::Int, h::H) where {γ, H}
     idxs = [k*τ for k in 1:γ]
-    hs = hweights(γ, h)
-    return DelayEmbedding{γ, typeof(hs)}(SVector{γ, Int}(idxs...), hs)
+    hs = hweights(g, h)
+    htype = H <: Union{Nothing, Real} ? H : eltype(H)
+    return DelayEmbedding{γ, htype}(SVector{γ, Int}(idxs...), hs)
 end
-@inline function DelayEmbedding(::Val{γ}, τ::AbstractVector, h::H) where {γ, H}
+@inline function DelayEmbedding(g::Val{γ}, τ::AbstractVector, h::H) where {γ, H}
     γ != length(τ) && throw(ArgumentError(
         "Delay time vector length must equal the embedding dimension minus 1."
     ))
-    hs = hweights(γ, h)
-    return DelayEmbedding{γ}(SVector{γ, Int}(τ...), hs)
+    hs = hweights(g, h)
+    htype = H <: Union{Nothing, Real} ? H : eltype(H)
+    return DelayEmbedding{γ, htype}(SVector{γ, Int}(τ...), hs)
 end
-hweights(a::Val{γ}, h::T) where {γ, T<:Real} = SVector{γ, T}([h^a for a in 1:γ]...)
-hweights(a::Val{γ}, h::AbstractVector) where {γ} = SVector{γ}(h)
+hweights(::Val{γ}, h::Nothing) where {γ} = SVector{γ, Nothing}(fill(nothing, γ))
+hweights(::Val{γ}, h::T) where {γ, T<:Real} = SVector{γ, T}([h^b for b in 1:γ]...)
+hweights(::Val{γ}, h::AbstractVector) where {γ} = SVector{γ}(h)
 
 @generated function (r::DelayEmbedding{γ, Nothing})(s::AbstractArray{T}, i) where {γ, T}
     gens = [:(s[i + r.delays[$k]]) for k=1:γ]
@@ -67,56 +70,37 @@ function WeightedDelayEmbedding(γ, τ, w)
 end
 
 """
-    reconstruct(s, γ, τ [, w])
-Reconstruct `s` using the delay coordinates embedding with `γ` temporal neighbors
-and delay `τ` and return the result as a [`Dataset`](@ref). Optionally use weight `w`.
+    embed(s, d, τ [, h])
+Embed `s` using delay coordinates with embedding dimension `d` and delay time `τ`
+and return the result as a [`Dataset`](@ref). Optionally use weight `h`, see below.
 
-Use [`embed`](@ref) for the version that accepts the embedding dimension `D = γ+1`
-instead. Here `τ ≥ 0`, use [`genembed`](@ref) for a generalized version.
+Here `τ > 0`, use [`genembed`](@ref) for a generalized version.
 
 ## Description
-### Single Timeseries
 If `τ` is an integer, then the ``n``-th entry of the embedded space is
 ```math
-(s(n), s(n+\\tau), s(n+2\\tau), \\dots, s(n+γ\\tau))
+(s(n), s(n+\\tau), s(n+2\\tau), \\dots, s(n+(d-1)\\tau))
 ```
-If instead `τ` is a vector of integers, so that `length(τ) == γ`,
+If instead `τ` is a vector of integers, so that `length(τ) == d-1`,
 then the ``n``-th entry is
 ```math
-(s(n), s(n+\\tau[1]), s(n+\\tau[2]), \\dots, s(n+\\tau[γ]))
+(s(n), s(n+\\tau[1]), s(n+\\tau[2]), \\dots, s(n+\\tau[d-1]))
 ```
 
-The reconstructed dataset can have same
+The resulting set can have same
 invariant quantities (like e.g. lyapunov exponents) with the original system
-that the timeseries were recorded from, for proper `γ` and `τ`.
+that the timeseries were recorded from, for proper `d` and `τ`.
 This is known as the Takens embedding theorem [^Takens1981] [^Sauer1991].
-The case of different delay times allows reconstructing systems with many time scales,
+The case of different delay times allows embedding systems with many time scales,
 see[^Judd1998].
 
-*Notice* - The dimension of the returned dataset (i.e. embedding dimension) is `γ+1`!
-
-If `w` (a "weight") is provided as an extra argument, then the entries
-of the embedded vector are further weighted with ``w^\\gamma``[^Farmer1988]
+If provided, `h` can be weights to multiply the entries of the embedded space.
+If `h isa Real` then the embedding is
 ```math
-(s(n), w*s(n+\\tau), w^2*s(n+2\\tau), \\dots,w^\\gamma * s(n+γ\\tau))
+(s(n), h \\cdot s(n+\\tau), w^2 \\cdot s(n+2\\tau), \\dots,w^{d-1} \\cdot s(n+γ\\tau))
 ```
-
-### Multiple Timeseries
-To make a reconstruction out of a multiple timeseries (i.e. trajectory) the number
-of timeseries must be known by type, so `s` must be a `Dataset`.
-
-If the trajectory is for example ``(x, y)`` and `τ` is integer, then the ``n``-th
-entry of the embedded space is
-```math
-(x(n), y(n), x(n+\\tau), y(n+\\tau), \\dots, x(n+γ\\tau), y(n+γ\\tau))
-```
-If `τ` is an `AbstractMatrix{Int}`, so that `size(τ) == (γ, B)`,
-then we have
-```math
-(x(n), y(n), x(n+\\tau[1, 1]), y(n+\\tau[1, 2]), \\dots, x(n+\\tau[γ, 1]), y(n+\\tau[γ, 2]))
-```
-
-*Notice* - The dimension of the returned dataset is `(γ+1)*B`!
+Otherwise `h` can be a vector of length `d-1`, which the decides the weights of each
+entry directly.
 
 ## References
 [^Takens1981] : F. Takens, *Detecting Strange Attractors in Turbulence — Dynamical
@@ -129,22 +113,16 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 [^Farmer1988]: Farmer & Sidorowich, [Exploiting Chaos to Predict the Future and Reduce Noise"](http://www.nzdl.org/gsdlmod?e=d-00000-00---off-0cltbibZz-e--00-1----0-10-0---0---0direct-10---4-------0-1l--11-en-50---20-home---00-3-1-00-0--4--0--0-0-11-10-0utfZz-8-00&a=d&cl=CL3.16&d=HASH013b29ffe107dba1e52f1a0c_1245)
 
 """
-function reconstruct(s::AbstractVector{T}, γ, τ) where {T}
-    if γ == 0
+function embed(s::AbstractVector{T}, d, τ, h::H = nothing) where {T, H}
+    if d == 0
         return Dataset(s)
     end
-    de::DelayEmbedding{γ} = DelayEmbedding(Val{γ}(), τ)
+    htype = H <: Union{Nothing, Real} ? H : eltype(H)
+    de::DelayEmbedding{d-1, htype} = DelayEmbedding(d-1, τ, h)
     return reconstruct(s, de)
 end
-function reconstruct(s::AbstractVector{T}, γ, τ, w) where {T}
-    if γ == 0
-        return Dataset(s)
-    end
-    de = WeightedDelayEmbedding(Val{γ}(), τ, w)
-    return reconstruct(s, de)
-end
-@inline function reconstruct(s::AbstractVector{T},
-    de::Union{WeightedDelayEmbedding{γ}, DelayEmbedding{γ}}) where {T, γ}
+
+@inline function reconstruct(s::AbstractVector{T}, de::DelayEmbedding{γ}) where {T, γ}
     r = τrange(s, de)
     data = Vector{SVector{γ+1, T}}(undef, length(r))
     @inbounds for i in r
@@ -169,6 +147,12 @@ See [`reconstruct`](@ref) for an advanced version that supports multiple delay
 times and can reconstruct multiple timeseries efficiently.
 """
 embed(s, D, τ) = reconstruct(s, D-1, τ)
+
+function reconstruct(s, γ, τ)
+    @warn "`reconstruct` is deprecated in favor of `embed`. In general, the old argument "*
+    "`γs` is being phased out throughout the library."
+    return embed(s, γ+1, τ)
+end
 
 
 #####################################################################################
