@@ -138,16 +138,8 @@ Return the range `r` of valid indices `n` to create delay vectors out of `s` usi
 τrange(s, de::AbstractEmbedding) = 1:(length(s) - maximum(de.delays))
 
 """
-    embed(s, D, τ)
-Perform a delay coordinates embedding on signal `s` with embedding dimension `D`
-and delay time `τ`. The result is returned as a [`Dataset`](@ref), which is a
-vector of static vectors.
-
-See [`reconstruct`](@ref) for an advanced version that supports multiple delay
-times and can reconstruct multiple timeseries efficiently.
+    reconstruct(s, γ, τ) = embed(s, γ+1, τ)
 """
-embed(s, D, τ) = reconstruct(s, D-1, τ)
-
 function reconstruct(s, γ, τ)
     @warn "`reconstruct` is deprecated in favor of `embed`. In general, the old argument "*
     "`γs` is being phased out throughout the library."
