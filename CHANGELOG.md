@@ -1,3 +1,6 @@
+# v1.13.0
+* `reconstruct` is deprecated in favor of `embed`.
+
 # v1.12.0
 * Possible delay times in `optimal_traditional_de` are now `1:100` for increased accuracy.
 * New method for univariate non-unified delay embedding by Hegger, Kantz
