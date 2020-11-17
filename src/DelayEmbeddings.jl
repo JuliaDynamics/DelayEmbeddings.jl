@@ -17,5 +17,6 @@ include("unified_de/pecora.jl")
 include("unified_de/uzal_cost.jl")
 include("unified_de/MDOP.jl")
 include("unified_de/garcia_almeida.jl")
+include("unified_de/pecuzal.jl")
 
 end

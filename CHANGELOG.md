@@ -1,3 +1,6 @@
+# v1.14.0
+* New unified embedding method `pecuzal` by Kraemer et al.
+
 # v1.13.0
 * `reconstruct` is deprecated in favor of `embed`.
 
