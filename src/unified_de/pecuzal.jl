@@ -25,10 +25,9 @@ A unified approach to properly embed a time series or a set of time series
   description). Must be at least 8 (in order to gurantee a valid statistic).
   `⟨ε★⟩` is computed taking the minimum result over all `k ∈ K`.
 * `KNN::Int = 3`: the amount of nearest neighbors considered, in order to compute
-  σ_k^2 (read algorithm description [`uzal_cost`]@ref). If given a vector, the
-  minimum result over all `knn ∈ KNN` is returned.
-* `Tw::Int = 4*w`: the maximal considered time horizon for obtaining σ_k^2 (read
-   algorithm description [`uzal_cost`]@ref).
+  σ². If given a vector, the minimum result over all `knn ∈ KNN` is returned.
+* `Tw::Int = 4*w`: the maximal considered time horizon for obtaining σ² (read
+   algorithm description.
 * `α::Real = 0.05`: The significance level for obtaining the continuity statistic
 * `p::Real = 0.5`: The p-parameter for the binomial distribution used for the
   computation of the continuity statistic ⟨ε★⟩.
@@ -53,7 +52,7 @@ In case of multivariate embedding, i.e. when embedding a set of M time series
 computed for all M time series available. The optimal delay value `τ` in each
 embedding cycle is chosen as the peak/`τ`-value for which `L` is minimal under
 all available peaks and under all M `⟨ε★⟩`'s. In the first embedding cycle there
-will be M^2 different `⟨ε★⟩`'s to consider, since it is not clear a priori which
+will be M² different `⟨ε★⟩`'s to consider, since it is not clear a priori which
 time series of the input should consitute the first component of the embedding
 vector and form `𝒟_actual`.
 
