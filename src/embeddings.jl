@@ -322,7 +322,7 @@ each step ``n`` will be
 
 `js` can be skipped, defaulting to index 1 (first timeseries) for all delay entries.
 
-See also [`reconstruct`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
+See also [`embed`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
 """
 function genembed(s, τs, js = ones(length(τs)))
     D = length(τs)
