@@ -21,7 +21,7 @@ set of time series (`Dataset` type) based on the papers of Garcia & Almeida
   that are excluded from being true neighbors). `w=0` means to exclude only the
   point itself, and no temporal neighbors.
 * `r1 = 10`: The threshold, which defines the factor of tolerable stretching for
-  the d_E1-statistic (see algorithm description in [`garcia_embedding_cycle`](@ref)).
+  the d_E1-statistic.
 * `r2 = 2`: The threshold for the tolerable relative increase of the distance
   between the nearest neighbors, when increasing the embedding dimension.
 * `fnn_thres= 0.05`: A threshold value defining a sufficiently small fraction
@@ -37,7 +37,7 @@ set of time series (`Dataset` type) based on the papers of Garcia & Almeida
 
 ## Description
 The method works iteratively and gradually builds the final embedding vectors
-`Y`. Based on the `N`-statistic [`garcia_embedding_cycle`](@ref) the algorithm
+`Y`. Based on the `N`-statistic the algorithm
 picks an optimal delay value `τ` for each embedding cycle as the first local
 minimum of `N`. In case of multivariate embedding, i.e. when embedding a set of
 time series (`s::Dataset`), the optimal delay value `τ` is chosen as the first
