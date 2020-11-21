@@ -7,7 +7,7 @@ export estimate_delay, exponential_decay_fit, autocor
 """
     estimate_delay(s, method::String [, τs = 1:100]; kwargs...) -> τ
 
-Estimate an optimal delay to be used in [`reconstruct`](@ref) or [`embed`](@ref).
+Estimate an optimal delay to be used in [`embed`](@ref).
 The `method` can be one of the following:
 
 * `"ac_zero"` : first delay at which the auto-correlation function becomes <0.
