@@ -282,14 +282,28 @@ function Base.show(io::IO, g::GeneralizedEmbedding{D, W}) where {D, W}
     print(io, "  τs: $(g.τs)\n")
     print(io, "  js: $(g.js)\n")
     wp = W == Nothing ? "nothing" : g.ws
-    print(io, "  ws: $(wp)\n")
+    print(io, "  ws: $(wp)")
 end
 
-@generated function (g::GeneralizedEmbedding{D})(s::Dataset{X, T}, i::Int) where {D, X, T}
+# no weights version
+@generated function (g::GeneralizedEmbedding{D, Nothing})(s::Dataset{X, T}, i::Int) where {D, X, T}
     if s isa Dataset
         gens = [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
     elseif s isa AbstractVector
         gens = [:(s[i + g.τs[$k]]) for k=1:D]
+    end
+    quote
+        @_inline_meta
+        @inbounds return SVector{$D,T}($(gens...))
+    end
+end
+
+# with weights version
+@generated function (g::GeneralizedEmbedding{D})(s::Dataset{X, T}, i::Int) where {D, X, T}
+    if s isa Dataset
+        gens = [:(g.ws*s[i + g.τs[$k], g.js[$k]]) for k=1:D]
+    elseif s isa AbstractVector
+        gens = [:(g.ws*s[i + g.τs[$k]]) for k=1:D]
     end
     quote
         @_inline_meta
