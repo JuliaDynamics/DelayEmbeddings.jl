@@ -1,3 +1,10 @@
+# v1.15.0
+* Horizontal concatenation of same-length `Vector{<:Real}` and `Dataset` in any order using 
+  `Base.hcat(x, y)` or `[x y]` syntax.
+* Convenience constructors that uses horizontal concatenation: 
+  `Dataset(::Dataset, ::Vector{<:Real})`, `Dataset(::Vector{<:Real}, ::Dataset)` and 
+  `Dataset(::Dataset, ::Dataset)`.
+
 # v1.14.0
 * New unified embedding method `pecuzal` by Kraemer et al.
 
