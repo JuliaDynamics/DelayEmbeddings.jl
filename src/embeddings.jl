@@ -242,7 +242,7 @@ reconstruct(s::AbstractMatrix, args...) = reconstruct(Dataset(s), args...)
 export GeneralizedEmbedding, genembed
 
 """
-    GeneralizedEmbedding(τs [, js]) -> `embedding`
+    GeneralizedEmbedding(τs [, js]; ws = nothing) -> `embedding`
 Return a delay coordinates embedding structure to be used as a functor.
 Given a timeseries *or* trajectory (i.e. `Dataset`) `s` and calling
 ```julia
@@ -257,24 +257,32 @@ this case) and in addition `js` defaults to `(1, ..., 1)` for all `τ`.
 **Be very careful when choosing `n`, because `@inbounds` is used internally.**
 Use [`τrange`](@ref)!
 """
-struct GeneralizedEmbedding{D} <: AbstractEmbedding
+struct GeneralizedEmbedding{D, W} <: AbstractEmbedding
     τs::NTuple{D, Int}
     js::NTuple{D, Int}
+    ws::NTuple{D, W}
 end
-GeneralizedEmbedding(τs::NTuple{D, Int}) where {D} =
-GeneralizedEmbedding{D}(τs, NTuple{D, Int}(ones(D)))
+function GeneralizedEmbedding(τs::NTuple{D, Int}) where {D} # type stable version
+    GeneralizedEmbedding{D, Nothing}(
+        τs, NTuple{D, Int}(ones(D)), NTuple{D, Nothing}(fill(nothing, D))
+    )
+end
 
-function GeneralizedEmbedding(τs, js::AbstractVector = ones(length(τs)))
+function GeneralizedEmbedding(τs, js = ones(length(τs)); ws = nothing)
     D = length(τs)
     a = NTuple{D, Int}(τs)
     b = NTuple{D, Int}(js)
-    return GeneralizedEmbedding{D}(a, b)
+    W = isnothing(ws) ? Nothing : typeof(ws[1])
+    c = isnothing(ws) ? NTuple{D, W}(fill(nothing, D)) : NTuple{D, W}(ws)
+    return GeneralizedEmbedding{D, W}(a, b, c)
 end
 
-function Base.show(io::IO, g::GeneralizedEmbedding{D}) where {D}
+function Base.show(io::IO, g::GeneralizedEmbedding{D, W}) where {D, W}
     print(io, "$D-dimensional generalized embedding\n")
     print(io, "  τs: $(g.τs)\n")
-    print(io, "  js: $(g.js)")
+    print(io, "  js: $(g.js)\n")
+    wp = W == Nothing ? "nothing" : g.ws
+    print(io, "  ws: $(wp)\n")
 end
 
 @generated function (g::GeneralizedEmbedding{D})(s::Dataset{X, T}, i::Int) where {D, X, T}
@@ -294,9 +302,9 @@ max(1, (-minimum(ge.τs) + 1)):min(length(s), length(s) - maximum(ge.τs))
 
 
 """
-    genembed(s, τs, js = ones(...)) → dataset
+    genembed(s, τs, js = ones(...); ws = nothing) → dataset
 Create a generalized embedding of `s` which can be a timeseries or arbitrary `Dataset`,
-and return the result as a new `dataset`.
+and return the result as a new `Dataset`.
 
 The generalized embedding works as follows:
 - `τs` denotes what delay times will be used for each of the entries
@@ -304,8 +312,10 @@ The generalized embedding works as follows:
   `τs` is allowed to have *negative entries* as well.
 - `js` denotes which of the timeseries contained in `s`
   will be used for the entries of the delay vector. `js` can contain duplicate indices.
+- `ws` are optional weights that weight each embedded entry.
+  If provided, it is recommeded that `ws[1] = 1`
 
-`τs, js` are tuples (or vectors) of length `D`, which also coincides with the embedding
+`τs, js, ws` are tuples (or vectors) of length `D`, which also coincides with the embedding
 dimension. For example, imagine input trajectory ``s = [x, y, z]`` where ``x, y, z`` are
 timeseries (the columns of the `Dataset`).
 If `js = (1, 3, 2)` and `τs = (0, 2, -7)` the created delay vector at
@@ -318,9 +328,10 @@ each step ``n`` will be
 
 See also [`embed`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
 """
-function genembed(s, τs, js = ones(length(τs)))
+function genembed(s, τs, js = ones(length(τs)); ws = nothing)
     D = length(τs)
-    ge::GeneralizedEmbedding{D} = GeneralizedEmbedding(τs, js)
+    W = isnothing(ws) ? Nothing : typeof(ws[1])
+    ge::GeneralizedEmbedding{D, W} = GeneralizedEmbedding(τs, js, ws)
     return genembed(s, ge)
 end
 
