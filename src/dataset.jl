@@ -98,6 +98,26 @@ function Base.hcat(d::AbstractDataset{D, T}, x::Vector{<:Real}) where {D, T}
     return Dataset(data)
 end
 
+function Base.hcat(x::Vector{<:Real}, d::AbstractDataset{D, T}) where {D, T}
+    L = length(d)
+    L == length(x) || error("dataset and vector must be of same length")
+    data = Vector{SVector{D+1, T}}(undef, L)
+    @inbounds for i in 1:L
+        data[i] = SVector{D+1, T}(d[i]..., x[i])
+    end
+    return Dataset(data)
+end
+
+function hcat(x::AbstractDataset{D1, T}, y::AbstractDataset{D2, T}) where {D1, D2, T}
+    length(x) == length(y) || error("Datasets must be of same length")
+    L = length(x)
+    v = Vector{SVector{D, T}}(undef, L)
+    for i = 1:L
+        v[i] = SVector{D1 + D2, T}((x[i]..., y[i]...,))
+    end
+    return Dataset(v)
+end
+
 ###########################################################################
 # Concrete implementation
 ###########################################################################
