@@ -242,7 +242,7 @@ reconstruct(s::AbstractMatrix, args...) = reconstruct(Dataset(s), args...)
 export GeneralizedEmbedding, genembed
 
 """
-    GeneralizedEmbedding(τs [, js]; ws = nothing) -> `embedding`
+    GeneralizedEmbedding(τs, js = ones(length(τs)), ws = nothing) -> `embedding`
 Return a delay coordinates embedding structure to be used as a functor.
 Given a timeseries *or* trajectory (i.e. `Dataset`) `s` and calling
 ```julia
@@ -268,12 +268,12 @@ function GeneralizedEmbedding(τs::NTuple{D, Int}) where {D} # type stable versi
     )
 end
 
-function GeneralizedEmbedding(τs, js = ones(length(τs)); ws = nothing)
+function GeneralizedEmbedding(τs, js = ones(length(τs)), ws = nothing)
     D = length(τs)
     a = NTuple{D, Int}(τs)
     b = NTuple{D, Int}(js)
-    W = isnothing(ws) ? Nothing : typeof(ws[1])
-    c = isnothing(ws) ? NTuple{D, W}(fill(nothing, D)) : NTuple{D, W}(ws)
+    W = isnothing(ws) ? Nothing : typeof(promote(ws...)[1])
+    c = isnothing(ws) ? NTuple{D, W}(fill(nothing, D)) : NTuple{D, W}(promote(ws...))
     return GeneralizedEmbedding{D, W}(a, b, c)
 end
 
@@ -286,28 +286,35 @@ function Base.show(io::IO, g::GeneralizedEmbedding{D, W}) where {D, W}
 end
 
 # no weights version
-@generated function (g::GeneralizedEmbedding{D, Nothing})(s::Dataset{X, T}, i::Int) where {D, X, T}
-    if s isa Dataset
-        gens = [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
-    elseif s isa AbstractVector
-        gens = [:(s[i + g.τs[$k]]) for k=1:D]
+@generated function (g::GeneralizedEmbedding{D, Nothing})(s::S, i::Int) where {D, S}
+    T = eltype(S)
+    gens = if S <: Dataset
+         [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
+    elseif S <: AbstractVector
+        [:(s[i + g.τs[$k]]) for k=1:D]
+    else
+        error("incorrect input type to embed.")
     end
     quote
         @_inline_meta
-        @inbounds return SVector{$D,T}($(gens...))
+        @inbounds return SVector{$D,$T}($(gens...))
     end
 end
 
-# with weights version
-@generated function (g::GeneralizedEmbedding{D})(s::Dataset{X, T}, i::Int) where {D, X, T}
-    if s isa Dataset
-        gens = [:(g.ws*s[i + g.τs[$k], g.js[$k]]) for k=1:D]
-    elseif s isa AbstractVector
-        gens = [:(g.ws*s[i + g.τs[$k]]) for k=1:D]
+# weights version
+@generated function (g::GeneralizedEmbedding{D, W})(s::S, i::Int) where {D, W, S}
+    T = eltype(S)
+    gens = if S <: Dataset
+         [:(g.ws[$k]*s[i + g.τs[$k], g.js[$k]]) for k=1:D]
+    elseif S <: AbstractVector
+        [:(g.ws[$k]*s[i + g.τs[$k]]) for k=1:D]
+    else
+        error("incorrect input type to embed.")
     end
+    X = promote_type(T, W)
     quote
         @_inline_meta
-        @inbounds return SVector{$D,T}($(gens...))
+        @inbounds return SVector{$D,$X}($(gens...))
     end
 end
 
@@ -337,14 +344,19 @@ each step ``n`` will be
 ```math
 (x(n), z(n+2), y(n-7))
 ```
+Using `ws = (1, 0.5, 0.25)` as well would create
+```math
+(x(n), \\frac{1}{2} z(n+2), \\frac{1}{4} y(n-7))
+```
 
-`js` can be skipped, defaulting to index 1 (first timeseries) for all delay entries.
+`js` can be skipped, defaulting to index 1 (first timeseries) for all delay entries, while
+it has no effect if `s` is a timeseries instead of a `Dataset`.
 
 See also [`embed`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
 """
 function genembed(s, τs, js = ones(length(τs)); ws = nothing)
     D = length(τs)
-    W = isnothing(ws) ? Nothing : typeof(ws[1])
+    W = isnothing(ws) ? Nothing : typeof(promote(ws...)[1])
     ge::GeneralizedEmbedding{D, W} = GeneralizedEmbedding(τs, js, ws)
     return genembed(s, ge)
 end
