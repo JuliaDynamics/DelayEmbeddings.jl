@@ -103,7 +103,7 @@ function Base.hcat(x::Vector{<:Real}, d::AbstractDataset{D, T}) where {D, T}
     L == length(x) || error("dataset and vector must be of same length")
     data = Vector{SVector{D+1, T}}(undef, L)
     @inbounds for i in 1:L
-        data[i] = SVector{D+1, T}(d[i]..., x[i])
+        data[i] = SVector{D+1, T}(x[i], d[i]...)
     end
     return Dataset(data)
 end
