@@ -199,8 +199,6 @@ function Dataset(vecs::Vararg{<:AbstractVector{T}}) where {T}
     return Dataset(_dataset(vecs...))
 end
 
-
-# constructor that merges two datasets
 Dataset(x::AbstractDataset{D1, T}, y::AbstractDataset{D2, T}) where {D1, D2, T} = 
     hcat(x, y)
 Dataset(x::Vector{<:Real}, y::AbstractDataset{D, T}) where {D, T} = hcat(x, y)
