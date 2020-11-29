@@ -108,12 +108,13 @@ function Base.hcat(x::Vector{<:Real}, d::AbstractDataset{D, T}) where {D, T}
     return Dataset(data)
 end
 
-function hcat(x::AbstractDataset{D1, T}, y::AbstractDataset{D2, T}) where {D1, D2, T}
+function Base.hcat(x::AbstractDataset{D1, T}, y::AbstractDataset{D2, T}) where {D1, D2, T}
     length(x) == length(y) || error("Datasets must be of same length")
     L = length(x)
+    D = D1 + D2
     v = Vector{SVector{D, T}}(undef, L)
     for i = 1:L
-        v[i] = SVector{D1 + D2, T}((x[i]..., y[i]...,))
+        v[i] = SVector{D, T}((x[i]..., y[i]...,))
     end
     return Dataset(v)
 end
@@ -198,6 +199,12 @@ function Dataset(vecs::Vararg{<:AbstractVector{T}}) where {T}
     return Dataset(_dataset(vecs...))
 end
 
+
+# constructor that merges two datasets
+Dataset(x::AbstractDataset{D1, T}, y::AbstractDataset{D2, T}) where {D1, D2, T} = 
+    hcat(x, y)
+Dataset(x::Vector{<:Real}, y::AbstractDataset{D, T}) where {D, T} = hcat(x, y)
+Dataset(x::AbstractDataset{D, T}, y::Vector{<:Real}) where {D, T} = hcat(x, y)
 
 #####################################################################################
 #                                Dataset <-> Matrix                                 #

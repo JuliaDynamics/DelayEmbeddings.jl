@@ -6,6 +6,14 @@ println("\nTesting Dataset...")
 @testset "Dataset" begin
   data = Dataset(rand(1001,3))
   xs = columns(data)
+
+  @testset "Concatenation" begin 
+    x, y, z = Dataset(rand(10, 2)), Dataset(rand(10, 2)), rand(10)
+    @test Dataset(x, y) isa Dataset
+    @test Dataset(x, z) isa Dataset
+    @test Dataset(z, x) isa Dataset
+  end
+
   @testset "Methods & Indexing" begin
     a = data[:, 1]
     b = data[:, 2]
