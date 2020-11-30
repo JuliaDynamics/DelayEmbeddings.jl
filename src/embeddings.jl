@@ -285,33 +285,30 @@ function Base.show(io::IO, g::GeneralizedEmbedding{D, W}) where {D, W}
     print(io, "  ws: $(wp)")
 end
 
-# no weights version
-@generated function (g::GeneralizedEmbedding{D, Nothing})(s::S, i::Int) where {D, S}
-    T = eltype(S)
-    gens = if S <: Dataset
-         [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
-    elseif S <: AbstractVector
-        [:(s[i + g.τs[$k]]) for k=1:D]
+const Data{T} = Union{Dataset{D, T}, AbstractVector{T}} where {D}
+
+# dataset version
+@generated function (g::GeneralizedEmbedding{D, W})(s::Dataset{Z, T}, i::Int) where {D,W,Z,T}
+    gens = if W == Nothing
+        [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
     else
-        error("incorrect input type to embed.")
+        [:(g.ws[$k]*s[i + g.τs[$k], g.js[$k]]) for k=1:D]
     end
+    X = W == Nothing ? T : promote_type(T, W)
     quote
         @_inline_meta
-        @inbounds return SVector{$D,$T}($(gens...))
+        @inbounds return SVector{$D,$X}($(gens...))
     end
 end
 
-# weights version
-@generated function (g::GeneralizedEmbedding{D, W})(s::S, i::Int) where {D, W, S}
-    T = eltype(S)
-    gens = if S <: Dataset
-         [:(g.ws[$k]*s[i + g.τs[$k], g.js[$k]]) for k=1:D]
-    elseif S <: AbstractVector
-        [:(g.ws[$k]*s[i + g.τs[$k]]) for k=1:D]
+# vector version
+@generated function (g::GeneralizedEmbedding{D, W})(s::AbstractVector{T}, i::Int) where {D,W,T}
+    gens = if W == Nothing
+        [:(s[i + g.τs[$k]]) for k=1:D]
     else
-        error("incorrect input type to embed.")
+        [:(g.ws[$k]*s[i + g.τs[$k]]) for k=1:D]
     end
-    X = promote_type(T, W)
+    X = W == Nothing ? T : promote_type(T, W)
     quote
         @_inline_meta
         @inbounds return SVector{$D,$X}($(gens...))
@@ -361,12 +358,13 @@ function genembed(s, τs, js = ones(length(τs)); ws = nothing)
     return genembed(s, ge)
 end
 
-function genembed(s, ge::GeneralizedEmbedding{D}) where {D}
+function genembed(s, ge::GeneralizedEmbedding{D, W}) where {D, W}
     r = τrange(s, ge)
     T = eltype(s)
-    data = Vector{SVector{D, T}}(undef, length(r))
+    X = W == Nothing ? T : promote_type(T, W)
+    data = Vector{SVector{D, X}}(undef, length(r))
     @inbounds for (i, n) in enumerate(r)
         data[i] = ge(s, n)
     end
-    return Dataset{D, T}(data)
+    return Dataset{D, X}(data)
 end
