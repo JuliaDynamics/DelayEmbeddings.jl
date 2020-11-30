@@ -2,7 +2,7 @@ using DelayEmbeddings
 using Test
 using DynamicalSystemsBase
 
-println("\nTesting delay count estimation...")
+println("\nTesting traditional optimal embedding dimension...")
 test_value = (val, vmin, vmax) -> @test vmin <= val <= vmax
 
 @testset "Embedding dimension estimation" begin

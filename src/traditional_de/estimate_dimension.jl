@@ -187,13 +187,15 @@ function delay_fnn(s::AbstractVector, τ::Int, ds = 2:6; rtol=10.0, atol=2.0)
     @inbounds for (k, d) ∈ enumerate(ds)
         y = embed(s[1:end-τ],d,τ)
         tree = KDTree(y)
-        nind = (x = NearestNeighbors.knn(tree, y.data, 2)[1]; [ind[1] for ind in x])
+        _nind = bulkisearch(tree, y.data, NeighborNumber(1), Theiler(0))
+        nind = (x[1] for x in _nind) # bulksearch always returns vectors of vectors
+        # nind = (x = NearestNeighbors.knn(tree, y.data, 2)[1]; [ind[1] for ind in x])
         for (i,j) ∈ enumerate(nind)
             δ = norm(y[i]-y[j], 2)
             # If y[i] and y[j] are still identical, choose the next nearest neighbor
             # as in Cao's algorithm (not suggested by Kennel, but still advisable)
             if δ == 0.0
-                j = NearestNeighbors.knn(tree, y[i], 3, true)[1][end]
+                j = Neighborhood.knn(tree, y[i], 2, Theiler(0)(i))[end]
                 δ = norm(y[i]-y[j])
             end
             δ1 = _increase_distance(δ,s,i,j,d-1,τ,Euclidean())
