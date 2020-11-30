@@ -3,14 +3,12 @@
 #####################################################################################
 using Neighborhood, Distances
 
-export search, WithinRange, NeighborNumber, bulksearch, bulkisearch, Theiler, KDTree
+export WithinRange, NeighborNumber, Theiler, KDTree
 export Euclidean, Chebyshev
 
 Neighborhood.KDTree(D::AbstractDataset, metric::Metric = Euclidean(); kwargs...) =
 KDTree(D.data, metric; kwargs...)
 
-# TODO: Function returns 0-indices and -Inf values, when w is too high compared
-#       to the length of vtree. This should be fixed, i.e. throw an error
 """
     all_neighbors(vtree, vs, ns, K, w)
 Return the `maximum(K)`-th nearest neighbors for all input points `vs`,
@@ -19,6 +17,7 @@ with indices `ns` in original data, while respecting the theiler window `w`.
 This function is nothing more than a convinience call to `Neighborhood.bulksearch`.
 """
 function all_neighbors(vtree, vs, ns, K, w)
+    w ≥ length(vtree.data)-1 && error("Theiler window larger than the entire data span!")
     k = maximum(K)
     tw = Theiler(w, ns)
     idxs, dists = bulksearch(vtree, vs, NeighborNumber(k), tw)
