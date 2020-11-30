@@ -6,7 +6,8 @@ using Neighborhood, Distances
 export search, WithinRange, NeighborNumber, bulksearch, bulkisearch, Theiler, KDTree
 export Euclidean, Chebyshev
 
-KDTree(D::AbstractDataset, metric::Metric = Euclidean()) = KDTree(D.data, metric)
+Neighborhood.KDTree(D::AbstractDataset, metric::Metric = Euclidean(); kwargs...) =
+KDTree(D.data, metric; kwargs...)
 
 # TODO: Function returns 0-indices and -Inf values, when w is too high compared
 #       to the length of vtree. This should be fixed, i.e. throw an error
@@ -26,9 +27,9 @@ end
 #####################################################################################
 #                Old Neighborhood Interface, deprecated                             #
 #####################################################################################
-using NearestNeighbors, StaticArrays
+import NearestNeighbors
+using StaticArrays
 using Distances: Euclidean, Metric
-import NearestNeighbors: KDTree
 
 export AbstractNeighborhood
 export FixedMassNeighborhood, FixedSizeNeighborhood
@@ -52,18 +53,19 @@ abstract type AbstractNeighborhood end
 
 struct FixedMassNeighborhood <: AbstractNeighborhood
     K::Int
+    function FixedMassNeighborhood(k::Int = 1)
+        @warn "FixedMassNeighborhood is deprecated in favor of NeighborNumber."
+        return new(k)
+    end
 end
-FixedMassNeighborhood() = FixedMassNeighborhood(1)
 
 struct FixedSizeNeighborhood <: AbstractNeighborhood
     ε::Float64
+    function FixedSizeNeighborhood(ε::Real = 0.01)
+        @warn "FixedSizeNeighborhood is deprecated in favor of WithinRange."
+        return new(ε)
+    end
 end
-FixedSizeNeighborhood() = FixedSizeNeighborhood(0.01)
-
-@deprecate AbstractNeighborhood SearchType
-@deprecate FixedSizeNeighborhood WithinRange
-@deprecate FixedMassNeighborhood NeighborNumber
-@deprecate neighborhood search
 
 """
     neighborhood(point, tree, ntype)
@@ -89,36 +91,26 @@ the argument `ntype`.
 """
 function neighborhood(point::AbstractVector, tree,
                       ntype::FixedMassNeighborhood, n::Int, w::Int = 1)
+    @warn "`neighborhood` is deprecated in favor of using `search` and Neighborhood.jl."
     idxs, = NearestNeighbors.knn(tree, point, ntype.K, false, i -> abs(i-n) < w)
     return idxs
 end
 function neighborhood(point::AbstractVector, tree, ntype::FixedMassNeighborhood)
+    @warn "`neighborhood` is deprecated in favor of using `search` and Neighborhood.jl."
     idxs, = NearestNeighbors.knn(tree, point, ntype.K, false)
     return idxs
 end
 
 function neighborhood(point::AbstractVector, tree,
                       ntype::FixedSizeNeighborhood, n::Int, w::Int = 1)
+
+@warn "`neighborhood` is deprecated in favor of using `search` and Neighborhood.jl."
     idxs = NearestNeighbors.inrange(tree, point, ntype.ε)
     filter!((el) -> abs(el - n) ≥ w, idxs)
     return idxs
 end
 function neighborhood(point::AbstractVector, tree, ntype::FixedSizeNeighborhood)
+    @warn "`neighborhood` is deprecated in favor of using `search` and Neighborhood.jl."
     idxs = NearestNeighbors.inrange(tree, point, ntype.ε)
     return idxs
 end
-
-
-
-# TODO: This must use the new Neighborhood.jl
-# function all_neighbors(vtree, vs, ns, K, w)
-#     k, sortres, N = maximum(K), true, length(vs)
-#     dists = [Vector{eltype(vs[1])}(undef, k) for _ in 1:N]
-#     idxs = [Vector{Int}(undef, k) for _ in 1:N]
-#     for i in 1:N
-#         # The skip predicate also skips the point itself for w ≥ 0
-#         skip = j -> ns[i] - w ≤ j ≤ ns[i] + w
-#         NearestNeighbors.knn_point!(vtree, vs[i], sortres, dists[i], idxs[i], skip)
-#     end
-#     return idxs, dists
-# end
