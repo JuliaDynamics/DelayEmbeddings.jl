@@ -255,9 +255,12 @@ function _compare_first_nn(s, γ::Int, τ::Int, Rγ::Dataset{D,T}, metric) where
     tree1 = KDTree(Rγ1,metric)
     nf1nn = 0
     # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k`
-    nind = (x = NearestNeighbors.knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
-    @inbounds for  (i,j) ∈ enumerate(nind)
-        k = NearestNeighbors.knn(tree1, Rγ1.data[i], 2, true)[1][end]
+    _nind = bulkisearch(tree, Rγ.data, NeighborNumber(1), Theiler(0))
+    nind = (x[1] for x in _nind) # bulksearch always returns vectors of vectors
+    # nind = (x = NearestNeighbors.knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
+    @inbounds for (i,j) ∈ enumerate(nind)
+        # k = NearestNeighbors.knn(tree1, Rγ1.data[i], 2, true)[1][end]
+        k = Neighborhood.knn(tree1, Rγ1.data[i], 1, Theiler(0)(i))[1][1]
         if j != k
             nf1nn += 1
         end
