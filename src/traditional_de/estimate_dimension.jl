@@ -105,10 +105,9 @@ function stochastic_indicator(s::AbstractVector{T}, τ, ds) where T # E2, equati
     for d ∈ ds
         Rγ1 = embed(s,d+1,τ)
         tree1 = KDTree(Rγ1[1:end-1-τ])
-        method = FixedMassNeighborhood(2)
-
         Es1 = 0.0
-        nind = (x = neighborhood(Rγ1[1:end-τ], tree1, method); [ind[1] for ind in x])
+        _nind = bulkisearch(tree1, Rγ1[1:end-τ], NeighborNumber(1), Theiler(0))
+        nind = (x[1] for x in _nind) # bulksearch always returns vectors of vectors
         for  (i,j) ∈ enumerate(nind)
             Es1 += abs(Rγ1[i+τ][end] - Rγ1[j+τ][end]) / length(Rγ1)
         end
@@ -117,7 +116,8 @@ function stochastic_indicator(s::AbstractVector{T}, τ, ds) where T # E2, equati
         Rγ = embed(s,d,τ)
         tree2 = KDTree(Rγ[1:end-1-τ])
         Es2 = 0.0
-        nind = (x = neighborhood(Rγ[1:end-τ], tree2, method); [ind[1] for ind in x])
+        _nind = bulkisearch(tree2, Rγ[1:end-τ], NeighborNumber(1), Theiler(0))
+        nind = (x[1] for x in _nind)
         for  (i,j) ∈ enumerate(nind)
             Es2 += abs(Rγ[i+τ][end] - Rγ[j+τ][end]) / length(Rγ)
         end
