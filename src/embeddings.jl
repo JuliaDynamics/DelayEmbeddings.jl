@@ -330,8 +330,8 @@ The generalized embedding works as follows:
   `τs` is allowed to have *negative entries* as well.
 - `js` denotes which of the timeseries contained in `s`
   will be used for the entries of the delay vector. `js` can contain duplicate indices.
-- `ws` are optional weights that weight each embedded entry.
-  If provided, it is recommeded that `ws[1] = 1`
+- `ws` are optional weights that weight each embedded entry (the i-th entry of the 
+    delay vector is weighted by `ws[i]`). If provided, it is recommended that `ws[1] = 1`
 
 `τs, js, ws` are tuples (or vectors) of length `D`, which also coincides with the embedding
 dimension. For example, imagine input trajectory ``s = [x, y, z]`` where ``x, y, z`` are
