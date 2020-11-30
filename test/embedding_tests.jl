@@ -80,4 +80,5 @@ println("\nTesting generalized embedding...")
         @test em[1:3, 1] == x[1+7:3+7]
         @test em[1:3, 2] == 0 .* z[1+7+2:3+7+2]
         @test em[1:3, 3] == 0.1 .* y[1:3]
+    end
 end
