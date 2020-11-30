@@ -1,4 +1,4 @@
-using Test, StaticArrays, DelayEmbeddings
+using Test, DelayEmbeddings
 
 println("\nTesting delay embeddings...")
 
@@ -55,22 +55,37 @@ println("\nTesting generalized embedding...")
     τs = (0, 2, -7)
     js = (1, 3, 2)
     ge = GeneralizedEmbedding(τs, js)
+    s = Dataset(rand(20, 3))
+    x, y, z = columns(s)
+    τr = τrange(s, ge)
     @testset "univariate" begin
-        x = rand(20)
-        τr = τrange(x, ge)
-        em = genembed(x, τs, js)
-        @test em == genembed(x, τs)
-        @test em[1:3, 3] == x[1:3]
-        @test em[1:3, 1] == x[1+7:3+7]
-        @test em[1:3, 2] == x[1+7+2:3+7+2]
+        w = rand(20)
+        em = genembed(w, τs, js)
+        @test em == genembed(w, τs)
+        @test em[1:3, 3] == w[1:3]
+        @test em[1:3, 1] == w[1+7:3+7]
+        @test em[1:3, 2] == w[1+7+2:3+7+2]
     end
     @testset "multivariate" begin
-        s = Dataset(rand(20, 3))
-        τr = τrange(s, ge)
         em = genembed(s, τs, js)
-        x, y, z = columns(s)
         @test em[1:3, 1] == x[1+7:3+7]
-        @test em[1:3, 3] == y[1:3]
         @test em[1:3, 2] == z[1+7+2:3+7+2]
+        @test em[1:3, 3] == y[1:3]
+    end
+    @testset "weighted" begin
+        ws = (1, 0, 0.1)
+        em = genembed(s, τs, js; ws)
+        @test em[1:3, 1] == x[1+7:3+7]
+        @test em[1:3, 2] == 0 .* z[1+7+2:3+7+2]
+        @test em[1:3, 3] == 0.1 .* y[1:3]
+    end
+    @testset "weighted integer" begin
+        ws = (1, 0, -0.1)
+        x = collect(1:100)
+        ge = GeneralizedEmbedding(τs, js, ws)
+        em = genembed(x, τs, js; ws)
+        @test em[1:3, 1] == x[1+7:3+7]
+        @test em[1:3, 2] == 0 .* x[1+7+2:3+7+2]
+        @test em[1:3, 3] == -0.1 .* x[1:3]
     end
 end

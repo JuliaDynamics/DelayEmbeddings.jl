@@ -16,10 +16,18 @@ jobs:
       matrix:
         version:
           - '1'
-        os:  [ubuntu-latest]
+        os:  [ubuntu-latest] # adjust according to need, e.g. os: [ubuntu-latest] if testing only on linux
         arch:
           - x64
     steps:
+      # Cancel ongoing CI test runs if pushing to branch again before the previous tests
+      # have finished
+      - name: Cancel ongoing test runs for previous commits
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+
+      # Do tests
       - uses: actions/checkout@v2
       - uses: julia-actions/setup-julia@v1
         with:

@@ -1,8 +1,11 @@
+# v1.16.0
+* Arbitrary weights can be given as options to `genembed`.
+
 # v1.15.0
-* Horizontal concatenation of same-length `Vector{<:Real}` and `Dataset` in any order using 
+* Horizontal concatenation of same-length `Vector{<:Real}` and `Dataset` in any order using
   `Base.hcat(x, y)` or `[x y]` syntax.
-* Convenience constructors that uses horizontal concatenation: 
-  `Dataset(::Dataset, ::Vector{<:Real})`, `Dataset(::Vector{<:Real}, ::Dataset)` and 
+* Convenience constructors that uses horizontal concatenation:
+  `Dataset(::Dataset, ::Vector{<:Real})`, `Dataset(::Vector{<:Real}, ::Dataset)` and
   `Dataset(::Dataset, ::Dataset)`.
 
 # v1.14.0
