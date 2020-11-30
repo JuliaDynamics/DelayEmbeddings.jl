@@ -1,3 +1,6 @@
+# v1.17.0
+* All code related to neighborhoods and finding nearest neighbors has moved to Neighborhood.jl, and thus old names like `FixedMassNeighborhood` and `neighborhood` have been deprecated.
+
 # v1.16.0
 * Arbitrary weights can be given as options to `genembed`.
 
