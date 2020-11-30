@@ -3,11 +3,19 @@
 #####################################################################################
 using Neighborhood, Distances
 
-export WithinRange, NeighborNumber, Theiler, KDTree
-export Euclidean, Chebyshev
+export WithinRange, NeighborNumber
+export Euclidean, Chebyshev, Cityblock
 
 Neighborhood.KDTree(D::AbstractDataset, metric::Metric = Euclidean(); kwargs...) =
 KDTree(D.data, metric; kwargs...)
+
+# Convenience extensions for ::Dataset in bulksearches
+for f ∈ (:bulkisearch, :bulksearch)
+    for nt ∈ (:NeighborNumber, :WithinRange)
+        @eval Neighborhood.$(f)(ss::KDTree, D::Dataset, st::$nt, args...; kwargs...) =
+        $(f)(ss, D.data, st, args...; kwargs...)
+    end
+end
 
 """
     all_neighbors(vtree, vs, ns, K, w)

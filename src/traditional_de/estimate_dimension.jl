@@ -6,37 +6,8 @@ time is allowed.
 
 All methods in this file are based on the idea of "false nearest neighbors".
 =#
-using NearestNeighbors, Statistics, Distances
-
-export estimate_dimension, stochastic_indicator
-export afnn, fnn, ifnn, f1nn
-export delay_afnn, delay_fnn, delay_ifnn, delay_f1nn
-export Euclidean, Chebyshev, Cityblock
-
-# Deprecations for new syntax and for removing `reconstruct`.
-for f in (:afnn, :fnn, :ifnn, :f1nn)
-    q = quote
-        function $(f)(s, τ, γs = 1:6, args...; kwargs...)
-            dep = """
-            function `$($(f))` is deprecated because it uses "γ" (amount of temporal
-            neighbors in delay vector) and `reconstruct`. These syntaxes are being phased
-            out in favor of `embed` and using `d` directly, the embedding dimension.
-
-            Use instead `$($(Symbol(:delay_, f)))` and replace given `γs` with `γs.+1`.
-            """
-            @warn dep
-            return $(Symbol(:delay_, f))(s, τ, γs .+ 1, args...; kwargs...)
-        end
-    end
-    @eval $q
-end
-
-# fnn(s::AbstractVector, τ:Int, γs = 1:5; rtol=10.0, atol=2.0) → FNNs
-# afnn(s::AbstractVector{T}, τ::Int, γs = 1:5, metric=Euclidean()) where {T}
-# f1nn(s::AbstractVector, τ::Int, γs = 1:5, metric = Euclidean())
-# ifnn(s::Vector{T}, τ::Int, γs = 0:10;
-#             r::Real = 2, w::Int = 1, metric = Euclidean()) where {T}
-
+using Statistics, Distances
+export delay_afnn, delay_fnn, delay_ifnn, delay_f1nn, stochastic_indicator
 
 #####################################################################################
 #                                Cao's method                                       #
@@ -76,18 +47,18 @@ function delay_afnn(s::AbstractVector{T}, τ::Int, ds = 2:6, metric=Euclidean())
     return E1s
 end
 
-# TODO: This algorithm needs to be re-written on Neighborhood.jl.
 function _average_a(s::AbstractVector{T},d,τ,metric) where {T}
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
     Rd = embed(s[1:end-τ],d,τ)
-    tree2 = KDTree(Rd, metric)
-    nind = (x = NearestNeighbors.knn(tree2, Rd.data, 2)[1]; [ind[1] for ind in x])
+    tree = KDTree(Rd, metric)
+    _nind = bulkisearch(tree, Rd, NeighborNumber(1), Theiler(0))
+    nind = (x[1] for x in _nind) # bulksearch always returns vectors of vectors
     e = 0.0
     @inbounds for (i,j) ∈ enumerate(nind)
         δ = evaluate(metric, Rd[i], Rd[j])
         #If Rγ[i] and Rγ[j] are still identical, choose the next nearest neighbor
         if δ == 0.0
-            j = NearestNeighbors.knn(tree2, Rd[i], 3, true)[1][end]
+            j = Neighborhood.knn(tree, Rd[i], 2, Theiler(0)(i))[end]
             δ = evaluate(metric, Rd[i], Rd[j])
         end
         e += _increase_distance(δ,s,i,j,d-1,τ,metric)/δ
@@ -136,7 +107,7 @@ function stochastic_indicator(s::AbstractVector{T}, τ, ds) where T # E2, equati
         tree1 = KDTree(Rγ1[1:end-1-τ])
         method = FixedMassNeighborhood(2)
 
-        Es1 = 0.
+        Es1 = 0.0
         nind = (x = neighborhood(Rγ1[1:end-τ], tree1, method); [ind[1] for ind in x])
         for  (i,j) ∈ enumerate(nind)
             Es1 += abs(Rγ1[i+τ][end] - Rγ1[j+τ][end]) / length(Rγ1)
@@ -145,7 +116,7 @@ function stochastic_indicator(s::AbstractVector{T}, τ, ds) where T # E2, equati
         #Calculate E* for Dimension d
         Rγ = embed(s,d,τ)
         tree2 = KDTree(Rγ[1:end-1-τ])
-        Es2 = 0.
+        Es2 = 0.0
         nind = (x = neighborhood(Rγ[1:end-τ], tree2, method); [ind[1] for ind in x])
         for  (i,j) ∈ enumerate(nind)
             Es2 += abs(Rγ[i+τ][end] - Rγ[j+τ][end]) / length(Rγ)
@@ -187,7 +158,7 @@ function delay_fnn(s::AbstractVector, τ::Int, ds = 2:6; rtol=10.0, atol=2.0)
     @inbounds for (k, d) ∈ enumerate(ds)
         y = embed(s[1:end-τ],d,τ)
         tree = KDTree(y)
-        _nind = bulkisearch(tree, y.data, NeighborNumber(1), Theiler(0))
+        _nind = bulkisearch(tree, y, NeighborNumber(1), Theiler(0))
         nind = (x[1] for x in _nind) # bulksearch always returns vectors of vectors
         # nind = (x = NearestNeighbors.knn(tree, y.data, 2)[1]; [ind[1] for ind in x])
         for (i,j) ∈ enumerate(nind)
@@ -255,7 +226,7 @@ function _compare_first_nn(s, γ::Int, τ::Int, Rγ::Dataset{D,T}, metric) where
     tree1 = KDTree(Rγ1,metric)
     nf1nn = 0
     # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k`
-    _nind = bulkisearch(tree, Rγ.data, NeighborNumber(1), Theiler(0))
+    _nind = bulkisearch(tree, Rγ, NeighborNumber(1), Theiler(0))
     nind = (x[1] for x in _nind) # bulksearch always returns vectors of vectors
     # nind = (x = NearestNeighbors.knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
     @inbounds for (i,j) ∈ enumerate(nind)
@@ -353,6 +324,27 @@ end
 #####################################################################################
 #                               OLD method TODO: remove                             #
 #####################################################################################
+export estimate_dimension
+export afnn, fnn, ifnn, f1nn
+
+# Deprecations for new syntax and for removing `reconstruct`.
+for f in (:afnn, :fnn, :ifnn, :f1nn)
+    q = quote
+        function $(f)(s, τ, γs = 1:6, args...; kwargs...)
+            dep = """
+            function `$($(f))` is deprecated because it uses "γ" (amount of temporal
+            neighbors in delay vector) and `reconstruct`. These syntaxes are being phased
+            out in favor of `embed` and using `d` directly, the embedding dimension.
+
+            Use instead `$($(Symbol(:delay_, f)))` and replace given `γs` with `γs.+1`.
+            """
+            @warn dep
+            return $(Symbol(:delay_, f))(s, τ, γs .+ 1, args...; kwargs...)
+        end
+    end
+    @eval $q
+end
+
 """
     estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn"; kwargs...)
 
