@@ -126,6 +126,8 @@ end
     Dataset{D, T} <: AbstractDataset{D,T}
 A dedicated interface for datasets.
 It contains *equally-sized datapoints* of length `D`, represented by `SVector{D, T}`.
+These data are contained in the field `.data` of a dataset, as a standard Julia
+`Vector{SVector}`.
 
 When indexed with 1 index, a `dataset` is like a vector of datapoints.
 When indexed with 2 indices it behaves like a matrix that has each of the columns be the
@@ -199,7 +201,7 @@ function Dataset(vecs::Vararg{<:AbstractVector{T}}) where {T}
     return Dataset(_dataset(vecs...))
 end
 
-Dataset(x::AbstractDataset{D1, T}, y::AbstractDataset{D2, T}) where {D1, D2, T} = 
+Dataset(x::AbstractDataset{D1, T}, y::AbstractDataset{D2, T}) where {D1, D2, T} =
     hcat(x, y)
 Dataset(x::Vector{<:Real}, y::AbstractDataset{D, T}) where {D, T} = hcat(x, y)
 Dataset(x::AbstractDataset{D, T}, y::Vector{<:Real}) where {D, T} = hcat(x, y)
