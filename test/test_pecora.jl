@@ -3,7 +3,6 @@ using Test
 using Random
 import Peaks
 
-
 @testset "Pecora" begin
 # %% Generate data
 lor = Systems.lorenz([0.0;1.0;0.0];ρ=60)
@@ -33,7 +32,7 @@ samplesize = 1
 τs = (0,)
 Random.seed!(123)
 es_ref, Γs = pecora(s, τs; delays = 0:Tmax, w = optimal_τ, samplesize = samplesize, K = K, metric = metric, undersampling = UNDERSAMPLING)
-max1 = Peaks.maxima(vec(es_ref))
+(max1,_) = Peaks.findmaxima(vec(es_ref))
 @test optimal_τ - 2 ≤ max1[1]-1 ≤ optimal_τ + 2
 maxi = maximum(es_ref)
 @test maxi ≤ 1.3
@@ -43,8 +42,8 @@ maxi = maximum(es_ref)
 τs = (0, max1[1]-1,)
 Random.seed!(123)
 es, Γs = pecora(s, τs; delays = 0:Tmax, w = optimal_τ, samplesize = samplesize, K = K, metric = metric, undersampling = UNDERSAMPLING)
-max2 = Peaks.maxima(vec(es))
-min1 = Peaks.minima(vec(es))
+(max2,_) = Peaks.findmaxima(vec(es))
+(min1,_) = Peaks.findminima(vec(es))
 @test 1 ≤ max2[1]-1 ≤ 4
 @test optimal_τ - 2 ≤ min1[1]-1 ≤ optimal_τ + 2
 # ax1.plot(es, label = "τs = $(τs)")
@@ -53,7 +52,7 @@ min1 = Peaks.minima(vec(es))
 τs = (0, max1[1]-1, max2[1]-1)
 Random.seed!(123)
 es, Γs = pecora(s, τs; delays = 0:Tmax, w = optimal_τ, samplesize = samplesize, K = K, metric = metric, undersampling = UNDERSAMPLING)
-min2 = Peaks.minima(vec(es))
+(min2,_) = Peaks.findminima(vec(es))
 @test max2[1]-2 ≤ min2[1]-1 ≤ max2[1]
 # ax1.plot(es, label = "τs = $(τs)")
 # ax2.plot(Γs)
@@ -63,7 +62,7 @@ min2 = Peaks.minima(vec(es))
 end
 
 @testset "Pecora multivariate" begin
-# %% Trajectory case
+## %% Trajectory case
 s = Dataset(data)
 optimal_τ = estimate_delay(s[:,2], "mi_min")
 Tmax = 100
@@ -78,9 +77,9 @@ Random.seed!(123)
 es, Γs = pecora(s, τs, js; delays = 0:Tmax, samplesize = samplesize, w = optimal_τ, K = K, metric = metric, undersampling = UNDERSAMPLING)
 
 @test round.(es[:,2], digits = 4) == round.(vec(es_ref),digits = 4)
-x_maxi = Peaks.maxima(es[:,1])
+(x_maxi,_) = Peaks.findmaxima(es[:,1])
 @test 8 ≤ x_maxi[1]-1 ≤ 10
-z_maxi = Peaks.maxima(es[:,3])
+(z_maxi,_) = Peaks.findmaxima(es[:,3])
 @test 13 ≤ z_maxi[1]-1 ≤ 15
 
 # using PyPlot

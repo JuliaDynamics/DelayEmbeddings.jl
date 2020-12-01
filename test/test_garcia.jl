@@ -26,8 +26,8 @@ Y = regularize(Y)
     @test NN_distances[5][1:100] == NN_distances2[5][1:100]
 
     min_dist = 12
-    max_1_idx = Peaks.maxima(N,min_dist)
-    max_2_idx = Peaks.maxima(N2,min_dist)
+    (max_1_idx,_) = Peaks.findmaxima(N,min_dist)
+    (max_2_idx,_) = Peaks.findmaxima(N2,min_dist)
 
     @test 30 ≤ max_1_idx[1] ≤ 35
     @test 30 ≤ max_2_idx[1] ≤ 35
