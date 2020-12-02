@@ -142,10 +142,7 @@ In the following let `i, j` be integers,  `typeof(data) <: AbstractDataset`
 and `v1, v2` be `<: AbstractVector{Int}` (`v1, v2` could also be ranges).
 
 * `data[i]` gives the `i`th datapoint (returns an `SVector`)
-* `data[v1]`, where `v1` is a collection of indices, returns a `Dataset`
-  with the points in those indices.
-* `data[v1, :]` using a `Colon` as a second index will return a `Dataset` of
-  these points
+* `data[v1] == data[v1, :]`, returns a `Dataset` with the points in those indices.
 * `data[:, j]` gives the `j`th variable timeseries, as `Vector`
 * `data[v1, v2]` returns a `Dataset` with the appropriate entries (first indices
   being "time"/point index, while second being variables)
