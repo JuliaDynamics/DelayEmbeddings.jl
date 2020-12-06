@@ -119,11 +119,7 @@ end
 #####################################################################################
 #                               Mutual information                                  #
 #####################################################################################
-export selfmutualinfo, mutualinformation
-function mutualinformation(args...; kwargs...)
-    @warn "`mutualinformation` is deprecated in favor of `selfmutualinfo`."
-    selfmutualinfo(args...; kwargs...)
-end
+export selfmutualinfo
 
 """
     selfmutualinfo(s, τs; kwargs...) → m
