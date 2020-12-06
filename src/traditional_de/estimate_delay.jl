@@ -172,14 +172,14 @@ function selfmutualinfo(s::AbstractVector{T}, τs::AbstractVector{Int};
     mi_values = zeros(length(τs))
     for (i, τ) ∈ enumerate(τs)
         sτ = view(s, τ+1:n)[perm] # delayed and reordered time series
-        mi_values[i] = _mutualinfo!(f, sτ, bins, edges)
+        mi_values[i] = _selfmutualinfo!(f, sτ, bins, edges)
     end
     return mi_values
 end
 
 
 """
-    _mutualinfo!(f, sτ, edges, bins0)
+    _selfmutualinfo!(f, sτ, edges, bins0)
 
 Calculate the mutual information between the distribution of the delayed time
 series `sτ` and its original image.
@@ -193,7 +193,7 @@ are contained in the following `bins[2]` positions, etc.
 
 The vector `f` is used as a placeholder to pre-allocate the histogram.
 """
-function _mutualinfo!(f::AbstractVector, sτ::AbstractVector,
+function _selfmutualinfo!(f::AbstractVector, sτ::AbstractVector,
     bins0::AbstractVector{<:Integer}, edges::AbstractVector)
 
     # Initialize values
