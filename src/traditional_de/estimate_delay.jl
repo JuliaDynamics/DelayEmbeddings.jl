@@ -14,7 +14,7 @@ The `method` can be one of the following:
 * `"ac_min"` : delay of first minimum of the auto-correlation function.
 * `"mi_min"` : delay of first minimum of mutual information of `s` with itself
   (shifted for various `τs`).
-  Keywords `nbins, binwidth` are propagated into [`mutualinformation`](@ref).
+  Keywords `nbins, binwidth` are propagated into [`selfmutualinfo`](@ref).
 * `"exp_decay"` : [`exponential_decay_fit`](@ref) of the correlation function rounded
    to an integer (uses least squares on `c(t) = exp(-t/τ)` to find `τ`).
 * `"exp_extrema"` : same as above but the exponential fit is done to the
@@ -47,7 +47,7 @@ function estimate_delay(x::AbstractVector, method::String,
         c = autocor(x, τs, demean=true)
         return mincrossing(c, τs)
     elseif method=="mi_min"
-        c = mutualinformation(x, τs; kwargs...)
+        c = selfmutualinfo(x, τs; kwargs...)
         return mincrossing(c, τs)
     elseif method=="exp_decay"
         c = autocor(x, τs; demean=true)
@@ -119,11 +119,16 @@ end
 #####################################################################################
 #                               Mutual information                                  #
 #####################################################################################
-export mutualinformation
-"""
-    mutualinformation(s, τs[; nbins, binwidth])
+export selfmutualinfo, mutualinformation
+function mutualinformation(args...; kwargs...)
+    @warn "`mutualinformation` is deprecated in favor of `selfmutualinfo`."
+    selfmutualinfo(args...; kwargs...)
+end
 
-Calculate the mutual information between the time series `s` and its images
+"""
+    selfmutualinfo(s, τs; kwargs...) → m
+
+Calculate the mutual information between the time series `s` and itself
 delayed by `τ` points for `τ` ∈ `τs`, using an _improvement_ of the method
 outlined by Fraser & Swinney in[^Fraser1986].
 
@@ -132,7 +137,7 @@ outlined by Fraser & Swinney in[^Fraser1986].
 The joint space of `s` and its `τ`-delayed image (`sτ`) is partitioned as a
 rectangular grid, and the mutual information is computed from the joint and
 marginal frequencies of `s` and `sτ` in the grid as defined in [1].
-The mutual information values are returned in a vector of the same length
+The mutual information values are returned in a vector `m` of the same length
 as `τs`.
 
 If any of the optional keyword parameters is given, the grid will be a
@@ -155,7 +160,7 @@ frequencies of `s`.
 
 [^Fraser1986]: Fraser A.M. & Swinney H.L. "Independent coordinates for strange attractors from mutual information" *Phys. Rev. A 33*(2), 1986, 1134:1140.
 """
-function mutualinformation(s::AbstractVector{T}, τs::AbstractVector{Int};
+function selfmutualinfo(s::AbstractVector{T}, τs::AbstractVector{Int};
     kwargs...) where {T}
     n = length(s)
     nτ = n-maximum(τs)
