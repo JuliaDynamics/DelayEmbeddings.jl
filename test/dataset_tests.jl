@@ -29,7 +29,7 @@ println("\nTesting Dataset...")
     @test data[SVector{10}(1:10), SVector(1, 2)] == data[1:10, 1:2]
 
     sub = @view data[11:20]
-    @test sub isa SubDataset
+    @test sub isa DelayEmbeddings.SubDataset
     @test sub[2] == data[12]
   end
 
