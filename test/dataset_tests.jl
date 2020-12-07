@@ -31,6 +31,7 @@ println("\nTesting Dataset...")
     sub = @view data[11:20]
     @test sub isa DelayEmbeddings.SubDataset
     @test sub[2] == data[12]
+    @test dimension(sub) == dimension(data)
   end
 
   @testset "minmax" begin
