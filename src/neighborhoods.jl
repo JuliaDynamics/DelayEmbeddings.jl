@@ -12,7 +12,7 @@ KDTree(D.data, metric; kwargs...)
 # Convenience extensions for ::Dataset in bulksearches
 for f ∈ (:bulkisearch, :bulksearch)
     for nt ∈ (:NeighborNumber, :WithinRange)
-        @eval Neighborhood.$(f)(ss::KDTree, D::Dataset, st::$nt, args...; kwargs...) =
+        @eval Neighborhood.$(f)(ss::KDTree, D::AbstractDataset, st::$nt, args...; kwargs...) =
         $(f)(ss, D.data, st, args...; kwargs...)
     end
 end

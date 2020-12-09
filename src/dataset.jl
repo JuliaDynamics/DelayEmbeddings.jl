@@ -339,8 +339,8 @@ using Statistics
 Create a regularized version of the input dataset where each timeseries (column)
 is transformed to have mean 0 and standard deviation 1.
 """
-regularize(d::Dataset) = Dataset(regularized_timeseries(d)[1]...)
-function regularized_timeseries(d::Dataset)
+regularize(d::AbstractDataset) = Dataset(regularized_timeseries(d)[1]...)
+function regularized_timeseries(d::AbstractDataset)
     xs = columns(d)
     means = mean.(xs)
     stds = std.(xs)

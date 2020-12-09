@@ -113,7 +113,7 @@ function garcia_almeida_embedding(s::Vector{F}; τs = 0:50 , w::Int = 1,
 end
 
 
-function garcia_almeida_embedding(Y::Dataset{D, F}; τs = 0:50 , w::Int = 1,
+function garcia_almeida_embedding(Y::AbstractDataset{D, F}; τs = 0:50 , w::Int = 1,
     r1::Real = 10, r2::Real = 2, fnn_thres::Real = 0.05,
     T::Int = 1, metric = Euclidean(), max_num_of_cycles = 50) where {D, F<:Real}
 
@@ -206,7 +206,7 @@ this embedding cycle as the value, where `N` has its first local minimum.
 
 [^Garcia2005a]: Garcia, S. P., Almeida, J. S. (2005). [Nearest neighbor embedding with different time delays. Physical Review E 71, 037204](https://doi.org/10.1103/PhysRevE.71.037204).
 """
-function n_statistic(Y::Dataset{D, F}, s::Vector{F}; τs = 0:50 , r::Real = 10,
+function n_statistic(Y::AbstractDataset{D, F}, s::Vector{F}; τs = 0:50 , r::Real = 10,
     T::Int = 1, w::Int = 1, metric = Euclidean()) where {D, F<:Real}
 
     # assert a minimum length of the input time series
