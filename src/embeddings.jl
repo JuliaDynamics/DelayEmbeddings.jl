@@ -288,7 +288,7 @@ end
 const Data{T} = Union{Dataset{D, T}, AbstractVector{T}} where {D}
 
 # dataset version
-@generated function (g::GeneralizedEmbedding{D, W})(s::Dataset{Z, T}, i::Int) where {D,W,Z,T}
+@generated function (g::GeneralizedEmbedding{D, W})(s::AbstractDataset{Z, T}, i::Int) where {D,W,Z,T}
     gens = if W == Nothing
         [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
     else
@@ -330,7 +330,7 @@ The generalized embedding works as follows:
   `τs` is allowed to have *negative entries* as well.
 - `js` denotes which of the timeseries contained in `s`
   will be used for the entries of the delay vector. `js` can contain duplicate indices.
-- `ws` are optional weights that weight each embedded entry (the i-th entry of the 
+- `ws` are optional weights that weight each embedded entry (the i-th entry of the
     delay vector is weighted by `ws[i]`). If provided, it is recommended that `ws[1] = 1`
 
 `τs, js, ws` are tuples (or vectors) of length `D`, which also coincides with the embedding

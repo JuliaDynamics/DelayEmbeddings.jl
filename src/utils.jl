@@ -172,7 +172,7 @@ Add the `τ` lagged values of the timeseries `s` as additional component to `Y`
 (`Vector` or `Dataset`), in order to form a higher embedded
 dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
 """
-function hcat_lagged_values(Y::Dataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
+function hcat_lagged_values(Y::AbstractDataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
     N = length(Y)
     @assert N ≤ length(s)
     M = N - τ

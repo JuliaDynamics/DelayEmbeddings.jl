@@ -111,7 +111,7 @@ end
 Helper function for selecting the appropriate embedding dimension from the
 statistic when using Kennel's, Hegger's or Krakovskas's method.
 """
-function find_fnn_optimal(s::Vector{T}, τ::Int, rat::Vector, fnn_thres::Real,
+function find_fnn_optimal(s::AbstractVector{T}, τ::Int, rat::Vector, fnn_thres::Real,
                                                     slope_thres::Real) where {T}
     @assert length(rat) > 1
     y = abs.(diff(rat))
@@ -146,7 +146,7 @@ end
 Helper function for selecting the appropriate embedding dimension from the
 statistic when using Cao's method.
 """
-function find_cao_optimal(s::Vector{T}, τ::Int, rat::Vector, thres::Real) where {T}
+function find_cao_optimal(s::AbstractVector{T}, τ::Int, rat::Vector, thres::Real) where {T}
     m = 0
     y = abs.(diff(rat))
     for i = 1:length(rat)-1
@@ -171,7 +171,7 @@ end
 Helper function for Cao's method, whether to decide if the input signal is
 stochastic or not.
 """
-function is_stochastic(rat::Vector{T}, thres::Real) where {T}
+function is_stochastic(rat::AbstractVector{T}, thres::Real) where {T}
     cnt = 0
     for i = 1:length(rat)
         if abs(1-rat[i]) ≥ thres

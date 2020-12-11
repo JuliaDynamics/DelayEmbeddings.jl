@@ -27,6 +27,11 @@ println("\nTesting Dataset...")
     @test size(data[1:10,1:2]) == (10,2)
     @test data[1:10,1:2] == Dataset(a[1:10], b[1:10])
     @test data[SVector{10}(1:10), SVector(1, 2)] == data[1:10, 1:2]
+
+    sub = @view data[11:20]
+    @test sub isa DelayEmbeddings.SubDataset
+    @test sub[2] == data[12]
+    @test dimension(sub) == dimension(data)
   end
 
   @testset "minmax" begin

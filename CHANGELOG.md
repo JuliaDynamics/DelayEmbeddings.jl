@@ -1,8 +1,9 @@
 # v1.18.0
-* `mutualinformation` is deprecated in favor of `selfmutualinfo`.
+* `view` is now applicable to `AbstractDataset`, producing objects of the new type `SubDataset`.
 
 # v1.17.0
 * All code related to neighborhoods and finding nearest neighbors has moved to Neighborhood.jl, and thus old names like `FixedMassNeighborhood` and `neighborhood` have been deprecated.
+* `mutualinformation` is deprecated in favor of `selfmutualinfo`.
 
 # v1.16.0
 * Arbitrary weights can be given as options to `genembed`.
