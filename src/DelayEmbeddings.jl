@@ -19,4 +19,6 @@ include("unified_de/MDOP.jl")
 include("unified_de/garcia_almeida.jl")
 include("unified_de/pecuzal.jl")
 
+include("deprecate.jl")
+
 end

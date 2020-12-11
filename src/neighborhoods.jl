@@ -1,14 +1,47 @@
-using NearestNeighbors, StaticArrays
+#####################################################################################
+#                   Neighborhood.jl Interface & convenience functions               #
+#####################################################################################
+using Neighborhood, Distances
+
+export WithinRange, NeighborNumber
+export Euclidean, Chebyshev, Cityblock
+
+Neighborhood.KDTree(D::AbstractDataset, metric::Metric = Euclidean(); kwargs...) =
+KDTree(D.data, metric; kwargs...)
+
+# Convenience extensions for ::Dataset in bulksearches
+for f ∈ (:bulkisearch, :bulksearch)
+    for nt ∈ (:NeighborNumber, :WithinRange)
+        @eval Neighborhood.$(f)(ss::KDTree, D::Dataset, st::$nt, args...; kwargs...) =
+        $(f)(ss, D.data, st, args...; kwargs...)
+    end
+end
+
+"""
+    all_neighbors(vtree, vs, ns, K, w)
+Return the `maximum(K)`-th nearest neighbors for all input points `vs`,
+with indices `ns` in original data, while respecting the theiler window `w`.
+
+This function is nothing more than a convinience call to `Neighborhood.bulksearch`.
+"""
+function all_neighbors(vtree, vs, ns, K, w)
+    w ≥ length(vtree.data)-1 && error("Theiler window larger than the entire data span!")
+    k = maximum(K)
+    tw = Theiler(w, ns)
+    idxs, dists = bulksearch(vtree, vs, NeighborNumber(k), tw)
+end
+
+#####################################################################################
+#                Old Neighborhood Interface, deprecated                             #
+#####################################################################################
+import NearestNeighbors
+using StaticArrays
 using Distances: Euclidean, Metric
-import NearestNeighbors: KDTree
 
 export AbstractNeighborhood
 export FixedMassNeighborhood, FixedSizeNeighborhood
 export neighborhood, KDTree
 
-#####################################################################################
-#                              Neighborhoods n stuff                                #
-#####################################################################################
 """
     AbstractNeighborhood
 Supertype of methods for deciding the neighborhood of points for a given point.
@@ -27,13 +60,19 @@ abstract type AbstractNeighborhood end
 
 struct FixedMassNeighborhood <: AbstractNeighborhood
     K::Int
+    function FixedMassNeighborhood(k::Int = 1)
+        @warn "FixedMassNeighborhood is deprecated in favor of NeighborNumber."
+        return new(k)
+    end
 end
-FixedMassNeighborhood() = FixedMassNeighborhood(1)
 
 struct FixedSizeNeighborhood <: AbstractNeighborhood
     ε::Float64
+    function FixedSizeNeighborhood(ε::Real = 0.01)
+        @warn "FixedSizeNeighborhood is deprecated in favor of WithinRange."
+        return new(ε)
+    end
 end
-FixedSizeNeighborhood() = FixedSizeNeighborhood(0.01)
 
 """
     neighborhood(point, tree, ntype)
@@ -59,44 +98,26 @@ the argument `ntype`.
 """
 function neighborhood(point::AbstractVector, tree,
                       ntype::FixedMassNeighborhood, n::Int, w::Int = 1)
+    @warn "`neighborhood` is deprecated in favor of using `search` and Neighborhood.jl."
     idxs, = NearestNeighbors.knn(tree, point, ntype.K, false, i -> abs(i-n) < w)
     return idxs
 end
 function neighborhood(point::AbstractVector, tree, ntype::FixedMassNeighborhood)
+    @warn "`neighborhood` is deprecated in favor of using `search` and Neighborhood.jl."
     idxs, = NearestNeighbors.knn(tree, point, ntype.K, false)
     return idxs
 end
 
 function neighborhood(point::AbstractVector, tree,
                       ntype::FixedSizeNeighborhood, n::Int, w::Int = 1)
+
+@warn "`neighborhood` is deprecated in favor of using `search` and Neighborhood.jl."
     idxs = NearestNeighbors.inrange(tree, point, ntype.ε)
     filter!((el) -> abs(el - n) ≥ w, idxs)
     return idxs
 end
 function neighborhood(point::AbstractVector, tree, ntype::FixedSizeNeighborhood)
+    @warn "`neighborhood` is deprecated in favor of using `search` and Neighborhood.jl."
     idxs = NearestNeighbors.inrange(tree, point, ntype.ε)
     return idxs
-end
-
-KDTree(D::AbstractDataset, metric::Metric = Euclidean()) = KDTree(D.data, metric)
-
-
-# TODO: This must use the new Neighborhood.jl
-# TODO: Function returns 0-indices and -Inf values, when w is too high compared
-#       to the length of vtree. This should be fixed, i.e. throw an error
-"""
-    all_neighbors(vtree, vs, ns, K, w)
-Return the `maximum(K)`-th nearest neighbors for all input points `vs`, with indices `ns` in
-original data, while respecting the theiler window `w`.
-"""
-function all_neighbors(vtree, vs, ns, K, w)
-    k, sortres, N = maximum(K), true, length(vs)
-    dists = [Vector{eltype(vs[1])}(undef, k) for _ in 1:N]
-    idxs = [Vector{Int}(undef, k) for _ in 1:N]
-    for i in 1:N
-        # The skip predicate also skips the point itself for w ≥ 0
-        skip = j -> ns[i] - w ≤ j ≤ ns[i] + w
-        NearestNeighbors.knn_point!(vtree, vs[i], sortres, dists[i], idxs[i], skip)
-    end
-    return idxs, dists
 end
