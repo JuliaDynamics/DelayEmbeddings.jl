@@ -134,7 +134,7 @@ When indexed with 2 indices it behaves like a matrix that has each of the column
 timeseries of each of the variables.
 
 `Dataset` also supports most sensible operations like `append!, push!, hcat, eachrow`,
-among others.
+among others, and when iterated over, it iterates over its contained points.
 
 ## Description of indexing
 In the following let `i, j` be integers,  `typeof(data) <: AbstractDataset`
