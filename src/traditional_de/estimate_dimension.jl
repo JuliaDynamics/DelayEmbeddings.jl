@@ -65,7 +65,7 @@ function _average_a(s::AbstractVector{T},d,τ,metric,theiler) where {T}
         δ = evaluate(metric, Rd[i], Rd[j])
         #If Rγ[i] and Rγ[j] are still identical, choose the next nearest neighbor
         if δ == 0.0
-            j = Neighborhood.knn(tree, Rd[i], 2, theiler(i))[end]
+            j = isearch(tree, Rd[i], NeighborNumber(1), theiler(i))[end]
             δ = evaluate(metric, Rd[i], Rd[j])
         end
         e += _increase_distance(δ,s,i,j,d-1,τ,metric)/δ
