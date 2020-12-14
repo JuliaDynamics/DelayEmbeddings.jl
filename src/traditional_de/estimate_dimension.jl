@@ -13,7 +13,7 @@ export delay_afnn, delay_fnn, delay_ifnn, delay_f1nn, stochastic_indicator
 #                                Cao's method                                       #
 #####################################################################################
 """
-    delay_afnn(s::AbstractVector, τ:Int, ds = 2:6, metric=Euclidean()) → E₁
+    delay_afnn(s::AbstractVector, τ:Int, ds = 2:6; metric=Euclidean(), w = 0) → E₁
 
 Compute the parameter E₁ of Cao's "averaged false nearest neighbors" method for
 determining the minimum embedding dimension of the time series `s`, with
@@ -33,32 +33,39 @@ find `d` for which the value `E₁` saturates at some value around 1.
 
 *Note: This method does not work for datasets with perfectly periodic signals.*
 
+`w` is the [Theiler window](@ref).
+
 See also: [`optimal_traditional_de`](@ref) and [`stochastic_indicator`](@ref).
 """
-function delay_afnn(s::AbstractVector{T}, τ::Int, ds = 2:6, metric=Euclidean()) where {T}
+function delay_afnn(s::AbstractVector, τ::Int, ds = 2:6, metric=Euclidean())
+    return delay_afnn(s, τ, ds; metric, w = 0)
+end
+
+function delay_afnn(s::AbstractVector{T}, τ::Int, ds = 2:6; metric=Euclidean(), w=0) where {T}
     E1s = zeros(length(ds))
     aafter = 0.0
-    aprev = _average_a(s, ds[1], τ, metric)
+    theiler = Theiler(w)
+    aprev = _average_a(s, ds[1], τ, metric, theiler)
     for (i, d) ∈ enumerate(ds)
-        aafter = _average_a(s, d+1, τ, metric)
+        aafter = _average_a(s, d+1, τ, metric, theiler)
         E1s[i] = aafter/aprev
         aprev = aafter
     end
     return E1s
 end
 
-function _average_a(s::AbstractVector{T},d,τ,metric) where {T}
+function _average_a(s::AbstractVector{T},d,τ,metric,theiler) where {T}
     #Sum over all a(i,d) of the Ddim Reconstructed space, equation (2)
     Rd = embed(s[1:end-τ],d,τ)
     tree = KDTree(Rd, metric)
-    _nind = bulkisearch(tree, Rd, NeighborNumber(1), Theiler(0))
+    _nind = bulkisearch(tree, Rd, NeighborNumber(1), theiler)
     nind = (x[1] for x in _nind) # bulksearch always returns vectors of vectors
     e = 0.0
     @inbounds for (i,j) ∈ enumerate(nind)
         δ = evaluate(metric, Rd[i], Rd[j])
         #If Rγ[i] and Rγ[j] are still identical, choose the next nearest neighbor
         if δ == 0.0
-            j = Neighborhood.knn(tree, Rd[i], 2, Theiler(0)(i))[end]
+            j = Neighborhood.knn(tree, Rd[i], 2, theiler(i))[end]
             δ = evaluate(metric, Rd[i], Rd[j])
         end
         e += _increase_distance(δ,s,i,j,d-1,τ,metric)/δ
@@ -226,12 +233,12 @@ function _compare_first_nn(s, γ::Int, τ::Int, Rγ::AbstractDataset{D,T}, metri
     tree1 = KDTree(Rγ1,metric)
     nf1nn = 0
     # For each point `i`, the fnn of `Rγ` is `j`, and the fnn of `Rγ1` is `k`
-    _nind = bulkisearch(tree, Rγ, NeighborNumber(1), Theiler(0))
+    theiler = Theiler(0)
+    _nind = bulkisearch(tree, Rγ, NeighborNumber(1), theiler)
     nind = (x[1] for x in _nind) # bulksearch always returns vectors of vectors
     # nind = (x = NearestNeighbors.knn(tree, Rγ.data, 2)[1]; [ind[1] for ind in x])
     @inbounds for (i,j) ∈ enumerate(nind)
-        # k = NearestNeighbors.knn(tree1, Rγ1.data[i], 2, true)[1][end]
-        k = Neighborhood.knn(tree1, Rγ1.data[i], 1, Theiler(0)(i))[1][1]
+        k = Neighborhood.knn(tree1, Rγ1.data[i], 1, theiler(i))[1][1]
         if j != k
             nf1nn += 1
         end
@@ -256,8 +263,7 @@ reached.
 *`r = 2`: Obligatory threshold, which determines the maximum tolerable spreading
     of trajectories in the reconstruction space.
 *`metric = Euclidean`: The norm used for distance computations.
-*`w = 1` = The Theiler window, which excludes temporally correlated points from
-    the nearest neighbor search.
+*`w = 1` = The [Theiler window](@ref).
 
 See also: [`optimal_traditional_de`](@ref).
 """
@@ -316,90 +322,5 @@ function fnn_embedding_cycle(NNdist, NNdistnew, r::Real=2)
         return 1
     else
         return fnns/fnns2
-    end
-end
-
-
-
-#####################################################################################
-#                               OLD method TODO: remove                             #
-#####################################################################################
-export estimate_dimension
-export afnn, fnn, ifnn, f1nn
-
-# Deprecations for new syntax and for removing `reconstruct`.
-for f in (:afnn, :fnn, :ifnn, :f1nn)
-    q = quote
-        function $(f)(s, τ, γs = 1:6, args...; kwargs...)
-            dep = """
-            function `$($(f))` is deprecated because it uses "γ" (amount of temporal
-            neighbors in delay vector) and `reconstruct`. These syntaxes are being phased
-            out in favor of `embed` and using `d` directly, the embedding dimension.
-
-            Use instead `$($(Symbol(:delay_, f)))` and replace given `γs` with `γs.+1`.
-            """
-            @warn dep
-            return $(Symbol(:delay_, f))(s, τ, γs .+ 1, args...; kwargs...)
-        end
-    end
-    @eval $q
-end
-
-"""
-    estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn"; kwargs...)
-
-Compute a quantity that can estimate an optimal amount of
-temporal neighbors `γ` to be used in [`reconstruct`](@ref) or [`embed`](@ref).
-
-## Description
-Given the scalar timeseries `s` and the embedding delay `τ` compute a quantity
-for each `γ ∈ γs` based on the "nearest neighbors" in the embedded time series.
-
-The quantity that is calculated depends on the algorithm defined by the string `method`:
-
-* `"afnn"` (default) is Cao's "Averaged False Nearest Neighbors" method[^Cao1997], which
-    gives a ratio of distances between nearest neighbors. This ratio saturates
-    around `1.0` near the optimal value of `γ` (see [`afnn`](@ref)).
-* `"fnn"` is Kennel's "False Nearest Neighbors" method[^Kennel1992], which gives the
-    number of points that cease to be "nearest neighbors" when the dimension
-    increases. This number drops down to zero near the optimal value of `γ`.
-    This method accepts the keyword arguments `rtol` and `atol`, which stand
-    for the "tolerances" required by Kennel's algorithm (see [`fnn`](@ref)).
-* `"f1nn"` is Krakovská's "False First Nearest Neighbors" method[^Krakovská2015], which
-    gives the ratio of pairs of points that cease to be "nearest neighbors"
-    when the dimension increases. This number drops down to zero near the
-    optimal value of `γ` (see [`f1nn`](@ref)). This is the worse method of all.
-
-`"afnn"` and `"f1nn"` also support the `metric` keyword, which can be any of
-`Cityblock(), Euclidean(), Chebyshev()`. This metric is used both
-for computing the nearest neighbors (`KDTree`s) as well as the distances necessary for
-Cao's method (eqs. (2, 3) of [1]). Defaults to `Euclidean()` (note that [1] used
-`Chebyshev`).
-
-Please be aware that in **DynamicalSystems.jl** `γ` stands for the amount of temporal
-neighbors and not the embedding dimension (`D = γ + 1`, see also [`embed`](@ref)).
-
-[^Cao1997]: Liangyue Cao, [Physica D, pp. 43-50 (1997)](https://www.sciencedirect.com/science/article/pii/S0167278997001188?via%3Dihub)
-
-[^Kennel1992]: M. Kennel *et al.*, [Phys. Review A **45**(6), (1992)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.45.3403).
-
-[^Krakovská2015]: Anna Krakovská *et al.*, [J. Complex Sys. 932750 (2015)](https://doi.org/10.1155/2015/932750)
-"""
-function estimate_dimension(s::AbstractVector, τ::Int, γs = 1:5, method = "afnn";
-    metric = Euclidean(), kwargs...)
-    @warn """
-    Using `estimate_dimension` is deprecated in favor of either calling `delay_afnn, delay_fnn, ...`
-    directly or using the function `optimal_traditional_de`.
-    """
-    if method == "afnn"
-        return afnn(s, τ, γs, metric)
-    elseif method == "fnn"
-        return fnn(s, τ, γs; kwargs...)
-    elseif method == "ifnn"
-        return ifnn(s, τ, γs; kwargs...)
-    elseif method == "f1nn"
-        return f1nn(s, τ, γs, metric)
-    else
-        error("unrecognized method")
     end
 end
