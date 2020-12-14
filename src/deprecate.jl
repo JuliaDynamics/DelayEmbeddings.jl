@@ -4,6 +4,9 @@ function mutualinformation(args...; kwargs...)
     selfmutualinfo(args...; kwargs...)
 end
 
+function delay_afnn(s::AbstractVector, τ::Int, ds, metric)
+    return delay_afnn(s, τ, ds; metric, w = 0)
+end
 
 
 #####################################################################################

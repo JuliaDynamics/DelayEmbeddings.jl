@@ -37,10 +37,6 @@ find `d` for which the value `E₁` saturates at some value around 1.
 
 See also: [`optimal_traditional_de`](@ref) and [`stochastic_indicator`](@ref).
 """
-function delay_afnn(s::AbstractVector, τ::Int, ds = 2:6, metric=Euclidean())
-    return delay_afnn(s, τ, ds; metric, w = 0)
-end
-
 function delay_afnn(s::AbstractVector{T}, τ::Int, ds = 2:6; metric=Euclidean(), w=0) where {T}
     E1s = zeros(length(ds))
     aafter = 0.0
