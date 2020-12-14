@@ -1,3 +1,6 @@
+# v1.19.0
+* Theiler window is now usable in Cao's method.
+
 # v1.18.0
 * `view` is now applicable to `AbstractDataset`, producing objects of the new type `SubDataset`.
 
