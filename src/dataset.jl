@@ -85,8 +85,8 @@ end
 ###########################################################################
 # appending data
 ###########################################################################
-Base.append!(d1::AbstractDataset, d2::AbstractDataset) = append!(d1.data, d2.data)
-Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
+Base.append!(d1::AbstractDataset, d2::AbstractDataset) = (append!(d1.data, d2.data); d1)
+Base.push!(d::AbstractDataset, new_item) = (push!(d.data, new_item); d)
 
 function Base.hcat(d::AbstractDataset{D, T}, x::Vector{<:Real}) where {D, T}
     L = length(d)
