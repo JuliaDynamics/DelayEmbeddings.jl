@@ -34,13 +34,13 @@ function all_neighbors(vtree, vs, ns, K, w)
 end
 
 """
-    all_neighbors(A::Dataset, stype, w) → idxs, dists
-Find all neighbors of all points in `A` with search type `stype` (either
+    all_neighbors(A::Dataset, stype, w = 0) → idxs, dists
+Find the neighbors of all points in `A` using search type `stype` (either
 [`NeighborNumber`](@ref) or [`WithinRange`](@ref)) and `w` the [Theiler window](@ref).
 
 This function is nothing more than a convinience call to `Neighborhood.bulksearch`.
 """
-function all_neighbors(A::AbstractDataset, stype, w::Int)
+function all_neighbors(A::AbstractDataset, stype, w::Int = 0)
     theiler = Theiler(w)
     tree = KDTree(A)
     idxs, dists = bulksearch(tree, A, stype, theiler)
