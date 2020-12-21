@@ -1,3 +1,5 @@
+# v1.19.3
+* Automated traditional delay embedding has improved clause for Cao's method.
 # v1.19.0
 * Theiler window is now usable in Cao's method.
 
