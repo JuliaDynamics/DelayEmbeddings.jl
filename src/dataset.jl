@@ -85,8 +85,8 @@ end
 ###########################################################################
 # appending data
 ###########################################################################
-Base.append!(d1::AbstractDataset, d2::AbstractDataset) = append!(d1.data, d2.data)
-Base.push!(d::AbstractDataset, new_item) = push!(d.data, new_item)
+Base.append!(d1::AbstractDataset, d2::AbstractDataset) = (append!(d1.data, d2.data); d1)
+Base.push!(d::AbstractDataset, new_item) = (push!(d.data, new_item); d)
 
 function Base.hcat(d::AbstractDataset{D, T}, x::Vector{<:Real}) where {D, T}
     L = length(d)
@@ -134,7 +134,7 @@ When indexed with 2 indices it behaves like a matrix that has each of the column
 timeseries of each of the variables.
 
 `Dataset` also supports most sensible operations like `append!, push!, hcat, eachrow`,
-among others.
+among others, and when iterated over, it iterates over its contained points.
 
 ## Description of indexing
 In the following let `i, j` be integers,  `typeof(data) <: AbstractDataset`
@@ -339,8 +339,8 @@ using Statistics
 Create a regularized version of the input dataset where each timeseries (column)
 is transformed to have mean 0 and standard deviation 1.
 """
-regularize(d::Dataset) = Dataset(regularized_timeseries(d)[1]...)
-function regularized_timeseries(d::Dataset)
+regularize(d::AbstractDataset) = Dataset(regularized_timeseries(d)[1]...)
+function regularized_timeseries(d::AbstractDataset)
     xs = columns(d)
     means = mean.(xs)
     stds = std.(xs)

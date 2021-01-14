@@ -102,7 +102,7 @@ function mdop_embedding(s::Vector{T};
 end
 
 
-function mdop_embedding(Y::Dataset{D, T};
+function mdop_embedding(Y::AbstractDataset{D, T};
         τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05,
         max_num_of_cycles = 50,
         r::Real = 2) where {D, T<:Real}
@@ -377,7 +377,7 @@ trajectory `Y` can also be just a univariate time series.
 [^Nichkawde2013]: Nichkawde, Chetan (2013). [Optimal state-space reconstruction using derivatives on projected manifold. Physical Review E 87, 022905](https://doi.org/10.1103/PhysRevE.87.022905).
 [^Kennel1992]: Kennel, M. B., Brown, R., Abarbanel, H. D. I. (1992). [Determining embedding dimension for state-space reconstruction using a geometrical construction. Phys. Rev. A 45, 3403] (https://doi.org/10.1103/PhysRevA.45.3403).
 """
-function beta_statistic(Y::Dataset{D,T}, s::Vector{T}, τs = 0:50, w::Int = 1) where {D, T<:Real}
+function beta_statistic(Y::AbstractDataset{D,T}, s::Vector{T}, τs = 0:50, w::Int = 1) where {D, T<:Real}
     @assert length(s) ≥ length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
     @assert all(x -> x ≥ 0, τs)
     τ_max = maximum(τs)
@@ -432,7 +432,7 @@ function mdop_maximum_delay(s::Vector{T}, tw=1:50, samplesize::Real=1) where {T<
     return tw[τ_max], L
 end
 
-function mdop_maximum_delay(s::Dataset{D,T}, tw=1:50, samplesize::Real=1) where {D, T<:Real}
+function mdop_maximum_delay(s::AbstractDataset{D,T}, tw=1:50, samplesize::Real=1) where {D, T<:Real}
     τs_max = zeros(Int,D)
     Ls = zeros(T, length(tw), D)
     @inbounds for i = 1:D

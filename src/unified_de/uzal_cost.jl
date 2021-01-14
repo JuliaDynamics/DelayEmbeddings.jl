@@ -59,7 +59,7 @@ the inverse of all `ϵ²`'s for all considered reference points.
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost(Y::Dataset{D, ET};
+function uzal_cost(Y::AbstractDataset{D, ET};
         Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Real = 0.5,
         metric = Euclidean()
     ) where {D, ET}
@@ -151,7 +151,7 @@ Keywords as in [`uzal_cost`](@ref).
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost_local(Y::Dataset{D, ET};
+function uzal_cost_local(Y::AbstractDataset{D, ET};
         Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Real = 0.5,
         metric = Euclidean()
     ) where {D, ET}

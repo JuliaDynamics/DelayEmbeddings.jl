@@ -117,7 +117,7 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 1,
 
 end
 
-function pecuzal_embedding(𝒟::Dataset{D, T}; τs = 0:50 , w::Int = 1,
+function pecuzal_embedding(𝒟::AbstractDataset{D, T}; τs = 0:50 , w::Int = 1,
     samplesize::Real = 1, K::Int = 13, KNN::Int = 3, Tw::Int=4*w,
     α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50) where {D, T<:Real}
 
