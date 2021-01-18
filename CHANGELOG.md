@@ -1,3 +1,6 @@
+# v1.20.0
+* Revised version of PECUZAL algorithm, now tracking maximal L-decrease
+
 # v1.19.3
 * Automated traditional delay embedding has improved clause for Cao's method.
 # v1.19.0
