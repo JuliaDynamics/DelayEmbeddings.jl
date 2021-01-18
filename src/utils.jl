@@ -126,8 +126,11 @@ dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
 """
 function hcat_lagged_values(Y::AbstractDataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
     N = length(Y)
-    @assert N ≤ length(s)
-    M = N - τ
+    MM = length(s)
+    @assert N ≤ MM
+
+    MMM = MM - τ
+    M = min(N, MMM)
     data = Vector{SVector{D+1, T}}(undef, M)
     @inbounds for i in 1:M
         data[i] = SVector{D+1, T}(Y[i]..., s[i+τ])
@@ -137,7 +140,9 @@ end
 
 function hcat_lagged_values(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
     N = length(Y)
-    @assert N ≤ length(s)
-    M = N - τ
-    return Dataset(view(Y, 1:M), view(s, τ+1:N))
+    MM = length(s)
+    @assert N ≤ MM
+    MMM = MM - τ
+    M = min(N, MMM)
+    return Dataset(view(Y, 1:M), view(s, τ+1:τ+M))
 end
