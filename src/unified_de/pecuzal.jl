@@ -129,14 +129,14 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 1,
 end
 
 function pecuzal_embedding(Y::Dataset{D, T}; τs = 0:50 , w::Int = 1,
-    samplesize::Real = 1, K::Int = 13, KNN::Int = 3, threshold::Real = 0,
+    samplesize::Real = 1, K::Int = 13, KNN::Int = 3, L_threshold::Real = 0,
     α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false
     ) where {D, T<:Real}
 
     @assert 0 < samplesize ≤ 1 "Please select a valid `samplesize`, which denotes a fraction of considered fiducial points, i.e. `samplesize` ∈ (0 1]"
     @assert all(x -> x ≥ 0, τs)
-    @assert threshold ≥ 0
-    threshold = -threshold # due to the negativity of L-decrease
+    @assert L_threshold ≥ 0
+    threshold = -L_threshold # due to the negativity of L-decrease
     metric = Euclidean()
 
     Y_orig = Y
