@@ -1,3 +1,6 @@
+# v1.20.1
+* Patch for correct keyword arguments in PECUZAL algorithm
+
 # v1.20.0
 * Revised version of PECUZAL algorithm, now tracking maximal L-decrease
 
