@@ -67,7 +67,7 @@ end
     @test -0.015 < Ls[4] < -0.014
 
     @time Y, τ_vals, ts_vals, Ls , ε★ = pecuzal_embedding(tr[1:5000,:];
-                                        τs = 0:Tmax , w = w, econ = true, threshold = 0.2)
+                                        τs = 0:Tmax , w = w, econ = true, L_threshold = 0.2)
     @test -0.9338 < Ls[1] < -0.9337
     @test -0.356 < Ls[2] < -0.355
     @test size(Y,2) == 3
