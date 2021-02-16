@@ -172,6 +172,7 @@ Dataset(s::AbstractVector{T}) where {T} = Dataset(SVector.(s))
 
 function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
     D = length(v[1])
+    @assert length(unique!(length.(v))) == 1 "All input vectors must have same length" 
     D > 100 && @warn "You are attempting to make a Dataset of dimensions > 100"
     L = length(v)
     data = Vector{SVector{D, T}}(undef, L)
