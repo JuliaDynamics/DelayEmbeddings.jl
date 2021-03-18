@@ -7,7 +7,7 @@ export pecuzal_embedding
 A unified approach to properly embed a time series or a set of time series
 (`Dataset`) based on the ideas of Pecora et al. [^Pecoral2007] and Uzal et al.
 [^Uzal2011]. For a detailled description of the algorithm see Kraemer et al.
-[^Kraemer2020].
+[^Kraemer2021].
 
 ## Keyword arguments
 
@@ -81,7 +81,7 @@ For distance computations the Euclidean norm is used.
 
 [^Pecora2007]: Pecora, L. M., Moniz, L., Nichols, J., & Carroll, T. L. (2007). [A unified approach to attractor reconstruction. Chaos 17(1)](https://doi.org/10.1063/1.2430294).
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
-[^Kraemer2020]: Kraemer, K.H., Datseris, G., Kurths, J., Kiss, I.Z., Ocampo-Espindola, Marwan, N. (2020). [A unified and automated approach to attractor reconstruction. arXiv:2011.07040](https://arxiv.org/abs/2011.07040).
+[^Kraemer2021]: Kraemer, K.H., Datseris, G., Kurths, J., Kiss, I.Z., Ocampo-Espindola, Marwan, N. (2021). [A unified and automated approach to attractor reconstruction. New Journal of Physics 23(3), 033017](https://iopscience.iop.org/article/10.1088/1367-2630/abe336).
 """
 function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 1,
     samplesize::Real = 1, K::Int = 13, KNN::Int = 3, L_threshold::Real = 0,
