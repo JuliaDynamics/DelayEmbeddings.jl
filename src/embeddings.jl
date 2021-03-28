@@ -243,7 +243,7 @@ export GeneralizedEmbedding, genembed
 
 """
     GeneralizedEmbedding(τs, js = ones(length(τs)), ws = nothing) -> `embedding`
-Return a delay coordinates embedding structure to be used as a functor.
+Return a delay coordinates embedding structure to be used as a function.
 Given a timeseries *or* trajectory (i.e. `Dataset`) `s` and calling
 ```julia
 embedding(s, n)
