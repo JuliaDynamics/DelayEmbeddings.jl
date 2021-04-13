@@ -505,7 +505,7 @@ function uzal_cost_pecuzal(Y::Dataset{D, ET}, Y_trial::Dataset{DT, ET}, Tw::Int;
         # increased
         dist = compute_L_decrease(E², E²_trial, ϵ², ϵ²_trial, cnt, NN)
         if isnan(dist)
-            error("Computed 0-distances. You might use model-data, thus try to add minimal additive noise to the signal you wish to embed and try again.")
+            error("Computed 0-distances, due to duplicate datapoints in your data. Try to add minimal additive noise to the signal you wish to embed and try again.")
         end
         if dist > dist_former && dist_former<0
             break
