@@ -3,24 +3,22 @@ using Random
 export pecuzal_embedding
 
 """
-    pecuzal_embedding(s; kwargs...) → 𝒟, τ_vals, ts_vals, ΔLs, ⟨ε★⟩
-A unified approach to properly embed a time series or a set of time series
-(`Dataset`) based on the ideas of Pecora et al. [^Pecoral2007] and Uzal et al.
-[^Uzal2011]. For a detailled description of the algorithm see Kraemer et al.
-[^Kraemer2021].
+    pecuzal_embedding(s; kwargs...) → Y, τ_vals, ts_vals, ΔLs, ⟨ε★⟩
+A unified approach to properly embed a timeseries or a set of timeseries
+(`Dataset`) based on the recent PECUZAL algorithm due to Kraemer et al.[^Kraemer2021].
+
+For more details, see the description below.
 
 ## Keyword arguments
-
 * `τs = 0:50`: Possible delay values `τs` (in sampling time units). For each of
   the `τs`'s the continuity statistic ⟨ε★⟩ gets computed and further processed
-  in order to find optimal delays `τᵢ` for each embedding cycle `i` (read
-  algorithm description).
-* `w::Int = 1`: Theiler window (neighbors in time with index `w` close to the point,
+  in order to find optimal delays `τᵢ` for each embedding cycle `i`.
+* `w::Int = 0`: Theiler window (neighbors in time with index `w` close to the point,
   that are excluded from being true neighbors). `w=0` means to exclude only the
   point itself, and no temporal neighbors.
-* `samplesize::Real = 1`: determine the fraction of all phase space points
-  (=`length(s)`) to be considered (fiducial points v) to average ε★, in order to
-  produce `⟨ε★⟩`.
+* `samplesize::Real = 1.0`: Fraction of state space points
+  to be considered (fiducial points v) to average ε★ over, in order to
+  produce `⟨ε★⟩`. Lower fraction value decreases accuracy as well as computation time.
 * `K::Int = 13`: the amount of nearest neighbors in the δ-ball (read algorithm
   description). Must be at least 8 (in order to gurantee a valid statistic).
   `⟨ε★⟩` is computed taking the minimum result over all `k ∈ K`.
@@ -37,26 +35,29 @@ A unified approach to properly embed a time series or a set of time series
 * `econ::Bool = false`: Economy-mode for L-statistic computation. Instead of
   computing L-statistics for time horizons `2:Tw`, here we only compute them for
   `2:2:Tw`, see description for further details.
+* `verbose = true`: Print information about the process.
 
 ## Description
 The method works iteratively and gradually builds the final embedding vectors
-`Y`. Based on the `⟨ε★⟩`-statistic [`pecora`](@ref) the algorithm picks an
+`Y`. Based on the `⟨ε★⟩`-statistic (of [`pecora`](@ref)) the algorithm picks an
 optimal delay value `τᵢ` for each embedding cycle `i`.
 For achieving that, we take the inpute time series `s`, denoted as the actual
 phase space trajectory `Y_actual` and compute the continuity statistic `⟨ε★⟩`.
+
 1. Each local maxima in `⟨ε★⟩` is used for constructing a
-candidate embedding trajectory `Y_trial` with a delay corresponding to that
-specific peak in `⟨ε★⟩`. 2. We then compute the `L`-statistic [`uzal_cost`](@ref)
-for `Y_trial` (`L-trial`) and `Y_actual` (`L_actual`) for increasing prediction
-time horizons (free parameter in the `L`-statistic) and save the maximum
-difference `max(L-trial - L_actual)` as `ΔL` (Note that this is a
-negative number, since the `L`-statistic decreases with better reconstructions).
-3. We pick the peak/`τ`-value, for which `ΔL` is minimal (=maximum decrease of
-the overall `L`-value) and construct the actual embedding trajectory
-`Y_actual` (steps 1.-3. correspond to an embedding cycle). 4. We repeat steps
-1.-3. with `Y_actual` as input and stop the algorithm when `ΔL` is > 0,
-i.e. when and additional embedding component would not lead to a lower overall
-L-value. `Y_actual` -> `Y`.
+   candidate embedding trajectory `Y_trial` with a delay corresponding to that
+   specific peak in `⟨ε★⟩`.
+2. We then compute the `L`-statistic (of [`uzal_cost`](@ref))
+   for `Y_trial` (`L-trial`) and `Y_actual` (`L_actual`) for increasing prediction
+   time horizons (free parameter in the `L`-statistic) and save the maximum
+   difference `max(L-trial - L_actual)` as `ΔL` (Note that this is a
+   negative number, since the `L`-statistic decreases with better reconstructions).
+3. We pick the `τ`-value, for which `ΔL` is minimal (=maximum decrease of
+   the overall `L`-value) and construct the actual embedding trajectory
+   `Y_actual` (steps 1.-3. correspond to an embedding cycle).
+4. We repeat steps 1.-3. with `Y_actual` as input and stop the algorithm when `ΔL` is > 0,
+   i.e. when and additional embedding component would not lead to a lower overall
+   L-value. `Y_actual` -> `Y`.
 
 In case of multivariate embedding, i.e. when embedding a set of M time series
 (`s::Dataset`), in each embedding cycle the continuity statistic `⟨ε★⟩` gets
@@ -73,22 +74,22 @@ vector is stored in `Y` (`Dataset`). The chosen delay values for each embedding
 cycle are stored in `τ_vals` and the according time series numbers chosen for
 each delay value in `τ_vals` are stored in `ts_vals`. For univariate embedding
 (`s::Vector`) `ts_vals` is a vector of ones of length `τ_vals`, because there is
-simply just one time series to choose from. The function also returns the
+simply just one timeseries to choose from. The function also returns the
 `ΔLs`-values for each embedding cycle and the continuity statistic `⟨ε★⟩`
 as an `Array` of `Vector`s.
 
 For distance computations the Euclidean norm is used.
 
-[^Pecora2007]: Pecora, L. M., Moniz, L., Nichols, J., & Carroll, T. L. (2007). [A unified approach to attractor reconstruction. Chaos 17(1)](https://doi.org/10.1063/1.2430294).
-[^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 [^Kraemer2021]: Kraemer, K.H., Datseris, G., Kurths, J., Kiss, I.Z., Ocampo-Espindola, Marwan, N. (2021). [A unified and automated approach to attractor reconstruction. New Journal of Physics 23(3), 033017](https://iopscience.iop.org/article/10.1088/1367-2630/abe336).
 """
-function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 1,
+function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 0,
     samplesize::Real = 1, K::Int = 13, KNN::Int = 3, L_threshold::Real = 0,
-    α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false
+    α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false,
+    verbose = true,
     ) where {T<:Real}
 
-    @assert 0 < samplesize ≤ 1 "Please select a valid `samplesize`, which denotes a fraction of considered fiducial points, i.e. `samplesize` ∈ (0 1]"
+    verbose && println("Initializing PECUZAL algorithm for univariate input...")
+    @assert 0 < samplesize ≤ 1
     @assert all(x -> x ≥ 0, τs)
     @assert L_threshold ≥ 0
     threshold = -L_threshold # due to the negativity of L-decrease
@@ -112,6 +113,7 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 1,
     # loop over increasing embedding dimensions until some break criterion will
     # tell the loop to stop/break
     while flag
+        verbose && println("Starting $counter-th embedding cycle...")
         Y_act = pecuzal_embedding_cycle!(
                 Y_act, flag, s, τs, w, counter, ε★s, τ_vals, metric,
                 Ls, ts_vals, samplesize, K, α, p, KNN, econ)
@@ -130,10 +132,12 @@ end
 
 function pecuzal_embedding(Y::Dataset{D, T}; τs = 0:50 , w::Int = 1,
     samplesize::Real = 1, K::Int = 13, KNN::Int = 3, L_threshold::Real = 0,
-    α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false
+    α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false,
+    verbose = true,
     ) where {D, T<:Real}
 
-    @assert 0 < samplesize ≤ 1 "Please select a valid `samplesize`, which denotes a fraction of considered fiducial points, i.e. `samplesize` ∈ (0 1]"
+    verbose && println("Initializing PECUZAL algorithm for multivariate input...")
+    @assert 0 < samplesize ≤ 1
     @assert all(x -> x ≥ 0, τs)
     @assert L_threshold ≥ 0
     threshold = -L_threshold # due to the negativity of L-decrease
@@ -158,6 +162,7 @@ function pecuzal_embedding(Y::Dataset{D, T}; τs = 0:50 , w::Int = 1,
     # loop over increasing embedding dimensions until some break criterion will
     # tell the loop to stop/break
     while flag
+        verbose && println("Starting $counter-th embedding cycle...")
         Y_act = pecuzal_multivariate_embedding_cycle!(
                 Y_act, flag, Y, τs, w, counter, ε★s, τ_vals, metric,
                 Ls, ts_vals, samplesize, K, α, p, KNN, econ)
