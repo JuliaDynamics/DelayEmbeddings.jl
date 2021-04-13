@@ -205,7 +205,7 @@ function pecora(
         p::T = 0.5) where {D, T<:Real}
 
     @assert K ≥ 8 "You must provide a δ-neighborhood size consisting of at least 8 neighbors."
-
+    @assert all(x -> x ≥ 0, τs) "τ's and j's for generalized embedding must be positive integers"
     @assert all(x -> x ≥ 0, js) "τ's and j's for generalized embedding must be positive integers"
     @assert all(x -> x ≥ 0, delays) "considered delay values must be positive integers"
     @assert 0 < samplesize ≤ 1 "`samplesize` must be ∈ (0,1]"
