@@ -1,3 +1,6 @@
+# v1.20.6
+* Name `regularize` has been deprecated in favor of `standardize`, which aligns more with current literature.
+
 # v1.20.1
 * Patch for correct keyword arguments in PECUZAL algorithm
 
@@ -63,7 +66,7 @@
 # v1.8.0
 * New cost function for testing "goodness" of a delay embedding: `uzal_cost` from Uzal et. al.
 # v1.7.0
-* New function `standardize`, useful in doing dataset-related operations (e.g. finding fractal dimension)
+* New function `regularize`, useful in doing dataset-related operations (e.g. finding fractal dimension)
 # v1.6.1
 * `genembed` and co. now allow input arguments as vectors.
 # v1.6
