@@ -69,7 +69,7 @@ function garcia_almeida_embedding(s::Vector{F}; τs = 0:50 , w::Int = 1,
     @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
     s_orig = s
-    s = regularize(s) # especially important for fnn-computation
+    s = standardize(s) # especially important for fnn-computation
     # define actual phase space trajectory
     Y_act = Dataset(s)
 
@@ -120,7 +120,7 @@ function garcia_almeida_embedding(Y::AbstractDataset{D, F}; τs = 0:50 , w::Int 
     @assert 0 ≤ fnn_thres < 1 "Please select a valid breaking criterion, i.e. a threshold value `fnn_thres` ∈ [0 1)"
     @assert all(x -> x ≥ 0, τs)
     Y_orig = Y
-    Y = regularize(Y) # especially important for fnn-computation
+    Y = standardize(Y) # especially important for fnn-computation
     # define actual phase space trajectory and NN-distances
     Y_act = []
     NNdist_old = []

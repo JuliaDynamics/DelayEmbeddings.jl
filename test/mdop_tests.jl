@@ -193,7 +193,7 @@ end
     @test taus[max_idx] == τ_vals[2]
 
     Y2, τ_vals2, ts_vals2, FNNs2, betas2 = mdop_embedding(tra; τs = taus, w = theiler, max_num_of_cycles = mc)
-    ttra = regularize(tra)
+    ttra = standardize(tra)
     b1 = DelayEmbeddings.beta_statistic(Dataset(ttra[:,ts_vals2[1]]), ttra[:,1], taus, theiler)
     b2 = DelayEmbeddings.beta_statistic(Dataset(ttra[:,ts_vals2[1]]), ttra[:,2], taus, theiler)
     b3 = DelayEmbeddings.beta_statistic(Dataset(ttra[:,ts_vals2[1]]), ttra[:,3], taus, theiler)

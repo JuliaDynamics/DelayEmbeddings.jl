@@ -1,3 +1,5 @@
+@deprecate regularize standardize
+
 export mutualinformation
 function mutualinformation(args...; kwargs...)
     @warn "`mutualinformation` is deprecated in favor of `selfmutualinfo`."
