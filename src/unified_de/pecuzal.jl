@@ -96,7 +96,7 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 0,
     metric = Euclidean()
 
     s_orig = s
-    s = regularize(s) # especially important for comparative L-statistics
+    s = standardize(s) # especially important for comparative L-statistics
     # define actual phase space trajectory
     Y_act = Dataset(s)
 
@@ -144,7 +144,7 @@ function pecuzal_embedding(Y::Dataset{D, T}; τs = 0:50 , w::Int = 1,
     metric = Euclidean()
 
     Y_orig = Y
-    Y = regularize(Y) # especially important for comparative L-statistics
+    Y = standardize(Y) # especially important for comparative L-statistics
 
     # define actual phase space trajectory
     Y_act = []

@@ -63,7 +63,7 @@ function mdop_embedding(s::Vector{T};
     @assert all(x -> x ≥ 0, τs)
     metric = Euclidean()
     s_orig = s
-    s = regularize(s) # especially important for fnn-computation
+    s = standardize(s) # especially important for fnn-computation
     # define actual phase space trajectory
     Y_act = Dataset(s)
 
@@ -111,7 +111,7 @@ function mdop_embedding(Y::AbstractDataset{D, T};
     @assert all(x -> x ≥ 0, τs)
     metric = Euclidean()
     Y_orig = Y
-    Y = regularize(Y) # especially important for fnn-computation
+    Y = standardize(Y) # especially important for fnn-computation
     # define actual phase space trajectory and NN-distances
     Y_act = []
     NNdist_old = []
