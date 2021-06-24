@@ -276,7 +276,7 @@ function delay_ifnn(s::AbstractVector{T}, τ::Int, ds = 1:10;
     bm = 0
     for (i, d) ∈ enumerate(ds)
         Y_act = embed(s[1:end-τ],d+1,τ)
-        Y_act = regularize(Y_act)
+        Y_act = standardize(Y_act)
         vtree = KDTree(Y_act, metric)
         _, NNdist_new = all_neighbors(vtree, Y_act, 1:length(Y_act), 1, w)
 

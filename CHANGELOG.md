@@ -1,3 +1,6 @@
+# v1.20.6
+* Name `regularize` has been deprecated in favor of `standardize`, which aligns more with current literature.
+
 # v1.20.1
 * Patch for correct keyword arguments in PECUZAL algorithm
 

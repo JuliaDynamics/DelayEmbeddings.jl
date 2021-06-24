@@ -12,7 +12,7 @@ tr = trajectory(lo, 80; dt = 0.01, Ttr = 10)
 
 x = tr[:, 1]
 Y = Dataset(x)
-Y = regularize(Y)
+Y = standardize(Y)
 
 @testset "N-statistic" begin
     τs = 0:100
@@ -78,7 +78,7 @@ end
 
     # try to reproduce Fig.2a in [^Garcia2005b]
     tra = Dataset(hcat(tr[:,1], tr[:,3]))
-    tra = regularize(tra)
+    tra = standardize(tra)
     taus = 0:100
 
     N , _ = n_statistic(tra, tra[:,1], w=17, T=17, τs = taus)

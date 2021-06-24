@@ -56,8 +56,8 @@ println("\nTesting Dataset...")
     @test Matrix(Dataset(m)) == m
   end
 
-  @testset "regularize" begin
-    r = regularize(data)
+  @testset "standardize" begin
+    r = standardize(data)
     rs = columns(r)
     for x in rs
       m, s = mean(x), std(x)

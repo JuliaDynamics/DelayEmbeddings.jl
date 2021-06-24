@@ -33,7 +33,7 @@ slope_thres = .1
 
 for names in dict_keys
     tr = trajectories[names]
-    tr = regularize(tr)
+    tr = standardize(tr)
     s = tr[:, 1].+ σ.*randn(length(tr))
     τ = estimate_delay(s, "mi_min")
 

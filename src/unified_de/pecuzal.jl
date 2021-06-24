@@ -96,7 +96,7 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 0,
     metric = Euclidean()
 
     s_orig = s
-    s = regularize(s) # especially important for comparative L-statistics
+    s = standardize(s) # especially important for comparative L-statistics
     # define actual phase space trajectory
     Y_act = Dataset(s)
 
@@ -144,7 +144,7 @@ function pecuzal_embedding(Y::Dataset{D, T}; τs = 0:50 , w::Int = 1,
     metric = Euclidean()
 
     Y_orig = Y
-    Y = regularize(Y) # especially important for comparative L-statistics
+    Y = standardize(Y) # especially important for comparative L-statistics
 
     # define actual phase space trajectory
     Y_act = []
@@ -505,7 +505,7 @@ function uzal_cost_pecuzal(Y::Dataset{D, ET}, Y_trial::Dataset{DT, ET}, Tw::Int;
         # increased
         dist = compute_L_decrease(E², E²_trial, ϵ², ϵ²_trial, cnt, NN)
         if isnan(dist)
-            error("Computed 0-distances. You might use model-data, thus try to add minimal additive noise to the signal you wish to embed and try again.")
+            error("Computed 0-distances, due to duplicate datapoints in your data. Try to add minimal additive noise to the signal you wish to embed and try again.")
         end
         if dist > dist_former && dist_former<0
             break

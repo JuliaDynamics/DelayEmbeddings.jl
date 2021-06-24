@@ -2,7 +2,7 @@ using StaticArrays, LinearAlgebra
 using Base.Iterators: flatten
 
 export Dataset, AbstractDataset, SVector, minima, maxima
-export minmaxima, columns, regularize, dimension
+export minmaxima, columns, standardize, dimension
 
 abstract type AbstractDataset{D, T} end
 
@@ -172,7 +172,7 @@ Dataset(s::AbstractVector{T}) where {T} = Dataset(SVector.(s))
 
 function Dataset(v::Vector{<:AbstractArray{T}}) where {T<:Number}
     D = length(v[1])
-    @assert length(unique!(length.(v))) == 1 "All input vectors must have same length" 
+    @assert length(unique!(length.(v))) == 1 "All input vectors must have same length"
     D > 100 && @warn "You are attempting to make a Dataset of dimensions > 100"
     L = length(v)
     data = Vector{SVector{D, T}}(undef, L)
@@ -331,17 +331,17 @@ function LinearAlgebra.svd(d::AbstractDataset)
 end
 
 #####################################################################################
-#                                regularize                                         #
+#                                standardize                                         #
 #####################################################################################
 using Statistics
 
 """
-    regularize(d::Dataset) → r
-Create a regularized version of the input dataset where each timeseries (column)
+    standardize(d::Dataset) → r
+Create a standardized version of the input dataset where each timeseries (column)
 is transformed to have mean 0 and standard deviation 1.
 """
-regularize(d::AbstractDataset) = Dataset(regularized_timeseries(d)[1]...)
-function regularized_timeseries(d::AbstractDataset)
+standardize(d::AbstractDataset) = Dataset(standardized_timeseries(d)[1]...)
+function standardized_timeseries(d::AbstractDataset)
     xs = columns(d)
     means = mean.(xs)
     stds = std.(xs)
@@ -352,7 +352,7 @@ function regularized_timeseries(d::AbstractDataset)
 end
 
 """
-    regularize(x::Vector) = (x - mean(x))/std(x)
+    standardize(x::Vector) = (x - mean(x))/std(x)
 """
-regularize(x::Vector) = regularize!(copy(x))
-regularize!(x::Vector) = (x .= (x .- mean(x))./std(x))
+standardize(x::Vector) = standardize!(copy(x))
+standardize!(x::Vector) = (x .= (x .- mean(x))./std(x))
