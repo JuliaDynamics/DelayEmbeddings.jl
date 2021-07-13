@@ -1,6 +1,4 @@
 using Neighborhood
-using NearestNeighbors
-using StatsBase
 using Distances
 
 export garcia_almeida_embedding
