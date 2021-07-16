@@ -1,5 +1,4 @@
 using Neighborhood
-using StatsBase
 using Distances
 
 export beta_statistic
