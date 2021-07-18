@@ -221,10 +221,10 @@ function Base.Matrix{S}(d::AbstractDataset{D,T}) where {S, D, T}
 end
 Base.Matrix(d::AbstractDataset{D,T}) where {D, T} = Matrix{T}(d)
 
-function Dataset(mat::AbstractMatrix{T}) where {T}
+function Dataset(mat::AbstractMatrix{T}; warn = true) where {T}
     N, D = size(mat)
-    D > 100 && @warn "You are attempting to make a Dataset of dimensions > 100"
-    D > N && @warn "You are attempting to make a Dataset of a matrix with more columns than rows."
+    warn && D > 100 && @warn "You are attempting to make a Dataset of dimensions > 100"
+    warn && D > N && @warn "You are attempting to make a Dataset of a matrix with more columns than rows."
     Dataset{D,T}(reshape(reinterpret(SVector{D,T}, vec(transpose(mat))), (N,)))
 end
 
