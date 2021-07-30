@@ -48,34 +48,10 @@ Base.eachrow(ds::AbstractDataset) = ds.data
 [d.data[k][j] for k in i]
 @inline Base.getindex(d::AbstractDataset, i::Int, j::AbstractVector) = d[i][j]
 @inline Base.getindex(d::AbstractDataset, ::Colon, ::Colon) = d
-
-# Some performance optims with `SVectors`
 @inline Base.getindex(d::AbstractDataset, ::Colon, v::AbstractVector) = 
 Dataset([d[i][v] for i in 1:length(d)])
 @inline Base.getindex(d::AbstractDataset, v1::AbstractVector, v::AbstractVector) = 
 Dataset([d[i][v] for i in v1])
-
-# # Generic getindex with ranges which returns a Dataset again
-# # TODO: this function could be done generated I guess
-# function Base.getindex(d::AbstractDataset{D,T}, 
-#         i::AbstractVector{Int}, j::AbstractVector{Int}
-#     ) where {D,T}
-    
-#     I = length(i)
-#     J = length(j)
-#     ret = zeros(T, J, I)
-#     for k=1:I
-#         for l=1:J
-#             ret[l,k] = d[i[k],j[l]]
-#         end
-#     end
-#     return Dataset(transpose(ret))
-# end
-
-# function Base.getindex(d::AbstractDataset{D,T},
-#     ::Colon, j::AbstractVector{Int}) where {D, T}
-#     return Dataset(Base.getindex(d, 1:length(d), j))
-# end
 
 """
     columns(dataset) -> x, y, z, ...
