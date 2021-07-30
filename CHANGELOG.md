@@ -1,3 +1,8 @@
+# v2.0.0
+**BREAKING**
+- All deprecations have been dropped. Switch to previous stable version to enable them again.
+- `Dataset[range_of_integers]` now returns a `Dataset` instead of `Vector{SVector}`.
+
 # v1.20.6
 * Name `regularize` has been deprecated in favor of `standardize`, which aligns more with current literature.
 
