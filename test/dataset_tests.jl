@@ -55,6 +55,11 @@ println("\nTesting Dataset...")
     @test e isa SVector{2, Float64}
     f = sub[5:8, 1:2]
     @test f isa Dataset
+
+    # setindex
+    data[1] = SVector(0.1,0.1,0.1)
+    @test data[1] == SVector(0.1,0.1,0.1)
+    @test_throws ErrorException (data[:,1] .= 0)
   end
 
   @testset "minmax" begin

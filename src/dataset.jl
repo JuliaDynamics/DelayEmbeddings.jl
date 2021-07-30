@@ -34,7 +34,6 @@ Base.eachrow(ds::AbstractDataset) = ds.data
 @inline Base.lastindex(d::AbstractDataset) = length(d)
 @inline Base.lastindex(d::AbstractDataset, k) = size(d)[k]
 @inline Base.firstindex(d::AbstractDataset) = 1
-@inline Base.setindex!(d::AbstractDataset, v, i::Int) = (d.data[i] = v)
 
 # 2D indexing with second index being column (reduces indexing to 1D indexing)
 @inline Base.getindex(d::AbstractDataset, i, ::Colon) = d[i]
@@ -61,6 +60,14 @@ function columns end
 @generated function columns(data::AbstractDataset{D, T}) where {D, T}
     gens = [:(data[:, $k]) for k=1:D]
     quote tuple($(gens...)) end
+end
+
+# Set index stuff
+@inline Base.setindex!(d::AbstractDataset, v, i::Int) = (d.data[i] = v)
+
+function Base.dotview(d::AbstractDataset, ::Colon, ::Int)
+    error("`setindex!` is not defined for Datasets and the given arguments. "*
+    "Best to create a new dataset or `Vector{SVector}` instead of in-place operations.")
 end
 
 ###########################################################################
