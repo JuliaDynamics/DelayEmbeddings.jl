@@ -6,7 +6,7 @@ import Peaks
 @testset "Pecora" begin
 # %% Generate data
 lor = Systems.lorenz([0.0;1.0;0.0];ρ=60)
-data = trajectory(lor, 200; dt=0.02, Ttr = 10)
+data = trajectory(lor, 200; Δt=0.02, Ttr = 10)
 metric = Chebyshev()
 
 UNDERSAMPLING = false

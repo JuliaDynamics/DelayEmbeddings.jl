@@ -2,7 +2,7 @@ using DelayEmbeddings
 using StaticArrays
 
 # Download some test timeseries
-repo = "https://raw.githubusercontent.com/JuliaDynamics/ExercisesRepo/master/exercise_data"
+repo = "https://raw.githubusercontent.com/JuliaDynamics/NonlinearDynamicsTextbook/master/exercise_data"
 tsfolder = joinpath(@__DIR__, "timeseries")
 todownload = ["$n.csv" for n in 1:4]
 
