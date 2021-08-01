@@ -185,7 +185,7 @@ function delay_fnn(s::AbstractVector, τ::Int, ds = 2:6; rtol=10.0, atol=2.0)
 end
 
 """
-    delay_f1nn(s::AbstractVector, τ::Int, ds = 2:6, metric = Euclidean())
+    delay_f1nn(s::AbstractVector, τ::Int, ds = 2:6; metric = Euclidean())
 
 Calculate the ratio of "false first nearest neighbors" (FFNN) of the datasets created
 from `s` with `embed(s, d, τ) for d ∈ ds`.
@@ -202,7 +202,7 @@ is found at the point where this ratio approaches zero.
 
 See also: [`optimal_traditional_de`](@ref).
 """
-function delay_f1nn(s::AbstractVector, τ::Int, ds = 2:6, metric = Euclidean())
+function delay_f1nn(s::AbstractVector, τ::Int, ds = 2:6; metric = Euclidean())
     f1nn_ratio = zeros(length(ds))
     γ_prev = 0 # to recall what γ has been analyzed before
     Rγ = embed(s[1:end-τ],ds[1],τ) # this is for the first iteration
