@@ -5,7 +5,7 @@ println("\nTesting pecuzal_method.jl...")
 @testset "PECUZAL" begin
 
 lo = Systems.lorenz([1.0, 1.0, 50.0])
-tr = trajectory(lo, 100; dt = 0.01, Ttr = 10)
+tr = trajectory(lo, 100; Δt = 0.01, Ttr = 10)
 
 @testset "Univariate example" begin
 
