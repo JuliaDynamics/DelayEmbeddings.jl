@@ -1,7 +1,7 @@
 using StaticArrays
 using Base: @_inline_meta
-export reconstruct, DelayEmbedding, MTDelayEmbedding, embed, τrange
-export WeightedDelayEmbedding, AbstractEmbedding
+export reconstruct, DelayEmbedding, embed, τrange
+export AbstractEmbedding
 
 #####################################################################################
 # Univariate Delay Coordinates
@@ -64,10 +64,6 @@ end
     end
 end
 
-function WeightedDelayEmbedding(γ, τ, w)
-    @warn "`WeightedDelayEmbedding` is deprecated in favor of `DelayEmbedding`."
-    return DelayEmbedding(γ, τ, w)
-end
 
 """
     embed(s, d, τ [, h])
@@ -97,7 +93,7 @@ see[^Judd1998].
 If provided, `h` can be weights to multiply the entries of the embedded space.
 If `h isa Real` then the embedding is
 ```math
-(s(n), h \\cdot s(n+\\tau), w^2 \\cdot s(n+2\\tau), \\dots,w^{d-1} \\cdot s(n+γ\\tau))
+(s(n), h \\cdot s(n+\\tau), h^2 \\cdot s(n+2\\tau), \\dots,h^{d-1} \\cdot s(n+γ\\tau))
 ```
 Otherwise `h` can be a vector of length `d-1`, which the decides the weights of each
 entry directly.
@@ -136,105 +132,6 @@ end
 Return the range `r` of valid indices `n` to create delay vectors out of `s` using `de`.
 """
 τrange(s, de::AbstractEmbedding) = 1:(length(s) - maximum(de.delays))
-
-"""
-    reconstruct(s, γ, τ) = embed(s, γ+1, τ)
-"""
-function reconstruct(s, γ, τ)
-    @warn "`reconstruct` is deprecated in favor of `embed`. In general, the old argument "*
-    "`γs` is being phased out throughout the library."
-    return embed(s, γ+1, τ)
-end
-
-
-#####################################################################################
-# Multiple timeseries
-#####################################################################################
-"""
-    MTDelayEmbedding(γ, τ, B) -> `embedding`
-Return a delay coordinates embedding structure to be used as a functor,
-that embeds multiple timeseries (`B` in total) given in the form of a [`Dataset`](@ref).
-
-Calling
-```julia
-embedding(s, n)
-```
-where `s` is a `Dataset` will create the `n`-th delay vector of the embedded space,
-which has `γ` temporal neighbors with delay(s) `τ`. See [`reconstruct`](@ref) for more.
-
-**Be very careful when choosing `n`, because `@inbounds` is used internally.**
-Use [`τrange`](@ref)!
-"""
-struct MTDelayEmbedding{γ, B, X} <: AbstractEmbedding
-    delays::SMatrix{γ, B, Int, X} # X = γ*B = total dimension number
-end
-
-@inline MTDelayEmbedding(γ, τ, B) = MTDelayEmbedding(Val{γ}(), τ, Val{B}())
-@inline function MTDelayEmbedding(::Val{γ}, τ::Int, ::Val{B}) where {γ, B}
-    @warn "Multi-timeseries delay embedding via `reconstruct` is deprecated in favor of "*
-    "using `genembed` directly."
-    X = γ*B
-    idxs = SMatrix{γ,B,Int,X}([k*τ for k in 1:γ, j in 1:B])
-    return MTDelayEmbedding{γ, B, X}(idxs)
-end
-@inline function MTDelayEmbedding(
-    ::Val{γ}, τ::AbstractMatrix{<:Integer}, ::Val{B}) where {γ, B}
-    @warn "Multi-timeseries delay embedding via `reconstruct` is deprecated in favor of "*
-    "using `genembed` directly."
-    X = γ*B
-    γ != size(τ)[1] && throw(ArgumentError(
-    "`size(τ)[1]` must equal the number of spatial neighbors."
-    ))
-    B != size(τ)[2] && throw(ArgumentError(
-    "`size(τ)[2]` must equal the number of timeseries."
-    ))
-    return MTDelayEmbedding{γ, B, X}(SMatrix{γ, B, Int, X}(τ))
-end
-function MTDelayEmbedding(
-    ::Val{γ}, τ::AbstractVector{<:Integer}, ::Val{B}) where {γ, B}
-    error("Does not work with vector τ, only matrix or integer!")
-end
-
-@generated function (r::MTDelayEmbedding{γ, B, X})(
-    s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
-    i) where {γ, A, B, T, M, X}
-    @warn "Multi-timeseries delay embedding via `reconstruct` is deprecated in favor of "*
-    "using `genembed` directly."
-    typeof(s) <: SizedArray && @warn "Using SizedArrays is deprecated. Use Dataset instead."
-    gensprev = [:(s[i, $d]) for d=1:B]
-    gens = [:(s[i + r.delays[$k, $d], $d]) for k=1:γ for d=1:B]
-    quote
-        @_inline_meta
-        @inbounds return SVector{$(γ+1)*$B,T}($(gensprev...), $(gens...))
-    end
-end
-
-τrange(s, de::MTDelayEmbedding) = 1:(size(s)[1] - maximum(de.delays))
-
-@inline function reconstruct(
-    s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
-    γ, τ) where {A, B, T, M}
-
-    if γ == 0
-        return Dataset{B, T}(s)
-    end
-    de::MTDelayEmbedding{γ, B, γ*B} = MTDelayEmbedding(γ, τ, B)
-    reconstruct(s, de)
-end
-@inline function reconstruct(
-    s::Union{AbstractDataset{B, T}, SizedArray{Tuple{A, B}, T, 2, M}},
-    de::MTDelayEmbedding{γ, B, F}) where {A, B, T, M, γ, F}
-
-    r = τrange(s, de)
-    X = (γ+1)*B
-    data = Vector{SVector{X, T}}(undef, length(r))
-    @inbounds for i in r
-        data[i] = de(s, i)
-    end
-    return Dataset{X, T}(data)
-end
-
-reconstruct(s::AbstractMatrix, args...) = reconstruct(Dataset(s), args...)
 
 #####################################################################################
 # Generalized embedding (arbitrary combination of timeseries and delays)
@@ -331,7 +228,7 @@ The generalized embedding works as follows:
 - `js` denotes which of the timeseries contained in `s`
   will be used for the entries of the delay vector. `js` can contain duplicate indices.
 - `ws` are optional weights that weight each embedded entry (the i-th entry of the
-    delay vector is weighted by `ws[i]`). If provided, it is recommended that `ws[1] = 1`
+    delay vector is weighted by `ws[i]`). If provided, it is recommended that `ws[1] == 1`.
 
 `τs, js, ws` are tuples (or vectors) of length `D`, which also coincides with the embedding
 dimension. For example, imagine input trajectory ``s = [x, y, z]`` where ``x, y, z`` are

@@ -153,7 +153,8 @@ is between d0 < dj ≤ d. Here is how we find the nearest neighbor:
 
 =#
 
-using Distances, Statistics, StatsBase, Distributions
+using Distances, Statistics, Distributions
+using StatsBase: fit, Histogram
 export pecora
 
 """

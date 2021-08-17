@@ -9,10 +9,10 @@ test_value = (val, vmin, vmax) -> @test vmin <= val <= vmax
 diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
 s_sin = sin.(0:0.1:1000)
 ro = Systems.roessler(ones(3));
-data = trajectory(ro,1000;dt=0.1,diffeq...)
+data = trajectory(ro,1000;Δt=0.1,diffeq...)
 s_roessler = data[:,1]
 lo = Systems.lorenz96(4, [0.1, 0.2, 0.5, 0.1]; F = 16.0);
-data = trajectory(lo,5000.0;dt=0.05, Ttr = 100.0, diffeq...)
+data = trajectory(lo,5000.0;Δt=0.05, Ttr = 100.0, diffeq...)
 s_lorenz = data[:,1]
 
 @testset "Caos method" begin

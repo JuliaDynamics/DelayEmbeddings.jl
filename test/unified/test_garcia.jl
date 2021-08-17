@@ -8,7 +8,7 @@ println("\nTesting garcia_almeida.jl...")
 
 lo = Systems.lorenz()
 
-tr = trajectory(lo, 80; dt = 0.01, Ttr = 10)
+tr = trajectory(lo, 80; Δt = 0.01, Ttr = 10)
 
 x = tr[:, 1]
 Y = Dataset(x)

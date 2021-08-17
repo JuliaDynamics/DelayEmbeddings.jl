@@ -2,8 +2,8 @@
     SubDataset{D, T, <:AbstractDataset{D,T}, <:SubArray{<:SVector{D,T},1}} <: AbstractDataset{D,T}
 
 A view of an `AbstractDataset`, as returned by the `view` function
-or the `@view` macro. A `SubDataset` is an `AbstractDataset`
-of the same type as its parent, so indexing and most functions
+or the `@view` macro on a dataset instance. A `SubDataset` is an `AbstractDataset`
+of the same type as its parent, so indexing, iteration, and most other functions
 can be expected to work in the same way for both the parent and the view.
 """
 struct SubDataset{D, T, P<:AbstractDataset{D,T}, S<:SubArray{<:SVector{D,T},1}} <: AbstractDataset{D,T}

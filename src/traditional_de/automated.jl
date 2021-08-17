@@ -86,7 +86,7 @@ function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "af
     γs = ds .- 1 # TODO: This must be updated to dimension in 2.0
 
     if dimensionmethod=="afnn"
-        dimension_statistic = delay_afnn(s, τ, ds, metric)
+        dimension_statistic = delay_afnn(s, τ, ds; metric, w)
         Y, τ = find_cao_optimal(s, τ, dimension_statistic, slope_thres)
         flag = is_stochastic(s, τ, 1:3, stoch_thres)
         flag && println("Stochastic signal, valid embedding NOT achieved ⨉.")
@@ -97,7 +97,7 @@ function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "af
         dimension_statistic = delay_ifnn(s, τ, ds; r, w, metric)
         Y, τ = find_fnn_optimal(s, τ, dimension_statistic, fnn_thres, slope_thres)
     elseif dimensionmethod=="f1nn"
-        dimension_statistic = delay_f1nn(s, τ, ds, metric)
+        dimension_statistic = delay_f1nn(s, τ, ds; metric)
         Y, τ = find_fnn_optimal(s, τ, dimension_statistic, fnn_thres, slope_thres)
     end
     return Y, τ, dimension_statistic
