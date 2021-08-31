@@ -3,11 +3,20 @@ using StaticArrays
 using Test
 
 # Download some test timeseries
+
+# Old:
 repo = "https://raw.githubusercontent.com/JuliaDynamics/NonlinearDynamicsTextbook/master/exercise_data"
 tsfolder = joinpath(@__DIR__, "timeseries")
 todownload = ["$n.csv" for n in 1:4]
 
 mkpath(tsfolder)
+for a in todownload
+    download(repo*"/"*a, joinpath(tsfolder, a))
+end
+
+#New:
+todownload = ["test_time_series_lorenz_standard_N_10000_multivariate.csv", "test_time_series_roessler_N_10000_multivariate.csv"]
+repo = "https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/timeseries"
 for a in todownload
     download(repo*"/"*a, joinpath(tsfolder, a))
 end
@@ -23,14 +32,15 @@ diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
     include("traditional/embedding_dimension_test.jl")
     include("unified/test_pecora.jl")
     include("unified/uzal_cost_test.jl")
+    include("unified/test_pecuzal_embedding.jl")
 
     # The following methods have been tested throughly and also published in research.
-    # We know that they work, but unfortunately the tests we have written 
-    # about them are not good. 
+    # We know that they work, but unfortunately the tests we have written
+    # about them are not good.
     # See https://github.com/JuliaDynamics/DelayEmbeddings.jl/issues/95
     # include("unified/mdop_tests.jl")
     # include("unified/test_garcia.jl")
-    # include("unified/test_pecuzal_embedding.jl")
+
 end
 
 ti = time() - ti

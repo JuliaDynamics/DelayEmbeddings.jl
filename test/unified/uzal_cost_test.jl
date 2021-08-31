@@ -1,4 +1,3 @@
-using DynamicalSystemsBase
 using DelayEmbeddings
 using Test
 using Random
@@ -9,15 +8,23 @@ println("\nTesting uzal_cost.jl...")
 @testset "Random vectors" begin
     ## Check on random vector
     Random.seed!(1516578735)
-    tr = randn(10000)
-    tr = Dataset(tr)
-    L = uzal_cost(tr;
+    tr1 = randn(10000)
+    tr2 = randn(5000)
+    tr1 = Dataset(tr1)
+    tr2 = Dataset(tr2)
+    L = uzal_cost(tr1;
+        Tw = 60, K= 3, w = 1, samplesize = 1.0,
+        metric = Euclidean()
+    )
+    L2 = uzal_cost(tr2;
         Tw = 60, K= 3, w = 1, samplesize = 1.0,
         metric = Euclidean()
     )
 
-    L_max = -2.059
-    @test L < L_max
+    L_max = -0.06
+    L_min = -0.08
+    @test L_min < L < L_max
+    @test L_min < L2 < L_max
 
 
     ## check on clean step function (0-distances)
@@ -41,11 +48,20 @@ println("\nTesting uzal_cost.jl...")
         Tw = 60, K= 3, w = 1, samplesize = 1.0,
         metric = Euclidean()
     )
-    @test L<-3
+    @test -1.6 < L < -1.5
 end
 
 @testset "Uzal local cost (Lorenz)" begin
-    tr = readdlm(joinpath(tsfolder, "3.csv"))
+    ## Test Lorenz example
+    # For comparison reasons using Travis CI we carry out the integration on a UNIX
+    # OS and save the resulting time series
+    # See https://github.com/JuliaDynamics/JuliaDynamics for the storage of
+    # the time series used for testing
+    #
+    # u0 = [0, 10.0, 0.0]
+    # lo = Systems.lorenz(u0; σ=10, ρ=28, β=8/3)
+    # tr = trajectory(lo, 100; Δt = 0.01, Ttr = 100)
+    tr = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
     tr = Dataset(tr)
 
     # check local cost function output
@@ -58,25 +74,29 @@ end
     @test length(L_local) == length(tr)-Tw
     @test maximum(L_local)>L
     @test minimum(L_local)<L
+    @test -0.3 < L < -0.28
+
 end
 
 @testset "Roessler system" begin
+    ## Test Roessler example as in Fig. 7 in the paper with internal data
     # For comparison reasons using Travis CI we carry out the integration on a UNIX
     # OS and save the resulting time series
-
-    ## Test Roessler example as in Fig. 7 in the paper with internal data
-    # ro = Systems.roessler([1.0, 1.0, 1.0], a=0.15, b = 0.2, c=10)
-    # tr = trajectory(ro, 1250; dt = 0.2, Ttr = 100)
-    # writedlm("4.csv", tr)
-
-    tr = readdlm(joinpath(tsfolder, "4.csv"))
+    # See https://github.com/JuliaDynamics/JuliaDynamics for the storage of
+    # the time series used for testing
+    #
+    # u0 = [1.0, 1.0, 1.0]
+    # ro = Systems.roessler(u0; a=0.15, b = 0.2, c=10)
+    # tr = trajectory(ro, 1000; Δt = 0.1, Ttr = 100)
+    tr = readdlm(joinpath(tsfolder, "test_time_series_roessler_N_10000_multivariate.csv"))
     tr = Dataset(tr)
+
     x = tr[:, 1]
 
     # theiler window
     w  = 12
     # Time horizon
-    Tw = 80
+    Tw = 50
     # sample size
     SampleSize = .5
     # metric
@@ -84,55 +104,62 @@ end
     # embedding dimension
     m = 3
     # maximum neighbours
-    k_max = 4
-    # number of total trials
-    trials = 8
+    k_max = 5
+    # number of considered tw-values
+    tw_max = 15 # corresponds to a maximum of tw = 30
 
     # preallocation
-    L = zeros(k_max,trials)
-    tw_max = zeros(trials)
+    L = zeros(k_max,tw_max)
+    tws = zeros(tw_max)
 
     for K = 1:k_max
-        for i = 1:trials
-            tw_max[i] = i*(m-1)
+        for i = 1:tw_max
+            tws[i] = i*(m-1)
             Y = embed(x,m,i)
             L[K,i] = uzal_cost(Y; Tw=Tw, K=K, w=w, samplesize=SampleSize, metric=metric)
         end
     end
 
-    tau_min = 4
-    tau_max = 8
+    tau_min = 7
+    tau_max = 12
 
     min1_idx = sortperm(L[1,:])
-    min1 = tw_max[min1_idx[1]]
+    min1 = tws[min1_idx[1]]
     @test tau_min < min1 < tau_max
-    L_min = -2.7
-    L_max = -2.3
+    L_min = -1.2
+    L_max = -0.8
     @test L_min < L[1,min1_idx[1]] < L_max
 
 
     min2_idx = sortperm(L[2,:])
-    min2 = tw_max[min2_idx[1]]
+    min2 = tws[min2_idx[1]]
     @test tau_min < min2 < tau_max
-    L_min = -2.3
-    L_max = -2.1
+    L_min = -0.79
+    L_max = -0.75
     @test L_min < L[2,min2_idx[1]] < L_max
 
 
     min3_idx = sortperm(L[3,:])
-    min3 = tw_max[min3_idx[1]]
+    min3 = tws[min3_idx[1]]
     @test tau_min < min3 < tau_max
-    L_min = -2.1
-    L_max = -2.0
+    L_min = -0.62
+    L_max = -0.58
     @test L_min < L[3,min3_idx[1]] < L_max
 
 
     min4_idx = sortperm(L[4,:])
-    min4 = tw_max[min4_idx[1]]
+    min4 = tws[min4_idx[1]]
     @test tau_min < min4 < tau_max
-    L_min = -2.0
-    L_max = -1.9
+    L_min = -0.51
+    L_max = -0.47
     @test L_min < L[4,min4_idx[1]] < L_max
+
+    min5_idx = sortperm(L[5,:])
+    min5 = tws[min5_idx[1]]
+    @test tau_min < min5 < tau_max
+    L_min = -0.43
+    L_max = -0.39
+    @test L_min < L[5,min5_idx[1]] < L_max
 
     L_local = uzal_cost_local(tr;
         Tw = Tw, K= 3, w = 12, samplesize=1.0,
@@ -149,16 +176,16 @@ end
     # # plot results using PyPlot
     # using PyPlot
     # pygui(true)
-    # labels = ["k=1", "k=2", "k=3", "k=4"]
+    # labels = ["k=1", "k=2", "k=3", "k=4", "k=5"]
     # figure()
-    # plot(tw_max,L[1,:], linewidth = 2)
-    # plot(tw_max,L[2,:], linewidth = 2)
-    # plot(tw_max,L[3,:], linewidth = 2)
-    # plot(tw_max,L[4,:], linewidth = 2)
+    # plot(tws,L[1,:], linewidth = 2)
+    # plot(tws,L[2,:], linewidth = 2)
+    # plot(tws,L[3,:], linewidth = 2)
+    # plot(tws,L[4,:], linewidth = 2)
+    # plot(tws,L[5,:], linewidth = 2)
     # xlabel(L"$t_w$")
     # ylabel(L"$L_k$")
     # legend(labels)
-    # xticks(0:1:16)
     # #yscale("symlog")
     # title("Roessler System as in Fig. 7(b) in the Uzal Paper")
     # grid()
@@ -218,84 +245,5 @@ end
     # cbar.set_label("Local cost function")
 
 end
-
-## Test Lorenz example as in Fig. 7 in the paper with internal data
-@testset "Lorenz fig. 7." begin
-    # lo = Systems.lorenz([0, 10.0, 0.0]; σ=10, ρ=28, β=8/3)
-    # tr = trajectory(lo, 100; dt = 0.01, Ttr = 100)
-    tr = readdlm(joinpath(tsfolder, "4.csv"))
-    x = tr[:, 1]
-
-    # theiler window
-    w  = 12
-    # Time horizon
-    Tw = 80
-    # sample size
-    SampleSize = 1.0
-    # metric
-    metric = Euclidean()
-    # embedding dimension
-    m = 3
-    # maximum neighbours
-    k_max = 4
-    # number of total trials
-    trials = 16
-
-    # preallocation
-    L = zeros(k_max,trials)
-    tw_max = zeros(trials)
-
-    for i = 1:trials
-        tw_max[i] = i*(m-1)
-        Y = embed(x,m,i)
-        for K = 1:k_max
-            L[K,i] = uzal_cost(Y; Tw=Tw, K=K, w=w, samplesize=SampleSize, metric=metric)
-        end
-    end
-
-    tau_min = 5
-    tau_max = 7
-    min1_idx = sortperm(L[1,:])
-    min1 = tw_max[min1_idx[1]]
-    @test tau_min < min1 < tau_max
-    L_max = -2.3
-    @test L[1,min1_idx[1]] < L_max
-
-    min2_idx = sortperm(L[2,:])
-    min2 = tw_max[min2_idx[1]]
-    @test tau_min < min2 < tau_max
-    L_max = -2.0
-    @test L[2,min2_idx[1]] < L_max
-
-    min3_idx = sortperm(L[3,:])
-    min3 = tw_max[min3_idx[1]]
-    @test 5 < min3 < 7
-    L_max = -1.9
-    @test L[3,min3_idx[1]] < L_max
-
-    min4_idx = sortperm(L[4,:])
-    min4 = tw_max[min4_idx[1]]
-    @test 5 < min4 < 7
-    L_max = -1.8
-    @test L[4,min4_idx[1]] < L_max
-
-    # # plot results using PyPlot
-    # using PyPlot
-    # pygui(true)
-    # labels = ["k=1", "k=2", "k=3", "k=4"]
-    # figure()
-    # plot(tw_max,L[1,:], linewidth = 2)
-    # plot(tw_max,L[2,:], linewidth = 2)
-    # plot(tw_max,L[3,:], linewidth = 2)
-    # plot(tw_max,L[4,:], linewidth = 2)
-    # xlabel(L"$t_w$")
-    # ylabel(L"$L_k$")
-    # legend(labels)
-    # xticks(0:2:32)
-    # #yscale("symlog")
-    # title("Lorenz System as in Fig. 7(a) in the Uzal Paper")
-    # grid()
-end
-
 
 end # Uzal cost testset

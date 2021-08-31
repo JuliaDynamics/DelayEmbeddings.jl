@@ -93,7 +93,7 @@ function uzal_cost(Y::AbstractDataset{D, ET};
     end
     σ² = E²_avrg ./ ϵ² # noise amplification σ², Eq. 17
     σ²_avrg = mean(σ²) # averaged value of the noise amplification, Eq. 18
-    α² = 1 / sum(ϵ².^(-1)) # for normalization, Eq. 21
+    α² = 1 / mean(ϵ².^(-1)) # for normalization, Eq. 21
     L = log10(sqrt(σ²_avrg)*sqrt(α²))
 end
 
@@ -184,7 +184,7 @@ function uzal_cost_local(Y::AbstractDataset{D, ET};
         E²_avrg[i] = mean(E²)                   # Eq. 15
     end
     σ² = E²_avrg ./ ϵ² # noise amplification σ², Eq. 17
-    α² = 1 / sum(ϵ².^(-1)) # for normalization, Eq. 21
+    α² = 1 / mean(ϵ².^(-1)) # for normalization, Eq. 21
     L_local = log10.(sqrt.(σ²).*sqrt(α²))
     return L_local
 end
