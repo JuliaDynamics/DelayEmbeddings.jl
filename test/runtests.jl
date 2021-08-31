@@ -15,7 +15,7 @@ for a in todownload
 end
 
 #New:
-repo = "https://github.com/JuliaDynamics/JuliaDynamics/tree/master/timeseries"
+repo = "https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/timeseries"
 a = "test_time_series_lorenz_standard_N_10000_multivariate.csv"
 download(repo*"/"*a, joinpath(tsfolder, a))
 a = "test_time_series_roessler_N_10000_multivariate.csv"

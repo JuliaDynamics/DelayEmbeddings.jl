@@ -13,9 +13,7 @@ println("\nTesting pecuzal_method.jl...")
 # u0 = [0, 10.0, 0.0]
 # lo = Systems.lorenz(u0; σ=10, ρ=28, β=8/3)
 # tr = trajectory(lo, 100; Δt = 0.01, Ttr = 100)
-# tr = readdlm(joinpath(tsfolder, "3.csv"))
-# tr = Dataset(tr)
-tr = readdlm("test_time_series_lorenz_standard_N_10000_multivariate.csv")
+tr = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
 tr = Dataset(tr)
 
 @testset "Univariate example" begin

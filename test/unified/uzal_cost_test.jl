@@ -61,9 +61,7 @@ end
     # u0 = [0, 10.0, 0.0]
     # lo = Systems.lorenz(u0; σ=10, ρ=28, β=8/3)
     # tr = trajectory(lo, 100; Δt = 0.01, Ttr = 100)
-    # tr = readdlm(joinpath(tsfolder, "3.csv"))
-    # tr = Dataset(tr)
-    tr = readdlm("test_time_series_lorenz_standard_N_10000_multivariate.csv")
+    tr = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
     tr = Dataset(tr)
 
     # check local cost function output
@@ -90,9 +88,7 @@ end
     # u0 = [1.0, 1.0, 1.0]
     # ro = Systems.roessler(u0; a=0.15, b = 0.2, c=10)
     # tr = trajectory(ro, 1000; Δt = 0.1, Ttr = 100)
-    # tr = readdlm(joinpath(tsfolder, "4.csv"))
-    # tr = Dataset(tr)
-    tr = readdlm("test_time_series_roessler_N_10000_multivariate.csv")
+    tr = readdlm(joinpath(tsfolder, "test_time_series_roessler_N_10000_multivariate.csv"))
     tr = Dataset(tr)
 
     x = tr[:, 1]
@@ -124,7 +120,7 @@ end
         end
     end
 
-    tau_min = 8
+    tau_min = 7
     tau_max = 12
 
     min1_idx = sortperm(L[1,:])
