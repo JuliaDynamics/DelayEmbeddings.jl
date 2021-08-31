@@ -15,11 +15,11 @@ for a in todownload
 end
 
 #New:
+todownload = ["test_time_series_lorenz_standard_N_10000_multivariate.csv", "test_time_series_roessler_N_10000_multivariate.csv"]
 repo = "https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/timeseries"
-a = "test_time_series_lorenz_standard_N_10000_multivariate.csv"
-download(repo*"/"*a, joinpath(tsfolder, a))
-a = "test_time_series_roessler_N_10000_multivariate.csv"
-download(repo*"/"*a, joinpath(tsfolder, a))
+for a in todownload
+    download(repo*"/"*a, joinpath(tsfolder, a))
+end
 
 ti = time()
 
