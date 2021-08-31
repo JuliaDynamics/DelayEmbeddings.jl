@@ -545,14 +545,14 @@ function compute_L_decrease(E²::Array{P, 2}, E²_trial::Array{P, 2}, ϵ²::Vect
     E²_avrg = mean(E²[1:NN,1:T], dims=2)                   # Eq. 15
     σ² = E²_avrg ./ ϵ²[1:NN] # noise amplification σ², Eq. 17
     σ²_avrg = mean(σ²) # averaged value of the noise amplification, Eq. 18
-    α² = 1 / sum(ϵ²[1:NN].^(-1)) # for normalization, Eq. 21
+    α² = 1 / mean(ϵ²[1:NN].^(-1)) # for normalization, Eq. 21
     L = log10(sqrt(σ²_avrg)*sqrt(α²))
     # 2nd dataset
     # Average E²[T] over all prediction horizons
     E²_avrg_trial = mean(E²_trial[1:NN,1:T], dims=2)                   # Eq. 15
     σ²_trial = E²_avrg_trial ./ ϵ²_trial[1:NN] # noise amplification σ², Eq. 17
     σ²_avrg_trial = mean(σ²_trial) # averaged value of the noise amplification, Eq. 18
-    α²_trial = 1 / sum(ϵ²_trial[1:NN].^(-1)) # for normalization, Eq. 21
+    α²_trial = 1 / mean(ϵ²_trial[1:NN].^(-1)) # for normalization, Eq. 21
     L_trial = log10(sqrt(σ²_avrg_trial)*sqrt(α²_trial))
 
     return L_trial - L

@@ -1,11 +1,20 @@
-using DelayEmbeddings, DynamicalSystemsBase
-using Test, Random
+using DelayEmbeddings
+using Test, Random, DelimitedFiles
 
 println("\nTesting pecuzal_method.jl...")
 @testset "PECUZAL" begin
 
-lo = Systems.lorenz([1.0, 1.0, 50.0])
-tr = trajectory(lo, 100; Δt = 0.01, Ttr = 10)
+## Test Lorenz example
+# For comparison reasons using Travis CI we carry out the integration on a UNIX
+# OS and save the resulting time series
+# See https://github.com/JuliaDynamics/JuliaDynamics for the storage of
+# the time series used for testing
+#
+# u0 = [0, 10.0, 0.0]
+# lo = Systems.lorenz(u0; σ=10, ρ=28, β=8/3)
+# tr = trajectory(lo, 100; Δt = 0.01, Ttr = 100)
+tr = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
+tr = Dataset(tr)
 
 @testset "Univariate example" begin
 
@@ -14,19 +23,21 @@ tr = trajectory(lo, 100; Δt = 0.01, Ttr = 10)
     Tmax = 100
 
     @time Y, τ_vals, ts_vals, Ls , εs = pecuzal_embedding(s[1:5000];
-                                        τs = 0:Tmax , w = w)
+                                        τs = 0:Tmax , w = w, L_threshold = 0.05, econ=true)
 
-    @test -0.728 < Ls[1] < -0.727
-    @test -0.324 < Ls[2] < -0.323
+    @test -1.08 < Ls[1] < -1.04
+    @test -0.51 < Ls[2] < -0.47
+    @test -0.18 < Ls[3] < -0.14
 
-    @test τ_vals[2] == 18
-    @test τ_vals[3] == 9
-    @test length(ts_vals) == 3
+    @test τ_vals[2] == 19
+    @test τ_vals[3] == 96
+    @test τ_vals[4] == 80
+    @test length(ts_vals) == 4
 
-    @time Y, τ_vals, ts_vals, Ls , εs = pecuzal_embedding(s[1:5000];
-                                        τs = 0:Tmax , w = w, econ = true)
-    @test -0.728 < Ls[1] < -0.726
-    @test -0.322 < Ls[2] < -0.321
+    @time Y, τ_vals, ts_vals, Ls , εs = pecuzal_embedding(s;
+                                        τs = 0:Tmax , w = w, L_threshold = 0.05)
+    @test -0.95 < Ls[1] < -0.91
+    @test -0.48 < Ls[2] < -0.44
 
     @test τ_vals[2] == 18
     @test τ_vals[3] == 9
@@ -41,7 +52,7 @@ end
 
 
 @testset "Multivariate example" begin
-## Test of the proposed Pecora-Uzal-embedding-method (multivariate case)
+    ## Test of the proposed PECUZAL-embedding-method (multivariate case)
 
     w1 = estimate_delay(tr[:,1], "mi_min")
     w2 = estimate_delay(tr[:,2], "mi_min")
@@ -52,26 +63,22 @@ end
     @time Y, τ_vals, ts_vals, Ls , ε★ = pecuzal_embedding(tr[1:5000,:];
                                         τs = 0:Tmax , w = w, econ = true)
 
-    @test length(ts_vals) == 5
-    @test ts_vals[3] == ts_vals[4] == ts_vals[5] == 1
+    @test length(ts_vals) == 4
+    @test ts_vals[2] == ts_vals[3] == ts_vals[4] == 1
     @test ts_vals[1] == 3
-    @test ts_vals[2] == 2
     @test τ_vals[1] == 0
-    @test τ_vals[2] == 0
-    @test τ_vals[3] == 62
-    @test τ_vals[4] == 48
-    @test τ_vals[5] == 0
-    @test -0.9338 < Ls[1] < -0.9337
-    @test -0.356 < Ls[2] < -0.355
-    @test -0.1279 < Ls[3] < -0.1278
-    @test -0.015 < Ls[4] < -0.014
+    @test τ_vals[2] == 9
+    @test τ_vals[3] == 64
+    @test τ_vals[4] == 53
+    @test -1.40 < Ls[1] < -1.36
+    @test -0.76 < Ls[2] < -0.72
+    @test -0.1 < Ls[3] < -0.06
 
     @time Y, τ_vals, ts_vals, Ls , ε★ = pecuzal_embedding(tr[1:5000,:];
                                         τs = 0:Tmax , w = w, econ = true, L_threshold = 0.2)
-    @test -0.9338 < Ls[1] < -0.9337
-    @test -0.356 < Ls[2] < -0.355
+    @test -1.40 < Ls[1] < -1.36
+    @test -0.76 < Ls[2] < -0.72
     @test size(Y,2) == 3
-
 
 end
 
