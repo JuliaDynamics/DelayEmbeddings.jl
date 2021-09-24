@@ -28,37 +28,38 @@ For calculating `E` to estimate the dimension we use the given `method` which ca
 
 For more details, see individual methods: [`delay_afnn`](@ref), [`delay_ifnn`](@ref),
 [`delay_fnn`](@ref), [`delay_f1nn`](@ref).
-The special keywords `` denote for which possible embedding
-dimensions should the statistics be computed for.
 
 !!! warn "Careful in automated methods"
     While this method is automated if you want to be **really sure** of the results,
     you should directly calculate the statistic and plot its values versus the
     dimensions.
 
-## Keywords
+## Keyword Arguments
 The keywords
-```
+```julia
 τs = 1:100, dmax = 10
 ```
 denote which delay times and embedding dimensions `ds ∈ 1:dmax` to consider when calculating
-optimal embedding. All remaining keywords are propagated to the low level functions:
+optimal embedding. The keywords 
+```julia
+slope_thres = 0.05, stoch_thres = 0.1, fnn_thres = 0.05
 ```
-fnn_thres::Real = 0.05, slope_thres::Real= 0.2, w::Int=1,
-rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean(), r::Real=2.0,
-stoch_thres = 0.1
+are specific to this function, see Description below.
+All remaining keywords are propagated to the low level functions:
+```
+w, rtol, atol, τs, metric, r
 ```
 
 ## Description
 We estimate the optimal embedding dimension based on the given delay time gained
 from `dmethod` as follows: For Cao's method the optimal dimension is reached,
 when the slope of the `E₁`-statistic (output from `"afnn"`) falls below the
-threshold `slope_thres` (default is .05) and the according stochastic test turns
+threshold `slope_thres` and the according stochastic test turns
 out to be false, i.e. if the `E₂`-statistic's first value is `< 1 - stoch_thres`.
 
 For all the other methods we return the optimal embedding dimension
 when the corresponding FNN-statistic (output from `"ifnn"`, `"fnn"` or `"f1nn"`)
-falls below the fnn-threshold `fnn_thres` (Default is .05) AND the slope of the
+falls below the fnn-threshold `fnn_thres` AND the slope of the
 statistic falls below the threshold `slope_thres`. Note that with noise
 contaminated time series, one might need to adjust `fnn_thres` according to the
 noise level.
