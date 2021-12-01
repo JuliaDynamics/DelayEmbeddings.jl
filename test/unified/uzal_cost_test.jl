@@ -21,7 +21,7 @@ println("\nTesting uzal_cost.jl...")
         metric = Euclidean()
     )
 
-    L_max = -0.06
+    L_max = -0.05
     L_min = -0.08
     @test L_min < L < L_max
     @test L_min < L2 < L_max
@@ -48,7 +48,7 @@ println("\nTesting uzal_cost.jl...")
         Tw = 60, K= 3, w = 1, samplesize = 1.0,
         metric = Euclidean()
     )
-    @test -1.6 < L < -1.5
+    @test -1.6 < L < -1.3
 end
 
 @testset "Uzal local cost (Lorenz)" begin
