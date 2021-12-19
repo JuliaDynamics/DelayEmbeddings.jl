@@ -12,7 +12,7 @@ todownload = ["$n.csv" for n in 1:4]
 
 mkpath(tsfolder)
 for a in todownload
-    download(repo*"/"*a, joinpath(tsfolder, a))
+    Downloads.download(repo*"/"*a, joinpath(tsfolder, a))
 end
 
 #New:
