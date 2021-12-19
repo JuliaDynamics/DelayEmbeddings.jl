@@ -1,6 +1,7 @@
 using DelayEmbeddings
 using StaticArrays
 using Test
+import Downloads
 
 # Download some test timeseries
 
@@ -11,14 +12,14 @@ todownload = ["$n.csv" for n in 1:4]
 
 mkpath(tsfolder)
 for a in todownload
-    download(repo*"/"*a, joinpath(tsfolder, a))
+    Downloads.download(repo*"/"*a, joinpath(tsfolder, a))
 end
 
 #New:
 todownload = ["test_time_series_lorenz_standard_N_10000_multivariate.csv", "test_time_series_roessler_N_10000_multivariate.csv"]
 repo = "https://raw.githubusercontent.com/JuliaDynamics/JuliaDynamics/master/timeseries"
 for a in todownload
-    download(repo*"/"*a, joinpath(tsfolder, a))
+    Downloads.download(repo*"/"*a, joinpath(tsfolder, a))
 end
 
 ti = time()
