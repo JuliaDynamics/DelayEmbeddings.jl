@@ -1,7 +1,7 @@
 name = "DelayEmbeddings"
 uuid = "5732040d-69e3-5649-938a-b6b4f237613f"
 repo = "https://github.com/JuliaDynamics/DelayEmbeddings.jl.git"
-version = "2.0.1"
+version = "2.0.3"
 
 [deps]
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
@@ -16,6 +16,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 [compat]
 Distances = "0.7, 0.8, 0.9, 0.10"
 Distributions = "0.23, 0.24, 0.25"
+DynamicalSystemsBase = "2.3.4"
 Neighborhood = "0.2"
 StaticArrays = "0.8, 0.11, 0.12, 1.0"
 StatsBase = "0.24, 0.32, 0.33"
@@ -23,10 +24,12 @@ julia = "1.5"
 
 [extras]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
 Peaks = "18e31ff7-3703-566c-8e60-38913d67486b"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["DynamicalSystemsBase", "Test", "Random", "DelimitedFiles", "Peaks"]
+test = ["DynamicalSystemsBase", "Test", 
+"Random", "DelimitedFiles", "Peaks", "Downloads"]

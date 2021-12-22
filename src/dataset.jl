@@ -176,7 +176,11 @@ end
     gens = [:(vecs[$k][i]) for k=1:D]
     D > 100 && @warn "You are attempting to make a Dataset of dimensions > 100"
     quote
-        L = minimum(length(x) for x in vecs)
+        L = typemax(Int)
+        for x in vecs
+            l = length(x)
+            l < L && (L = l)
+        end
         data = Vector{SVector{$D, T}}(undef, L)
         for i in 1:L
             @inbounds data[i] = SVector{$D, T}($(gens...))
