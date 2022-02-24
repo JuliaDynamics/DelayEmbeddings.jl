@@ -451,16 +451,16 @@ minimum. Return the according minimum `L_decrease`-value.
 * `econ::Bool = false`: Economy-mode for L-statistic computation. Instead of
   computing L-statistics for time horizons `2:Tw`, here we only compute them for
   `2:2:Tw`.
-* `samplesize::Real = 1.`: determine the fraction of all phase space points
+* `samplesize::Real = 1`: determine the fraction of all phase space points
   to be considered (fiducial points v) for computing the L-statistic
 """
 function uzal_cost_pecuzal(Y::Dataset{D, ET}, Y_trial::Dataset{DT, ET}, Tw::Int;
         K::Int = 3, w::Int = 1, econ::Bool = false, metric = Euclidean(),
-        samplesize::Real = 1.) where {D, DT, ET}
+        samplesize::Real = 1) where {D, DT, ET}
 
     @assert DT == D+1
     @assert Tw ≥ 0
-    @assert 0 < samplesize ≤ 1. "`samplesize` must be ∈ (0,1]"
+    @assert 0 < samplesize ≤ 1.0 "`samplesize` must be ∈ (0,1]"
 
     if econ
         tws = 2:2:Tw # start at 2 will eliminate bad results for noise
