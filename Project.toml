@@ -26,9 +26,8 @@ julia = "1.5"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 DynamicalSystemsBase = "6e36e845-645a-534a-86f2-f5d4aa5a06b4"
-Peaks = "18e31ff7-3703-566c-8e60-38913d67486b"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["DynamicalSystemsBase", "Test", "Random", "DelimitedFiles", "Peaks", "Downloads"]
+test = ["DynamicalSystemsBase", "Test", "Random", "DelimitedFiles", "Downloads"]

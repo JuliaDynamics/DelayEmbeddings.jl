@@ -38,13 +38,20 @@ s = readdlm(joinpath(tsfolder, "1.csv"))
 s = vec(s)
 Y = Dataset(s)
 
+# For comparison reasons using Travis CI we carry out the integration on a UNIX
+# OS and save the resulting time series
+# roe = Systems.roessler([1.0, 0, 0]; a=0.2, b=0.2, c=5.7)
+# sroe = trajectory(roe, 500; dt = 0.05, Ttr = 100.0)
+# writedlm("2.csv", sroe)
+sroe = readdlm(joinpath(tsfolder, "2.csv"))
+
 theiler = 57
 
 @testset "beta statistic" begin
     ## Test beta_statistic (core algorithm of mdop_embedding)
 
     taus = 0:100
-    β = @inferred DelayEmbeddings.beta_statistic(Y, s, taus, theiler)
+    β = DelayEmbeddings.beta_statistic(Y, s, taus, theiler)
     maxi, max_idx = findmax(β)
 
     @test maxi>4.1
@@ -71,7 +78,7 @@ theiler = 57
 
     # test different tau range
     taus2 = 1:4:100
-    β2 = @inferred beta_statistic(Y, s, taus2, theiler)
+    β2 = beta_statistic(Y, s, taus2, theiler)
     maxi2, max_idx2 = findmax(β2)
 
     @test maxi2>4.1
@@ -133,18 +140,12 @@ end
 end
 
 @testset "estimate τ max (Roessler)" begin
-    # For comparison reasons using Travis CI we carry out the integration on a UNIX
-    # OS and save the resulting time series
-    # roe = Systems.roessler([1.0, 0, 0]; a=0.2, b=0.2, c=5.7)
-    # sroe = trajectory(roe, 500; dt = 0.05, Ttr = 100.0)
-    # writedlm("2.csv", sroe)
 
-    sroe = readdlm(joinpath(tsfolder, "2.csv"))
     tws = 25:32
 
-    τ_m, L = @inferred mdop_maximum_delay(sroe[:, 2], tws)
+    τ_m, L = mdop_maximum_delay(sroe[:, 2], tws)
     @test τ_m == 26
-    τ_m, Ls = @inferred mdop_maximum_delay(Dataset(sroe[:, 1:2]), tws)
+    τ_m, Ls = mdop_maximum_delay(Dataset(sroe[:, 1:2]), tws)
     @test τ_m == 26
 
     # # reproduce Fig.2 of the paper
@@ -171,13 +172,6 @@ end
 end
 
 @testset "mdop_embedding multivariate" begin
-    # For comparison reasons using Travis CI we carry out the integration on a UNIX
-    # OS and save the resulting time series
-    # roe = Systems.roessler([1.0, 0, 0]; a=0.2, b=0.2, c=5.7)
-    # sroe = trajectory(roe, 500; dt = 0.05, Ttr = 100.0)
-    # writedlm("2.csv", sroe)
-
-    sroe = readdlm(joinpath(tsfolder, "2.csv"))
     tra = Dataset(sroe)
     w1 = estimate_delay(sroe[:,1], "mi_min")
     w2 = estimate_delay(sroe[:,2], "mi_min")
@@ -188,9 +182,9 @@ end
 
     Y, τ_vals, ts_vals, FNNs, betas =  mdop_embedding(sroe[:,1]; τs = taus, w = theiler, max_num_of_cycles = mc)
 
-    max_idx, ts_number = @inferred DelayEmbeddings.choose_optimal_tau2(betas)
+    max_idx, ts_number = DelayEmbeddings.choose_optimal_tau2(betas)
     @test ts_number == 1
-    @test taus[max_idx] == τ_vals[2]
+    @test taus[max_idx] == τ_vals[2] == 26
 
     Y2, τ_vals2, ts_vals2, FNNs2, betas2 = mdop_embedding(tra; τs = taus, w = theiler, max_num_of_cycles = mc)
     ttra = standardize(tra)
