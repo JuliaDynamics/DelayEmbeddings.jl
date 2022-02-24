@@ -201,7 +201,7 @@ written in detail (several pages!) in the source code of `pecora`.
 """
 function pecora(
         s, τs::NTuple{D, Int}, js::NTuple{D, Int} = Tuple(ones(Int, D));
-        delays = 0:50 , J=maxdimspan(s), samplesize::Real = 0.1, K::Int = 13, w::Int = 1,
+        delays = 0:50 , J=maxdimspan(s), samplesize::Real = 0.5, K::Int = 13, w::Int = 1,
         db = 250, undersampling = false, metric = Chebyshev(), α::T = 0.05,
         p::T = 0.5) where {D, T<:Real}
 
@@ -209,7 +209,6 @@ function pecora(
     @assert all(x -> x ≥ 0, js) "j's for generalized embedding must be positive integers"
     @assert 0 < samplesize ≤ 1 "`samplesize` must be ∈ (0,1]"
 
-    N = floor(Int,samplesize*length(s)) #number of fiducial points
     if undersampling
         error("Undersampling statistic is not yet accurate for production use.")
     end
@@ -225,9 +224,10 @@ function pecora(
         ns = vec(1:length(vec(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays)))))
     else
         ns = sample(vec(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays))),
-        length(vec(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays)))),
+        floor(Int,samplesize*length(vec(max(1, (-minimum(delays) + 1)):min(L, L - maximum(delays))))),
         replace = false)
     end
+
     vs = vspace[ns]
     allNNidxs, allNNdist = all_neighbors(vtree, vs, ns, K, w)
     # prepare things for undersampling statistic
