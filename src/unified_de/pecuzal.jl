@@ -361,7 +361,7 @@ function local_L_statistics(ε★::Vector{T}, Y_act::Dataset{D, T}, s::Vector{T}
         Y_trial = DelayEmbeddings.hcat_lagged_values(Y_act, s, τs[τ_idx-1])
         # compute L-statistic for Y_act and Y_trial and get the maximum decrease
         L_decrease[i] = uzal_cost_pecuzal(Y_act, Y_trial, τs[end]; K = KNN,
-                    w = w, metric = metric, econ = econ, samplesize = samplesize)
+                    w , metric, econ, samplesize)
     end
     return L_decrease, max_idx
 end
