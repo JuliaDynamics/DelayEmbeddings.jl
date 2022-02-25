@@ -361,7 +361,7 @@ function local_L_statistics(ε★::Vector{T}, Y_act::Dataset{D, T}, s::Vector{T}
         Y_trial = DelayEmbeddings.hcat_lagged_values(Y_act, s, τs[τ_idx-1])
         # compute L-statistic for Y_act and Y_trial and get the maximum decrease
         L_decrease[i] = uzal_cost_pecuzal(Y_act, Y_trial, τs[end]; K = KNN,
-                                w = w, metric = metric, econ = econ)
+                    w , metric, econ, samplesize)
     end
     return L_decrease, max_idx
 end
@@ -451,13 +451,16 @@ minimum. Return the according minimum `L_decrease`-value.
 * `econ::Bool = false`: Economy-mode for L-statistic computation. Instead of
   computing L-statistics for time horizons `2:Tw`, here we only compute them for
   `2:2:Tw`.
+* `samplesize::Real = 1`: determine the fraction of all phase space points
+  to be considered (fiducial points v) for computing the L-statistic
 """
 function uzal_cost_pecuzal(Y::Dataset{D, ET}, Y_trial::Dataset{DT, ET}, Tw::Int;
-        K::Int = 3, w::Int = 1, econ::Bool = false, metric = Euclidean()
-    ) where {D, DT, ET}
+        K::Int = 3, w::Int = 1, econ::Bool = false, metric = Euclidean(),
+        samplesize::Real = 1) where {D, DT, ET}
 
     @assert DT == D+1
     @assert Tw ≥ 0
+    @assert 0 < samplesize ≤ 1.0 "`samplesize` must be ∈ (0,1]"
 
     if econ
         tws = 2:2:Tw # start at 2 will eliminate bad results for noise
@@ -479,23 +482,29 @@ function uzal_cost_pecuzal(Y::Dataset{D, ET}, Y_trial::Dataset{DT, ET}, Tw::Int;
 
     dist_former = 9999999 # intial L-decrease
 
+    NN = length(Y_trial)-tws[end]
+    if NN < 1
+        error("Time series too short for given possible delays and Theiler window to find enough nearest neighbours")
+    end
+    if samplesize==1
+        ns = 1:NN
+        Nfp = length(ns)
+    else
+        Nfp = Int(floor(samplesize*NN)) # number of considered fiducial points
+        ns = sample(vec(1:NN), Nfp, replace = false)  # indices of fiducial points
+    end
+
+    vs = Y[ns] # the fiducial points in the data set
+    vs_trial = Y_trial[ns] # the fiducial points in the data set
+
+    vtree = KDTree(Y[1:NN], metric)
+    allNNidxs, allNNdist = DelayEmbeddings.all_neighbors(vtree, vs, ns, K, w)
+    vtree_trial = KDTree(Y_trial[1:NN], metric)
+    allNNidxs_trial, allNNdist_trial = DelayEmbeddings.all_neighbors(vtree_trial, vs_trial, ns, K, w)
+
     # loop over each time horizon
     cnt = 1
     for T in tws
-        NN = length(Y_trial)-T
-        if NN < 1
-            error("Time series too short for given possible delays and Theiler window to find enough nearest neighbours")
-        end
-        ns = 1:NN
-
-        vs = Y[ns] # the fiducial points in the data set
-        vs_trial = Y_trial[ns] # the fiducial points in the data set
-
-        vtree = KDTree(Y[1:NN], metric)
-        allNNidxs, allNNdist = DelayEmbeddings.all_neighbors(vtree, vs, ns, K, w)
-        vtree_trial = KDTree(Y_trial[1:NN], metric)
-        allNNidxs_trial, allNNdist_trial = DelayEmbeddings.all_neighbors(vtree_trial, vs_trial, ns, K, w)
-
         # compute conditional variances and neighborhood-sizes
         compute_conditional_variances!(ns, vs, vs_trial, allNNidxs,
             allNNidxs_trial, Y, Y_trial, ϵ_ball, ϵ_ball_trial, u_k, u_k_trial,
@@ -503,7 +512,7 @@ function uzal_cost_pecuzal(Y::Dataset{D, ET}, Y_trial::Dataset{DT, ET}, Tw::Int;
 
         # compute distance of L-values and check whether that distance can be
         # increased
-        dist = compute_L_decrease(E², E²_trial, ϵ², ϵ²_trial, cnt, NN)
+        dist = compute_L_decrease(E², E²_trial, ϵ², ϵ²_trial, cnt, Nfp)
         if isnan(dist)
             error("Computed 0-distances, due to duplicate datapoints in your data. Try to add minimal additive noise to the signal you wish to embed and try again.")
         end
