@@ -107,6 +107,7 @@ end
     orthonormal([T,] D, k) -> ws
 Return a matrix `ws` with `k` columns, each being
 an `D`-dimensional orthonormal vector.
+`T` is the return type and can be either `SMatrix` or `Matrix`
 
 returns either SMatrix{D, k} if D*k < 100, otherwise Matrix{D, k}
 """
