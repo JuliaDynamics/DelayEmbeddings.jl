@@ -1,3 +1,6 @@
+# v2.2.0
+* added option for different return type for orthonormal function, returns now SMatrix only for small matrices, otherwise Matrix
+
 # v2.0.0
 **BREAKING**
 - All deprecations have been removed and errors will be thrown now instead. Switch to previous stable version to enable them again.

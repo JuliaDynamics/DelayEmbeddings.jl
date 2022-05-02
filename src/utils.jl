@@ -108,7 +108,7 @@ end
 Return a matrix `ws` with `k` columns, each being
 an `D`-dimensional orthonormal vector.
 
-Default: returns SMatrix{D, k} if D*k < 100, otherwise Matrix
+returns either SMatrix{D, k} if D*k < 100, otherwise Matrix{D, k}
 """
 function orthonormal end
 
