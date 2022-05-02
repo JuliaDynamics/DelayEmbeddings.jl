@@ -104,19 +104,25 @@ function to_vectorSvector(a::AbstractMatrix)
 end
 
 """
-    orthonormal(D, k) -> ws
+    orthonormal([T,] D, k) -> ws
 Return a matrix `ws` with `k` columns, each being
 an `D`-dimensional orthonormal vector.
 
-Always return `SMatrix` for stability reasons.
+Default: returns SMatrix{D, k} if D*k < 100, otherwise Matrix
 """
 function orthonormal end
 
-@inline function orthonormal(D::Int, k::Int)
-    k > D && throw(ArgumentError("k must be ≤ D"))
-    q = qr(rand(SMatrix{D, k})).Q
-end
+orthonormal(D, k) = D*k < 100 ? orthonormal(SMatrix, D, k) : orthonormal(Matrix, D, k)
 
+@inline function orthonormal(T::Type, D::Int, k::Int)
+    k > D && throw(ArgumentError("k must be ≤ D"))
+    if T == SMatrix
+        q = qr(rand(SMatrix{D, k})).Q
+    elseif T == Matrix
+        q = Matrix(qr(rand(Float64, D, k)).Q)
+    end
+    q
+end
 
 """
     hcat_lagged_values(Y, s::Vector, τ::Int) -> Z
