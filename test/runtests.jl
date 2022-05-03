@@ -21,7 +21,7 @@ diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
 @testset "DelayEmbeddings tests" begin
     include("dataset_tests.jl")
     include("embedding_tests.jl")
-    include("utils_tests.jl")
+    include("utils_test.jl")
     include("traditional/delaytime_test.jl")
     include("traditional/embedding_dimension_test.jl")
     include("unified/test_pecora.jl")
