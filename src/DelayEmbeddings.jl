@@ -4,11 +4,7 @@ Basic package used in the ecosystem of DynamicalSystems.jl.
 """
 module DelayEmbeddings
 
-include("dataset.jl")
-include("subdataset.jl")
-include("embeddings.jl")
-include("utils.jl")
-include("neighborhoods.jl")
+include("datasets/Datasets.jl")
 
 include("traditional_de/estimate_delay.jl")
 include("traditional_de/estimate_dimension.jl")
