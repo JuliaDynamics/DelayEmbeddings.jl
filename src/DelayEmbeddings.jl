@@ -6,6 +6,7 @@ module DelayEmbeddings
 
 include("datasets/Datasets.jl")
 
+include("embeddings.jl")
 include("traditional_de/estimate_delay.jl")
 include("traditional_de/estimate_dimension.jl")
 include("traditional_de/automated.jl")
