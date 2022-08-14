@@ -37,11 +37,16 @@ A type used in specifying dataset distances in [`dataset_distance`](@ref).
 struct Hausdorff{M<:Metric}
     metric::M
 end
+Hausdorff() = Hausdorff(Euclidean())
 
 function dataset_distance(d1::AbstractDataset, d2, h::Hausdorff)
-    tree1, tree2 = KDTree.((d1, d2), h.metric)
+    tree1 = KDTree(d1, h.metric)
+    tree2 = KDTree(d2, h.metric)
     # This yields the minimum distance between each point
     _, vec_of_distances12 = bulksearch(tree1, vec(d2), NeighborNumber(1))
     _, vec_of_distances21 = bulksearch(tree2, vec(d1), NeighborNumber(1))
+    # Cast distances in vector (they are vectors of vectors)
+    vec_of_distances12 = reduce(vcat, vec_of_distances12)
+    vec_of_distances21 = reduce(vcat, vec_of_distances21)
     return max(maximum(vec_of_distances12), maximum(vec_of_distances21))
 end

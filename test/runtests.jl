@@ -20,6 +20,7 @@ diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
 
 @testset "DelayEmbeddings tests" begin
     include("dataset_tests.jl")
+    include("dataset_distance_tests.jl")
     include("embedding_tests.jl")
     include("utils_test.jl")
     include("traditional/delaytime_test.jl")
@@ -29,7 +30,6 @@ diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
     include("unified/test_pecuzal_embedding.jl")
     include("unified/test_garcia.jl")
     include("unified/mdop_tests.jl")
-
 end
 
 ti = time() - ti
