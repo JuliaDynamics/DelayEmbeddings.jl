@@ -1,3 +1,6 @@
+# v2.3
+- New function `dataset_distance` that calculates distances between datasets.
+
 # v2.2.0
 * added option for different return type for orthonormal function, returns now SMatrix only for small matrices, otherwise Matrix
 
