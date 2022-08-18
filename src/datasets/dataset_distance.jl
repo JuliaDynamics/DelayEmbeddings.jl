@@ -1,5 +1,7 @@
 export dataset_distance, Hausdorff
-
+###########################################################################################
+# Dataset distance
+###########################################################################################
 """
     dataset_distance(dataset1, dataset2 [, method])
 Calculate a distance between two `AbstractDatasets`,
@@ -11,10 +13,7 @@ If `method isa Metric` from Distances.jl, then the distance is the minimum
 distance of all the distances from a point in one set to the closest point in
 the other set. The distance is calculated with the given metric.
 
-If `method = Hausdorff([, metric])` (a name provided by this module), then we compute the
-[Hausdorff distance](https://en.wikipedia.org/wiki/Hausdorff_distance), which is the
-greatest of all the distances from a point in one set to the closest point in the other set.
-The distance is calculated with the metric given to `Hausdorff` which defaults to Euclidean.
+Else, `method` can be [`Hausdorff`](@ref) (a name provided by this module).
 """
 function dataset_distance(d1::AbstractDataset, d2, metric::Metric = Euclidean())
     # this is the tree-based method
@@ -33,6 +32,9 @@ end
 """
     Hausdorff(metric = Euclidean())
 A type used in specifying dataset distances in [`dataset_distance`](@ref).
+The [Hausdorff distance](https://en.wikipedia.org/wiki/Hausdorff_distance) is the
+greatest of all the distances from a point in one set to the closest point in the other set.
+The distance is calculated with the metric given to `Hausdorff` which defaults to Euclidean.
 """
 struct Hausdorff{M<:Metric}
     metric::M
@@ -49,4 +51,42 @@ function dataset_distance(d1::AbstractDataset, d2, h::Hausdorff)
     vec_of_distances12 = reduce(vcat, vec_of_distances12)
     vec_of_distances21 = reduce(vcat, vec_of_distances21)
     return max(maximum(vec_of_distances12), maximum(vec_of_distances21))
+end
+
+###########################################################################################
+# Sets of datasets distance
+###########################################################################################
+function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
+    ids₊, ids₋ = keys(a₊), keys(a₋)
+    # TODO: Deduce distance type instead of Float64
+    distances = Dict{eltype(ids₊), Dict{eltype(ids₋), Float64}}()
+    search_trees = Dict(k => KDTree(vec(att), metric) for (k, att) in pairs(a₋))
+    for i in ids₊
+        d = valtype(distances)()
+        for j in ids₋
+            # TODO: create and use `dataset_distance` function in delay embeddings.jl
+            # TODO: Use KD-trees or `pairwise`
+            d[j] = minimum(metric(x, y) for x ∈ a₊[i] for y ∈ a₋[j])
+        end
+        distances[i] = d
+    end
+    return distances
+end
+
+# code from attractors via proximity
+# This is the non-allocating version, but not sure if it is faster
+# than just passing in the entire dataset into a `bulksearch` call
+# TODO: Test it.
+dist, idx = [Inf], [0]
+minε = Inf
+for (k, A) in attractors
+    for (m, tree) in search_trees
+        k == m && continue
+        for p in A # iterate over all points of attractor
+            Neighborhood.NearestNeighbors.knn_point!(
+                tree, p, false, dist, idx, Neighborhood.alwaysfalse
+            )
+            dist[1] < minε && (minε = dist[1])
+        end
+    end
 end
