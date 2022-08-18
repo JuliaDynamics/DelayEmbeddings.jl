@@ -1,4 +1,4 @@
-export dataset_distance, Hausdorff
+export dataset_distance, Hausdorff, datasets_sets_distances
 ###########################################################################################
 # Dataset distance
 ###########################################################################################
@@ -31,7 +31,7 @@ end
 
 """
     Hausdorff(metric = Euclidean())
-A type used in specifying dataset distances in [`dataset_distance`](@ref).
+A dataset distance that can be used in [`dataset_distance`](@ref).
 The [Hausdorff distance](https://en.wikipedia.org/wiki/Hausdorff_distance) is the
 greatest of all the distances from a point in one set to the closest point in the other set.
 The distance is calculated with the metric given to `Hausdorff` which defaults to Euclidean.
@@ -59,24 +59,17 @@ end
 """
     datasets_sets_distances(a₊, a₋ [, metric/method]) → distances
 Calculate distances between sets of `Dataset`s. Here  `a₊, a₋` are containers of
-`Dataset`s, (either `Dict` or `Vector`) and the returned distances are containers
+`Dataset`s, and the returned distances are dictionaries of
 of distances. Specifically, `distances[i][j]` is the distance of the dataset in
-the `i` key of `a₊` to the `j` key of `a₋`.
-The reason to have `distances` in such nested form is to have same IO regardless
-of if input is dictionaries or vectors.
+the `i` key of `a₊` to the `j` key of `a₋`. Notice that distances from `a₋` to
+`a₊` are not computed at all (assumming symmetry in the distance function).
 
 The `metric/method` is exactly as in [`dataset_distance`](@ref).
-
-The function assumes that all methods for distance are symmetric so that
-`distances[i][j] == distances[j][i]` for all valid keys `i,j`.
 """
 function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
-    @assert typeof(a₊) == typeof(a₋)
+    @assert keytype(a₊) == keytype(a₋)
     ids₊, ids₋ = keys(a₊), keys(a₋)
     # TODO: Deduce distance type instead of Float64
-    # Type = a₊ isa Dict ? Dict : Vector
-    # TODO: No reason for it to be dict. It should be the container type
-    # that a has.
     distances = Dict{eltype(ids₊), Dict{eltype(ids₋), Float64}}()
     # Brute force version:
     # for i in ids₊
@@ -89,18 +82,11 @@ function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
     #     distances[i] = d
     # end
     # Non-allocating seacrh trees version
-    search_trees = Dict(k => KDTree(vec(att), metric) for (k, att) in pairs(a₋))
+    search_trees = Dict(m => KDTree(vec(att), metric) for (m, att) in pairs(a₋))
     dist, idx = [Inf], [0]
     for (k, A) in pairs(a₊)
-        haskey(distances, k) || (distances[k] = valtype(distances)())
+        distances[k] = valtype(distances)()
         for (m, tree) in search_trees
-            haskey(distances, m) || (distances[m] = valtype(distances)())
-            # assume symmetry in the distance function
-            if haskey(distances[m], k) # pair [k][m] has been done in [m][k]
-                distances[k][m] = distances[m][k]
-                continue
-            end
-            # actual distance computation
             # TODO: This should call `dataset_distance` and propagate the tree
             minε = Inf
             for p in A # iterate over all points of attractor
@@ -109,8 +95,8 @@ function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
                 )
                 dist[1] < minε && (minε = dist[1])
             end
-            # again assume symmetry
-            distances[k][m] = distances[m][k] = minε
+            # assume symmetry
+            distances[k][m] = minε
         end
     end
     return distances

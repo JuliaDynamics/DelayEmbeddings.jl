@@ -14,3 +14,25 @@ println("\nTesting Dataset distance...")
     d2 = Dataset([SVector(1, 2), SVector(1, 3)])
     @test dataset_distance(d1, d2, Hausdorff(Chebyshev())) == 2.0
 end
+
+@testset "Sets of Dataset Distances" begin
+    d1 = range(1, 10; length = 11)
+    d2 = d1 .+ 10
+    d3 = d2 .+ 10
+    set1 = Dataset.([d1, d2, d3])
+    r = range(1, 10; length = 11)
+    d1 = Dataset([SVector(x, 0) for x in r])
+    d2 = Dataset([SVector(x+10, 0) for x in r])
+    d3 = Dataset([SVector(x+20, 0) for x in r])
+    set2 = Dataset.([d1, d2, d3])
+
+    for set in (set1, set2)
+        dsds = datasets_sets_distances(set, set)
+        for i in 1:3
+            @test dsds[i][i] == 0
+        end
+        @test dsds[2][1] == dsds[2][3] == 1
+        @test dsds[3][1] == dsds[1][3] == 11
+    end
+
+end
