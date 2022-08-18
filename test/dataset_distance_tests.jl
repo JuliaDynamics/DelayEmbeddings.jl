@@ -24,10 +24,10 @@ end
     set1 = Dataset.([d1, d2, d3])
     r = range(1, 10; length = 11)
     D = 6
-    data(x) = (y = zeros(D); y[1] = x; y)
-    d1 = Dataset([data(x) for x in r])
-    d2 = Dataset([data(x+10) for x in r])
-    d3 = Dataset([data(x+20) for x in r])
+    makedata = x -> (y = zeros(D); y[1] = x; y)
+    d1 = Dataset([makedata(x) for x in r])
+    d2 = Dataset([makedata(x+10) for x in r])
+    d3 = Dataset([makedata(x+20) for x in r])
     set2 = Dataset.([d1, d2, d3])
 
     for set in (set1, set2)

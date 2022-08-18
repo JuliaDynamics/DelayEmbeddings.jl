@@ -72,16 +72,18 @@ struct Hausdorff{M<:Metric}
 end
 Hausdorff() = Hausdorff(Euclidean())
 
-function dataset_distance(d1::AbstractDataset, d2, h::Hausdorff)
-    tree1 = KDTree(d1, h.metric)
-    tree2 = KDTree(d2, h.metric)
+function dataset_distance(d1::AbstractDataset, d2, h::Hausdorff,
+        # trees given for a natural way to call this function in `datasets_sets_distances`
+        tree1 = KDTree(d1, h.metric),
+        tree2 = KDTree(d2, h.metric),
+    )
     # This yields the minimum distance between each point
     _, vec_of_distances12 = bulksearch(tree1, vec(d2), NeighborNumber(1))
     _, vec_of_distances21 = bulksearch(tree2, vec(d1), NeighborNumber(1))
-    # Cast distances in vector (they are vectors of vectors)
-    vec_of_distances12 = reduce(vcat, vec_of_distances12)
-    vec_of_distances21 = reduce(vcat, vec_of_distances21)
-    return max(maximum(vec_of_distances12), maximum(vec_of_distances21))
+    # get max of min distances (they are vectors of length-1 vectors, hence the [1])
+    max_d12 = maximum(vec_of_distances12)[1]
+    max_d21 = maximum(vec_of_distances21)[1]
+    return max(max_d12, max_d21)
 end
 
 ###########################################################################################
@@ -95,13 +97,20 @@ of distances. Specifically, `distances[i][j]` is the distance of the dataset in
 the `i` key of `a₊` to the `j` key of `a₋`. Notice that distances from `a₋` to
 `a₊` are not computed at all (assumming symmetry in the distance function).
 
-The `metric/method` is exactly as in [`dataset_distance`](@ref).
+The `metric/method` can be as in [`dataset_distance`](@ref), in which case
+both sets must have equal-dimension datasets.
+However, `method` can also be any arbitrary user function that takes as input
+two datasets and returns any positive-definite number as their "distance".
 """
-function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
+function datasets_sets_distances(a₊, a₋, method = Euclidean())
     @assert keytype(a₊) == keytype(a₋)
     ids₊, ids₋ = keys(a₊), keys(a₋)
     # TODO: Deduce distance type instead of Float64
     distances = Dict{eltype(ids₊), Dict{eltype(ids₋), Float64}}()
+    _datasets_sets_distances!(distances, a₊, a₋, method)
+end
+
+function _datasets_sets_distances!(distances, a₊, a₋, metric::Metric)
     # Non-allocating seacrh trees version
     search_trees = Dict(m => KDTree(vec(att), metric) for (m, att) in pairs(a₋))
     @inbounds for (k, A) in pairs(a₊)
@@ -109,6 +118,23 @@ function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
         for (m, tree) in search_trees
             # Internal method of `dataset_distance` for non-brute way
             d = dataset_distance(A, tree)
+            distances[k][m] = d
+        end
+    end
+    return distances
+end
+
+
+function _datasets_sets_distances!(distances, a₊, a₋, method::Hausdorff)
+    # Non-allocating seacrh trees version
+    trees₊ = Dict(m => KDTree(vec(att), metric) for (m, att) in pairs(a₊))
+    trees₋ = Dict(m => KDTree(vec(att), metric) for (m, att) in pairs(a₋))
+    @inbounds for (k, A) in pairs(a₊)
+        distances[k] = pairs(valtype(distances)())
+        tree1 = trees₊[k]
+        for (m, tree2) in trees₋
+            # Internal method of `dataset_distance` for non-brute way
+            d = dataset_distance(A, B, method, tree1, tree2)
             distances[k][m] = d
         end
     end
