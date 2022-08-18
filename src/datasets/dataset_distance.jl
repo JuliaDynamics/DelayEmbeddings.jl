@@ -57,8 +57,18 @@ end
 # Sets of datasets distance
 ###########################################################################################
 """
-    datasets_sets_distances(a₊, a₋, metric)
+    datasets_sets_distances(a₊, a₋ [, metric/method]) → distances
+Calculate distances between sets of `Dataset`s. Here  `a₊, a₋` are containers of
+`Dataset`s, (either `Dict` or `Vector`) and the returned distances are containers
+of distances. Specifically, `distances[i][j]` is the distance of the dataset in
+the `i` key of `a₊` to the `j` key of `a₋`.
+The reason to have `distances` in such nested form is to have same IO regardless
+of if input is dictionaries or vectors.
 
+The `metric/method` is exactly as in [`dataset_distance`](@ref).
+
+The function assumes that all methods for distance are symmetric so that
+`distances[i][j] == distances[j][i]` for all valid keys `i,j`.
 """
 function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
     @assert typeof(a₊) == typeof(a₋)
@@ -82,8 +92,15 @@ function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
     search_trees = Dict(k => KDTree(vec(att), metric) for (k, att) in pairs(a₋))
     dist, idx = [Inf], [0]
     for (k, A) in pairs(a₊)
-        d = valtype(distances)()
+        haskey(distances, k) || (distances[k] = valtype(distances)())
         for (m, tree) in search_trees
+            haskey(distances, m) || (distances[m] = valtype(distances)())
+            # assume symmetry in the distance function
+            if haskey(distances[m], k) # pair [k][m] has been done in [m][k]
+                distances[k][m] = distances[m][k]
+                continue
+            end
+            # actual distance computation
             # TODO: This should call `dataset_distance` and propagate the tree
             minε = Inf
             for p in A # iterate over all points of attractor
@@ -92,10 +109,9 @@ function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
                 )
                 dist[1] < minε && (minε = dist[1])
             end
-            d[m] = minε
+            # again assume symmetry
+            distances[k][m] = distances[m][k] = minε
         end
-        distances[k] = d
     end
-
     return distances
 end
