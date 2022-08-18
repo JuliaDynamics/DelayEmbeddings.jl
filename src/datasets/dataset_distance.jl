@@ -15,7 +15,7 @@ the other set. The distance is calculated with the given metric.
 
 Else, `method` can be [`Hausdorff`](@ref) (a name provided by this module).
 """
-function dataset_distance(d1::AbstractDataset, d2, metric::Metric = Euclidean())
+function dataset_distance(d1, d2::AbstractDataset, metric::Metric = Euclidean())
     # this is the tree-based method
     # TODO: Check whether the pairwise method leads to better performance
     tree = KDTree(d2, metric)
@@ -56,37 +56,46 @@ end
 ###########################################################################################
 # Sets of datasets distance
 ###########################################################################################
+"""
+    datasets_sets_distances(a₊, a₋, metric)
+
+"""
 function datasets_sets_distances(a₊, a₋, metric::Metric = Euclidean())
+    @assert typeof(a₊) == typeof(a₋)
     ids₊, ids₋ = keys(a₊), keys(a₋)
     # TODO: Deduce distance type instead of Float64
+    # Type = a₊ isa Dict ? Dict : Vector
+    # TODO: No reason for it to be dict. It should be the container type
+    # that a has.
     distances = Dict{eltype(ids₊), Dict{eltype(ids₋), Float64}}()
+    # Brute force version:
+    # for i in ids₊
+    #     d = valtype(distances)()
+    #     for j in ids₋
+    #         # TODO: create and use `dataset_distance` function in delay embeddings.jl
+    #         # TODO: Use KD-trees or `pairwise`
+    #         d[j] = minimum(metric(x, y) for x ∈ a₊[i] for y ∈ a₋[j])
+    #     end
+    #     distances[i] = d
+    # end
+    # Non-allocating seacrh trees version
     search_trees = Dict(k => KDTree(vec(att), metric) for (k, att) in pairs(a₋))
-    for i in ids₊
+    dist, idx = [Inf], [0]
+    for (k, A) in pairs(a₊)
         d = valtype(distances)()
-        for j in ids₋
-            # TODO: create and use `dataset_distance` function in delay embeddings.jl
-            # TODO: Use KD-trees or `pairwise`
-            d[j] = minimum(metric(x, y) for x ∈ a₊[i] for y ∈ a₋[j])
+        for (m, tree) in search_trees
+            # TODO: This should call `dataset_distance` and propagate the tree
+            minε = Inf
+            for p in A # iterate over all points of attractor
+                Neighborhood.NearestNeighbors.knn_point!(
+                    tree, p, false, dist, idx, Neighborhood.alwaysfalse
+                )
+                dist[1] < minε && (minε = dist[1])
+            end
+            d[m] = minε
         end
-        distances[i] = d
+        distances[k] = d
     end
-    return distances
-end
 
-# code from attractors via proximity
-# This is the non-allocating version, but not sure if it is faster
-# than just passing in the entire dataset into a `bulksearch` call
-# TODO: Test it.
-dist, idx = [Inf], [0]
-minε = Inf
-for (k, A) in attractors
-    for (m, tree) in search_trees
-        k == m && continue
-        for p in A # iterate over all points of attractor
-            Neighborhood.NearestNeighbors.knn_point!(
-                tree, p, false, dist, idx, Neighborhood.alwaysfalse
-            )
-            dist[1] < minε && (minε = dist[1])
-        end
-    end
+    return distances
 end
