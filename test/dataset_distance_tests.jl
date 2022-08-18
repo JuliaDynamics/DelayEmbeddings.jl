@@ -6,6 +6,8 @@ println("\nTesting Dataset distance...")
     d1 = range(1, 10; length = 11)
     d2 = d1 .+ 10
     @test dataset_distance(Dataset(d1), Dataset(d2)) == 1.0
+    @test dataset_distance(Dataset(d1), Dataset(d2); brute = false) == 1.0
+    @test dataset_distance(Dataset(d1), Dataset(d2); brute = true) == 1.0
     @test dataset_distance(Dataset(d1), Dataset(d2), Hausdorff()) == 10.0
 
     d1 = Dataset([SVector(0, 1)])
@@ -21,9 +23,11 @@ end
     d3 = d2 .+ 10
     set1 = Dataset.([d1, d2, d3])
     r = range(1, 10; length = 11)
-    d1 = Dataset([SVector(x, 0) for x in r])
-    d2 = Dataset([SVector(x+10, 0) for x in r])
-    d3 = Dataset([SVector(x+20, 0) for x in r])
+    D = 6
+    data(x) = (y = zeros(D); y[1] = x; y)
+    d1 = Dataset([data(x) for x in r])
+    d2 = Dataset([data(x+10) for x in r])
+    d3 = Dataset([data(x+20) for x in r])
     set2 = Dataset.([d1, d2, d3])
 
     for set in (set1, set2)
