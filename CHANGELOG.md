@@ -1,5 +1,7 @@
 # v2.3
 - New function `dataset_distance` that calculates distances between datasets.
+- New method/metric `Hausdorff` that can be used in `dataset_distance`.
+- New function `datasets_sets_distances` that calculates distances between sets of datasets.
 
 # v2.2.0
 * added option for different return type for orthonormal function, returns now SMatrix only for small matrices, otherwise Matrix
