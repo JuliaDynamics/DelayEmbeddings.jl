@@ -20,7 +20,7 @@ or calling `dataset_distance_brute` directly.
 `method` can also be [`Hausdorff`](@ref) (a name provided by this module).
 """
 function dataset_distance(d1, d2::AbstractDataset, metric::Metric = Euclidean();
-    brute = length(dataset1)*length(dataset2) < 1000)
+    brute = length(d1)*length(d2) < 1000)
     if brute
         return dataset_distance_brute(d1, d2, metric)
     else
@@ -103,15 +103,15 @@ However, `method` can also be any arbitrary user function that takes as input
 two datasets and returns any positive-definite number as their "distance".
 """
 function datasets_sets_distances(a₊, a₋, method = Euclidean())
-    @assert keytype(a₊) == keytype(a₋)
     ids₊, ids₋ = keys(a₊), keys(a₋)
-    # TODO: Deduce distance type instead of Float64
-    distances = Dict{eltype(ids₊), Dict{eltype(ids₋), Float64}}()
+    gettype = a -> eltype(first(values(a)))
+    T = promote_type(gettype(a₊), gettype(a₋))
+    distances = Dict{eltype(ids₊), Dict{eltype(ids₋), T}}()
     _datasets_sets_distances!(distances, a₊, a₋, method)
 end
 
 function _datasets_sets_distances!(distances, a₊, a₋, metric::Metric)
-    # Non-allocating seacrh trees version
+    @assert keytype(a₊) == keytype(a₋)
     search_trees = Dict(m => KDTree(vec(att), metric) for (m, att) in pairs(a₋))
     @inbounds for (k, A) in pairs(a₊)
         distances[k] = pairs(valtype(distances)())
@@ -126,7 +126,8 @@ end
 
 
 function _datasets_sets_distances!(distances, a₊, a₋, method::Hausdorff)
-    # Non-allocating seacrh trees version
+    @assert keytype(a₊) == keytype(a₋)
+    metric = method.metric
     trees₊ = Dict(m => KDTree(vec(att), metric) for (m, att) in pairs(a₊))
     trees₋ = Dict(m => KDTree(vec(att), metric) for (m, att) in pairs(a₋))
     @inbounds for (k, A) in pairs(a₊)
@@ -134,8 +135,18 @@ function _datasets_sets_distances!(distances, a₊, a₋, method::Hausdorff)
         tree1 = trees₊[k]
         for (m, tree2) in trees₋
             # Internal method of `dataset_distance` for non-brute way
-            d = dataset_distance(A, B, method, tree1, tree2)
+            d = dataset_distance(A, a₋[m], method, tree1, tree2)
             distances[k][m] = d
+        end
+    end
+    return distances
+end
+
+function _datasets_sets_distances!(distances, a₊, a₋, f::Function)
+    @inbounds for (k, A) in pairs(a₊)
+        distances[k] = pairs(valtype(distances)())
+        for (m, B) in pairs(a₋)
+            distances[k][m] = f(A, B)
         end
     end
     return distances
