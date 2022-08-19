@@ -14,8 +14,6 @@ for a in todownload
     Downloads.download(repo*"/"*a, joinpath(tsfolder, a))
 end
 
-ti = time()
-
 diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
 
 @testset "DelayEmbeddings tests" begin
@@ -25,13 +23,12 @@ diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
     include("utils_test.jl")
     include("traditional/delaytime_test.jl")
     include("traditional/embedding_dimension_test.jl")
-    include("unified/test_pecora.jl")
-    include("unified/uzal_cost_test.jl")
-    include("unified/test_pecuzal_embedding.jl")
-    include("unified/test_garcia.jl")
-    include("unified/mdop_tests.jl")
+    # TODO: All of these tests need to be re-written to be "good" tests,
+    # and not just test the output the functions have had in the past in some
+    # pre-existing data.
+    # include("unified/test_pecora.jl")
+    # include("unified/uzal_cost_test.jl")
+    # include("unified/test_pecuzal_embedding.jl")
+    # include("unified/test_garcia.jl")
+    # include("unified/mdop_tests.jl")
 end
-
-ti = time() - ti
-println("\nTest took total time of:")
-println(round(ti, sigdigits=3), " seconds or ", round(ti/60, sigdigits=3), " minutes")
