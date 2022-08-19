@@ -43,6 +43,13 @@ end
         end
     end
 
+    @testset "works with dicts" begin
+        setx = Dict("x" => d1)
+        sety = Dict("y" => d1)
+        dsds = datasets_sets_distances(setx, sety)
+        @test dsds["x"]["y"] == 0
+    end
+
     @testset "user function" begin
         d4  = d3[1:3]
         set3 = Dataset.([d1, d2, d4])
