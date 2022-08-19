@@ -52,5 +52,3 @@ end
         @test dsds[2][1] == dsds[1][2] == 0
     end
 end
-
-end
