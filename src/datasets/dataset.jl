@@ -14,6 +14,7 @@ dimension(::AbstractDataset{D,T}) where {D,T} = D
 @inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T
 import Base: ==
 ==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
+Base.vec(d::AbstractDataset) = d.data
 
 # Size:
 @inline Base.length(d::AbstractDataset) = length(d.data)
@@ -47,9 +48,9 @@ Base.eachrow(ds::AbstractDataset) = ds.data
 [d.data[k][j] for k in i]
 @inline Base.getindex(d::AbstractDataset, i::Int, j::AbstractVector) = d[i][j]
 @inline Base.getindex(d::AbstractDataset, ::Colon, ::Colon) = d
-@inline Base.getindex(d::AbstractDataset, ::Colon, v::AbstractVector) = 
+@inline Base.getindex(d::AbstractDataset, ::Colon, v::AbstractVector) =
 Dataset([d[i][v] for i in 1:length(d)])
-@inline Base.getindex(d::AbstractDataset, v1::AbstractVector, v::AbstractVector) = 
+@inline Base.getindex(d::AbstractDataset, v1::AbstractVector, v::AbstractVector) =
 Dataset([d[i][v] for i in v1])
 
 """
@@ -114,8 +115,8 @@ end
     Dataset{D, T} <: AbstractDataset{D,T}
 A dedicated interface for datasets.
 It contains *equally-sized datapoints* of length `D`, represented by `SVector{D, T}`.
-These data are contained in the field `.data` of a dataset, as a standard Julia
-`Vector{SVector}`.
+These data are a standard Julia `Vector{SVector}`, and can be obtained with
+`vec(dataset)`.
 
 When indexed with 1 index, a `dataset` is like a vector of datapoints.
 When indexed with 2 indices it behaves like a matrix that has each of the columns be the
