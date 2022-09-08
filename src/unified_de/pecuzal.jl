@@ -133,9 +133,7 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 0,
 
 end
 
-# TODO: Why the hell we have two functions. Just make the timeseries a 1D dataset
-# and then we don't need two functions?!?!?!?!?!
-
+# Multivariate version
 function pecuzal_embedding(Y::Dataset{D, T}; τs = 0:50 , w::Int = 1,
     samplesize::Real = 1, K::Int = 13, KNN::Int = 3, L_threshold::Real = 0,
     α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false,
