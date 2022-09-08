@@ -80,12 +80,15 @@ as an `Array` of `Vector`s.
 
 For distance computations the Euclidean norm is used.
 
-[^Kraemer2021]: Kraemer, K.H., Datseris, G., Kurths, J., Kiss, I.Z., Ocampo-Espindola, Marwan, N. (2021). [A unified and automated approach to attractor reconstruction. New Journal of Physics 23(3), 033017](https://iopscience.iop.org/article/10.1088/1367-2630/abe336).
+[^Kraemer2021]:
+    Kraemer, K.H., Datseris, G., Kurths, J., Kiss, I.Z., Ocampo-Espindola, Marwan, N. (2021)
+    [A unified and automated approach to attractor reconstruction. New Journal of
+    Physics 23(3), 033017](https://iopscience.iop.org/article/10.1088/1367-2630/abe336).
 """
 function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 0,
-    samplesize::Real = 1, K::Int = 13, KNN::Int = 3, L_threshold::Real = 0,
-    α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false,
-    verbose = true,
+        samplesize::Real = 1, K::Int = 13, KNN::Int = 3, L_threshold::Real = 0,
+        α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false,
+        verbose = true,
     ) where {T<:Real}
 
     verbose && println("Initializing PECUZAL algorithm for univariate input...")
@@ -117,7 +120,7 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 0,
         Y_act = pecuzal_embedding_cycle!(
                 Y_act, flag, s, τs, w, counter, ε★s, τ_vals, metric,
                 Ls, ts_vals, samplesize, K, α, p, KNN, econ)
-        flag = pecuzal_break_criterion(Ls, counter, max_cycles, threshold)
+        flag = pecuzal_break_criterion(Ls, counter, max_cycles, threshold, verbose)
         counter += 1
     end
     # construct final reconstruction vector
@@ -130,6 +133,7 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 0,
 
 end
 
+# Multivariate version
 function pecuzal_embedding(Y::Dataset{D, T}; τs = 0:50 , w::Int = 1,
     samplesize::Real = 1, K::Int = 13, KNN::Int = 3, L_threshold::Real = 0,
     α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false,
@@ -167,7 +171,7 @@ function pecuzal_embedding(Y::Dataset{D, T}; τs = 0:50 , w::Int = 1,
                 Y_act, flag, Y, τs, w, counter, ε★s, τ_vals, metric,
                 Ls, ts_vals, samplesize, K, α, p, KNN, econ)
 
-        flag = pecuzal_break_criterion(Ls, counter, max_cycles, threshold)
+        flag = pecuzal_break_criterion(Ls, counter, max_cycles, threshold, verbose)
         counter += 1
     end
     # construct final reconstruction vector
@@ -367,23 +371,19 @@ function local_L_statistics(ε★::Vector{T}, Y_act::Dataset{D, T}, s::Vector{T}
 end
 
 
-function pecuzal_break_criterion(Ls::Vector{T}, counter::Int,
-        max_num_of_cycles::Int, threshold::Real) where {T}
-    flag = true
+function pecuzal_break_criterion(Ls::Vector, counter, max_num_of_cycles, threshold, verbose)
+    flag = false
     if counter == 1 && Ls[end] > threshold
-        println("Algorithm stopped due to increasing L-values in the first embedding cycle. "*
+        verbose && println("Algorithm stopped due to increasing L-values in the first embedding cycle. "*
                 "Valid embedding NOT achieved ⨉.")
-        flag = false
-    end
-    if counter > 1 && Ls[end] > threshold
-        println("Algorithm stopped due to increasing L-values. "*
+    elseif counter > 1 && Ls[end] > threshold
+        verbose && println("Algorithm stopped due to increasing L-values. "*
                 "VALID embedding achieved ✓.")
-        flag = false
-    end
-    if max_num_of_cycles == counter
-        println("Algorithm stopped due to hitting max cycle number. "*
+    elseif max_num_of_cycles == counter
+        verbose && println("Algorithm stopped due to hitting max cycle number. "*
                 "Valid embedding NOT achieved ⨉.")
-        flag = false
+    else
+        flag = true # no problems
     end
     return flag
 end
