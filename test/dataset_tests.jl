@@ -7,7 +7,7 @@ println("\nTesting Dataset...")
   data = Dataset(rand(1001,3))
   xs = columns(data)
 
-  @testset "Concatenation/Append" begin 
+  @testset "Concatenation/Append" begin
     x, y, z = Dataset(rand(10, 2)), Dataset(rand(10, 2)), rand(10)
     @test Dataset(x) == x
     @test Dataset(x, y) isa Dataset
@@ -60,6 +60,15 @@ println("\nTesting Dataset...")
     data[1] = SVector(0.1,0.1,0.1)
     @test data[1] == SVector(0.1,0.1,0.1)
     @test_throws ErrorException (data[:,1] .= 0)
+  end
+
+  @testset "copy" begin
+    d = Dataset(rand(10, 2))
+    v = vec(d)
+    d2 = copy(d)
+    d2[1] == d[1]
+    d2[1] = SVector(5.0, 5.0)
+    @test d2[1] != d[1]
   end
 
   @testset "minmax" begin
