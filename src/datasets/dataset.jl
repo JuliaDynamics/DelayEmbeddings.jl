@@ -11,10 +11,11 @@ abstract type AbstractDataset{D, T} end
 Return the dimension of the `thing`, in the sense of state-space dimensionality.
 """
 dimension(::AbstractDataset{D,T}) where {D,T} = D
-@inline Base.eltype(d::AbstractDataset{D,T}) where {D,T} = T
-import Base: ==
-==(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
+Base.eltype(::AbstractDataset{D,T}) where {D,T} = T
+Base.:(==)(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
 Base.vec(d::AbstractDataset) = d.data
+Base.copy(d::AbstractDataset) = typeof(d)(copy(d.data))
+
 
 # Size:
 @inline Base.length(d::AbstractDataset) = length(d.data)
