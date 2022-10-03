@@ -6,6 +6,13 @@ export minmaxima, columns, standardize, dimension
 
 abstract type AbstractDataset{D, T} end
 
+# TODO: Many of these extensions can be wrapped in a simple block like:
+# for f in (:length, :size, :eachindex, :eltype,
+#     :lastindex, :firstindex, :vec, :getindex, :iterate)
+#     @eval Base.$(f)(d::AbsractDataset, args...) = $(f)(d.data, args...)
+# end
+
+
 """
     dimension(thing) -> D
 Return the dimension of the `thing`, in the sense of state-space dimensionality.
@@ -15,7 +22,8 @@ Base.eltype(::AbstractDataset{D,T}) where {D,T} = T
 Base.:(==)(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
 Base.vec(d::AbstractDataset) = d.data
 Base.copy(d::AbstractDataset) = typeof(d)(copy(d.data))
-
+Base.sort(d::AbstractDataset) = sort!(copy(d))
+Base.sort!(d::AbstractDataset) = sort!(d.data)
 
 # Size:
 @inline Base.length(d::AbstractDataset) = length(d.data)
