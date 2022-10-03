@@ -23,7 +23,7 @@ Base.:(==)(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
 Base.vec(d::AbstractDataset) = d.data
 Base.copy(d::AbstractDataset) = typeof(d)(copy(d.data))
 Base.sort(d::AbstractDataset, args...; kwargs...) = sort!(copy(d), args...; kwargs...)
-Base.sort!(d::AbstractDataset, args...; kwargs...) = sort!(d.data, ags...; kwargs...)
+Base.sort!(d::AbstractDataset, args...; kwargs...) = sort!(d.data, args...; kwargs...)
 
 # Size:
 @inline Base.length(d::AbstractDataset) = length(d.data)
