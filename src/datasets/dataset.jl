@@ -22,8 +22,8 @@ Base.eltype(::AbstractDataset{D,T}) where {D,T} = T
 Base.:(==)(d1::AbstractDataset, d2::AbstractDataset) = d1.data == d2.data
 Base.vec(d::AbstractDataset) = d.data
 Base.copy(d::AbstractDataset) = typeof(d)(copy(d.data))
-Base.sort(d::AbstractDataset) = sort!(copy(d))
-Base.sort!(d::AbstractDataset) = sort!(d.data)
+Base.sort(d::AbstractDataset, args...; kwargs...) = sort!(copy(d), args...; kwargs...)
+Base.sort!(d::AbstractDataset, args...; kwargs...) = sort!(d.data, ags...; kwargs...)
 
 # Size:
 @inline Base.length(d::AbstractDataset) = length(d.data)
