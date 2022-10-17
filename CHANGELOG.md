@@ -1,3 +1,6 @@
+# v2.4
+- It is now possible to horizontally concatenate more than two `Dataset`s using `hcat`. Providing multiple `Dataset`s of potentially different dimensions to the `Dataset` constructor will horizontally concatenate the inputs.
+
 # v2.3
 - New function `dataset_distance` that calculates distances between datasets.
 - New method/metric `Hausdorff` that can be used in `dataset_distance`.
