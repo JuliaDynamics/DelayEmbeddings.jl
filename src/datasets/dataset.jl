@@ -106,13 +106,14 @@ function Base.hcat(x::Vector{<:Real}, d::AbstractDataset{D, T}) where {D, T}
     return Dataset(data)
 end
 
-function Base.hcat(x::AbstractDataset{D1, T}, y::AbstractDataset{D2, T}) where {D1, D2, T}
-    length(x) == length(y) || error("Datasets must be of same length")
-    L = length(x)
-    D = D1 + D2
-    v = Vector{SVector{D, T}}(undef, L)
-    for i = 1:L
-        v[i] = SVector{D, T}((x[i]..., y[i]...,))
+function Base.hcat(ds::Vararg{AbstractDataset{D, T} where {D}, N}) where {T, N}
+    Ls = length.(ds)
+    maxlen = maximum(Ls)
+    all(Ls .== maxlen) || error("Datasets must be of same length")
+    newdim = sum(dimension.(ds))
+    v = Vector{SVector{newdim, T}}(undef, maxlen)
+    for i = 1:maxlen
+        v[i] = SVector{newdim, T}(Iterators.flatten(ds[d][i] for d = 1:N)...,)
     end
     return Dataset(v)
 end
@@ -203,8 +204,7 @@ function Dataset(vecs::Vararg{<:AbstractVector{T}}) where {T}
     return Dataset(_dataset(vecs...))
 end
 
-Dataset(x::AbstractDataset{D1, T}, y::AbstractDataset{D2, T}) where {D1, D2, T} =
-    hcat(x, y)
+Dataset(xs::Vararg{AbstractDataset}) = hcat(xs...)
 Dataset(x::Vector{<:Real}, y::AbstractDataset{D, T}) where {D, T} = hcat(x, y)
 Dataset(x::AbstractDataset{D, T}, y::Vector{<:Real}) where {D, T} = hcat(x, y)
 

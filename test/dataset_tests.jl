@@ -7,19 +7,51 @@ println("\nTesting Dataset...")
   data = Dataset(rand(1001,3))
   xs = columns(data)
 
-  @testset "Concatenation/Append" begin
+  @testset "Basics" begin
     x, y, z = Dataset(rand(10, 2)), Dataset(rand(10, 2)), rand(10)
-    @test Dataset(x) == x
-    @test Dataset(x, y) isa Dataset
+    @test Dataset(x) == x # identity
+    @test Dataset(x, y,) isa Dataset
+    @test Dataset(x, y, y) isa Dataset
     @test size(Dataset(x, y)) == (10, 4)
-    @test hcat(x, y) isa Dataset
-    @test Dataset(x, z) isa Dataset
-    @test Dataset(z, x) isa Dataset
+  end
 
-    append!(x, y)
-    @test length(x) == 20
-    w = hcat(x, rand(20))
-    @test size(w) == (20, 3)
+  @testset "Concatenation/Append" begin
+
+    @testset "append" begin
+        D1, D2 = Dataset([1:10 2:11]), Dataset([3:12 4:13])
+        append!(D1, D2)
+        @test length(D1) == 20
+        d1 = [1:10 |> collect; 3:12 |> collect]
+        d2 = [2:11 |> collect; 4:13 |> collect]
+        @test D1 == Dataset([d1 d2])
+    end
+
+    types = [Int, Float64]
+    @testset "hcat with identical element type ($(T))" for T in types
+        x1, x2, x3 = T.([1:5 2:6]), T.([3:7 4:8]), T.(5:9)
+        D1, D2, D3 = Dataset(x1), Dataset(x2), Dataset(x3)
+        y = T.(1:5) |> collect
+        @test hcat(D1, y) == Dataset([1:5 2:6 1:5])
+        @test hcat(D1, D2) == Dataset([1:5 2:6 3:7 4:8])
+        @test hcat(D1, D2, D3) == Dataset([1:5 2:6 3:7 4:8 5:9])
+        @test hcat(D1, y) |> size == (5, 3)
+        @test hcat(y, D1) |> size == (5, 3)
+        @test hcat(D1, y) == Dataset(([1:5 2:6 y]))
+        @test hcat(y, D1) == Dataset(([y 1:5 2:6]))
+    end
+
+    # TODO: By construction, these errors will occur, because the type constraints are
+    # not imposed on the vector inputs, only the dataset input. In contrast, for
+    # hcat on datasets only, the we force all datasets to have the same element type.
+    #
+    # Should we force the element types of the dataset and vector to be identical and
+    # throw an informative error message if they are not?
+    @testset "hcat with nonidentical element types" begin
+        D = Dataset([1:5 2:6]) # Dataset{2, Int}
+        x = rand(length(D))    # Vector{Float64}
+        @test_throws InexactError hcat(D, x)
+        @test_throws InexactError hcat(x, D)
+    end
   end
 
   @testset "Methods & Indexing" begin
