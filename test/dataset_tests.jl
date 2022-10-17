@@ -17,6 +17,15 @@ println("\nTesting Dataset...")
 
   @testset "Concatenation/Append" begin
 
+    @testset "append" begin
+        D1, D2 = Dataset([1:10 2:11]), Dataset([3:12 4:13])
+        append!(D1, D2)
+        @test length(D1) == 20
+        d1 = [1:10 |> collect; 3:12 |> collect]
+        d2 = [2:11 |> collect; 4:13 |> collect]
+        @test D1 == Dataset([d1 d2])
+    end
+
     types = [Int, Float64]
     @testset "hcat with identical element type ($(T))" for T in types
         x1, x2, x3 = T.([1:5 2:6]), T.([3:7 4:8]), T.(5:9)
