@@ -111,7 +111,6 @@ function Base.hcat(ds::Vararg{AbstractDataset{D, T} where {D}, N}) where {T, N}
     maxlen = maximum(Ls)
     all(Ls .== maxlen) || error("Datasets must be of same length")
     newdim = sum(dimension.(ds))
-    v = Vector{SVector{D, T}}(undef, maxlen)
     v = Vector{SVector{newdim, T}}(undef, maxlen)
     for i = 1:maxlen
         v[i] = SVector{newdim, T}(Iterators.flatten(ds[d][i] for d = 1:N)...,)
