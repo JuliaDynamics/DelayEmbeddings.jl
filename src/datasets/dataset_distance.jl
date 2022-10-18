@@ -103,6 +103,7 @@ However, `method` can also be any arbitrary user function that takes as input
 two datasets and returns any positive-definite number as their "distance".
 """
 function datasets_sets_distances(a₊, a₋, method = Euclidean())
+    (isempty(a₊) || isempty(a₋)) && error("The dataset containers must be non-empty.")
     ids₊, ids₋ = keys(a₊), keys(a₋)
     gettype = a -> eltype(first(values(a)))
     T = promote_type(gettype(a₊), gettype(a₋))
