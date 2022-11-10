@@ -4,7 +4,8 @@ Basic package used in the ecosystem of DynamicalSystems.jl.
 """
 module DelayEmbeddings
 
-include("datasets/Datasets.jl")
+using Reexport
+@reexport using StateSpaceSets
 
 include("embeddings.jl")
 include("traditional_de/estimate_delay.jl")
