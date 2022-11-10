@@ -1,4 +1,5 @@
-using DelayEmbeddings: localextrema, exponential_decay_fit
+using DelayEmbeddings
+using DelayEmbeddings: exponential_decay_fit
 using DynamicalSystemsBase, Test
 
 println("\nTesting delay time estimation...")
@@ -14,7 +15,7 @@ diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
     @test exponential_decay_fit(x, y, :small) ≈ 5
 
     ds = Systems.henon()
-    data = trajectory(ds,1000;Δt=1)
+    data = trajectory(ds, 1000)
     x = data[:,1]
     @test estimate_delay(x,"ac_zero", 0:10) ≤ 2
     @test estimate_delay(x,"ac_min", 0:10)  ≤ 2

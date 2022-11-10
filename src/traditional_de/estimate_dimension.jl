@@ -7,6 +7,7 @@ time is allowed.
 All methods in this file are based on the idea of "false nearest neighbors".
 =#
 using Statistics, Distances
+using LinearAlgebra: norm
 export delay_afnn, delay_fnn, delay_ifnn, delay_f1nn, stochastic_indicator
 
 #####################################################################################
