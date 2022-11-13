@@ -254,7 +254,6 @@ end
 
 maxdimspan(s) = 1:size(s)[2]
 maxdimspan(s::AbstractVector) = 1
-columns(s::AbstractVector) = (s, )
 
 function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, delays, K, α, p)
     avrg_ε★ = zeros(size(delays))
