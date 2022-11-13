@@ -1,3 +1,9 @@
+# v3.0
+**Major release**
+
+## Refactoring
+All functionality related to `Dataset` has been refactored into a new package StateSpaceSets.jl. Since DelayEmbeddings.jl re-exports it, nothing should be breaking, but still, if you don't explicitly need delay embeddings, you should use StateSpaceSets.jl directly.
+
 # v2.5
 - `statespace_sampler` ported here from ChaosTools.jl
 
