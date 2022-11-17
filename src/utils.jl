@@ -98,3 +98,32 @@ function all_neighbors(A::AbstractDataset, stype, w::Int = 0)
     tree = KDTree(A)
     idxs, dists = bulksearch(tree, A, stype, theiler)
 end
+
+"""
+    hcat_lagged_values(Y, s::Vector, τ::Int) -> Z
+Add the `τ` lagged values of the timeseries `s` as additional component to `Y`
+(`Vector` or `Dataset`), in order to form a higher embedded
+dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
+"""
+function hcat_lagged_values(Y::AbstractDataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
+    N = length(Y)
+    MM = length(s)
+    @assert N ≤ MM
+
+    MMM = MM - τ
+    M = min(N, MMM)
+    data = Vector{SVector{D+1, T}}(undef, M)
+    @inbounds for i in 1:M
+        data[i] = SVector{D+1, T}(Y[i]..., s[i+τ])
+    end
+    return Dataset{D+1, T}(data)
+end
+
+function hcat_lagged_values(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
+    N = length(Y)
+    MM = length(s)
+    @assert N ≤ MM
+    MMM = MM - τ
+    M = min(N, MMM)
+    return Dataset(view(Y, 1:M), view(s, τ+1:τ+M))
+end
