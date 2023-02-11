@@ -218,10 +218,10 @@ end
 Perform one embedding cycle on `Y_act` with a multivariate set Ys
 """
 function pecuzal_multivariate_embedding_cycle!(Y_act, flag::Bool,
-        Ys::Dataset{DT, T}, τs, w::Int, counter::Int, ε★s::AbstractMatrix,
-        τ_vals::Vector{Int}, metric, Ls::Vector{T}, ts_vals::Vector{Int},
+        Ys::AbstractDataset, τs, w::Int, counter::Int, ε★s::AbstractMatrix,
+        τ_vals::AbstractVector{Int}, metric, Ls::AbstractVector, ts_vals::AbstractVector{Int},
         samplesize::Real, K::Int, α::Real, p::Real, KNN::Int, econ::Bool
-        ) where {D, DT, T}
+    )
 
     M = size(Ys,2)
     # in the 1st cycle we have to check all (size(Y,2)^2 combinations and pick

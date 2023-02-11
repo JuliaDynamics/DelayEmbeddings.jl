@@ -40,7 +40,7 @@ The keywords
 τs = 1:100, dmax = 10
 ```
 denote which delay times and embedding dimensions `ds ∈ 1:dmax` to consider when calculating
-optimal embedding. The keywords 
+optimal embedding. The keywords
 ```julia
 slope_thres = 0.05, stoch_thres = 0.1, fnn_thres = 0.05
 ```
@@ -169,7 +169,7 @@ end
 Helper function for Cao's method, whether to decide if the input signal is
 stochastic or not.
 """
-function is_stochastic(s, τ, ds, stoch_thres) where {T}
+function is_stochastic(s, τ, ds, stoch_thres)
     E2 = stochastic_indicator(s, τ, ds)
     E2[1] > 1 - stoch_thres
 end
