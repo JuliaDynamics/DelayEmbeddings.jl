@@ -2,6 +2,8 @@
 
 A timeseries recorded in some manner from a dynamical system can be used to gain information about the dynamics of the entire state space of the system. This can be done by constructing a new state space from the timeseries. One method that can do this is what is known as [delay coordinates embedding](https://en.wikipedia.org/wiki/Takens%27_theorem) or delay coordinates reconstruction.
 
+The main functions to use for embedding some input data are [`embed`](@ref) or [`genembed`](@ref). Both functions return a [`StateSpaceSet`](@ref).
+
 ## Timeseries embedding
 
 Delay embeddings are done through `embed`:
@@ -40,4 +42,9 @@ DelayEmbedding
 ```@docs
 genembed
 GeneralizedEmbedding
+```
+
+## StateSpaceSet reference
+```@docs
+StateSpaceSet
 ```
