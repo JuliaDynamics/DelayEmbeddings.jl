@@ -56,7 +56,7 @@ hweights(::Val{γ}, h::AbstractVector) where {γ} = SVector{γ}(h)
 end
 
 # This is the version with weights
-@generated function (r::DelayEmbedding{γ})(s::AbstractArray{T}, i) where {γ, T, R<:Real}
+@generated function (r::DelayEmbedding{γ})(s::AbstractArray{T}, i) where {γ, T}
     gens = [:(r.h[$k]*(s[i + r.delays[$k]])) for k=1:γ]
     quote
         @_inline_meta
@@ -67,6 +67,7 @@ end
 
 """
     embed(s, d, τ [, h])
+
 Embed `s` using delay coordinates with embedding dimension `d` and delay time `τ`
 and return the result as a [`Dataset`](@ref). Optionally use weight `h`, see below.
 
@@ -84,7 +85,7 @@ then the ``n``-th entry is
 ```
 
 The resulting set can have same
-invariant quantities (like e.g. lyapunov exponents) with the original system
+invariant quantities (like e.g. Lyapunov exponents) with the original system
 that the timeseries were recorded from, for proper `d` and `τ`.
 This is known as the Takens embedding theorem [^Takens1981] [^Sauer1991].
 The case of different delay times allows embedding systems with many time scales,
