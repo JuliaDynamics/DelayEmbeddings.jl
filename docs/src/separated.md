@@ -36,26 +36,34 @@ DelayEmbeddings.stochastic_indicator
 using DelayEmbeddings, CairoMakie
 using DynamicalSystemsBase
 
+function roessler_rule(u, p, t)
+    a, b, c = p
+    du1 = -u[2]-u[3]
+    du2 = u[1] + a*u[2]
+    du3 = b + u[3]*(u[1] - c)
+    return SVector(du1, du2, du3)
+end
+ds = CoupledODEs(roessler_rule, [1, -2, 0.1], [0.2, 0.2, 5.7])
 
-ds = Systems.roessler()
 # This trajectory is a chaotic attractor with fractal dim ≈ 2
 # therefore the set needs at least embedding dimension of 3
-tr = trajectory(ds, 1000.0; Δt = 0.05)
-x = tr[:, 1]
+X, tvec = trajectory(ds, 1000.0; Δt = 0.05)
+x = X[:, 1]
 
 dmax = 7
 fig = Figure()
-ax = Axis(fig[1,1])
+ax = Axis(fig[1,1]; xlabel = "embedding dimension", ylabel = "estimator")
 for (i, method) in enumerate(["afnn", "fnn", "f1nn", "ifnn"])
     # Plot statistic used to estimate optimal embedding
     # as well as the automated output embedding
     𝒟, τ, E = optimal_traditional_de(x, method; dmax)
     lines!(ax, 1:dmax, E; label = method, marker = :circle, color = Cycled(i))
     optimal_d = size(𝒟, 2)
-    scatter!(ax, [optimal_d], [E[optimal_d]]; marker = :rect, color = Cycled(i))
+    ## Scatter the optimal embedding dimension as a lager marker
+    scatter!(ax, [optimal_d], [E[optimal_d]];
+        color = Cycled(i), markersize = 30
+    )
 end
 axislegend(ax)
-ax.xlabel = "embedding dimension"
-ax.ylabel = "estimator"
 fig
 ```

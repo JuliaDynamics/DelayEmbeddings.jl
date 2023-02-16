@@ -4,7 +4,8 @@ All functionality related to `StateSpaceSet` has been refactored into a new pack
 
 Now DelayEmbeddings.jl really is only about delay coordinate embedding methods.
 
-The package has also been updated to all new names used in DynamicalSystems.jl v3.0.
+The package has also been updated to all new names used in DynamicalSystems.jl v3.0,
+and now hosts its own documentation as per DynamicalSystems.jl v3.0 change.
 
 Nothing else has been changed.
 
