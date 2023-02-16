@@ -2,17 +2,44 @@ using DelayEmbeddings
 using Test
 using DynamicalSystemsBase
 
-println("\nTesting traditional optimal embedding dimension...")
 test_value = (val, vmin, vmax) -> @test vmin <= val <= vmax
 
 @testset "Embedding dimension estimation" begin
-diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
+
 s_sin = sin.(0:0.1:1000)
-ro = Systems.roessler(ones(3));
-data = trajectory(ro,1000;Δt=0.1,diffeq)
+
+diffeq = (atol = 1e-9, rtol = 1e-9)
+
+# Chaotic Roessler timeseries
+function roessler_rule(u, p, t)
+    @inbounds begin
+    a, b, c = p
+    du1 = -u[2]-u[3]
+    du2 = u[1] + a*u[2]
+    du3 = b + u[3]*(u[1] - c)
+    return SVector{3}(du1, du2, du3)
+    end
+end
+ro = CoupledODEs(roessler_rule, ones(3), [0.2, 0.2, 5.7]; diffeq)
+data = trajectory(ro, 1000; Δt=0.1)[1]
 s_roessler = data[:,1]
-lo = Systems.lorenz96(4, [0.1, 0.2, 0.5, 0.1]; F = 16.0);
-data = trajectory(lo,5000.0;Δt=0.05, Ttr = 100.0, diffeq)
+
+# Chaotic Lorenz96 timeseries
+struct Lorenz96{N} end # Structure for size type
+function (obj::Lorenz96{N})(dx, x, p, t) where {N}
+    F = p[1]
+    # 3 edge cases
+    @inbounds dx[1] = (x[2] - x[N - 1]) * x[N] - x[1] + F
+    @inbounds dx[2] = (x[3] - x[N]) * x[1] - x[2] + F
+    @inbounds dx[N] = (x[1] - x[N - 2]) * x[N - 1] - x[N] + F
+    # then the general case
+    for n in 3:(N - 1)
+      @inbounds dx[n] = (x[n + 1] - x[n - 2]) * x[n - 1] - x[n] + F
+    end
+    return nothing
+end
+lo = CoupledODEs(Lorenz96{4}(), [0.1, 0.2, 0.5, 0.1], [32.0]; diffeq)
+data = trajectory(lo, 1000.0; Δt=0.05, Ttr = 100.0)[1]
 s_lorenz = data[:,1]
 
 @testset "Caos method" begin
