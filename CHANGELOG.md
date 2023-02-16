@@ -1,13 +1,14 @@
-# v2.6 - Refactoring release
-
-All functionality related to `StateSpaceSet` has been refactored into a new package StateSpaceSets.jl. Since DelayEmbeddings.jl re-exports it, nothing should be breaking, but still, if you don't explicitly need delay embeddings, you should use StateSpaceSets.jl directly.
-
-Now DelayEmbeddings.jl really is only about delay coordinate embedding methods.
+# v2.7 - Refactoring release
 
 The package has also been updated to all new names used in DynamicalSystems.jl v3.0,
 and now hosts its own documentation as per DynamicalSystems.jl v3.0 change.
 
 Nothing else has been changed.
+
+# v2.6 - Refactoring release
+All functionality related to `StateSpaceSet` has been refactored into a new package StateSpaceSets.jl. Since DelayEmbeddings.jl re-exports it, nothing should be breaking, but still, if you don't explicitly need delay embeddings, you should use StateSpaceSets.jl directly.
+
+Now DelayEmbeddings.jl really is only about delay coordinate embedding methods.
 
 # v2.5
 - `statespace_sampler` ported here from ChaosTools.jl
