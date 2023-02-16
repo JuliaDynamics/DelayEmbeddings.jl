@@ -1,4 +1,5 @@
 # Unified optimal embedding
+
 Unified approaches try to create an optimal embedding by in parallel optimizing what combination of delay times and embedding dimensions suits best.
 
 In addition, the unified approaches are the only ones that can accommodate multi-variate inputs. This means that if you have multiple measured input timeseries, you should be able to take advantage of all of them for the best possible embedding of the dynamical system's set.
@@ -10,12 +11,24 @@ In addition, the unified approaches are the only ones that can accommodate multi
 In following we illustrate the most recent unified optimal embedding method, called PECUZAL, on three examples (see [`pecuzal_embedding`](@ref)).
 We start with a univariate case, i.e. we only feed in one time series,
 here the x-component of the Lorenz system.
+
 ```@example MAIN
-using DynamicalSystems
+using DynamicalSystemsBase # to simulate Lorenz63
 
-lo = Systems.lorenz([1.0, 1.0, 50.0])
-tr = trajectory(lo, 100; Δt = 0.01, Ttr = 10)
+function lorenz_rule(u, p, t)
+    σ = p[1]; ρ = p[2]; β = p[3]
+    du1 = σ*(u[2]-u[1])
+    du2 = u[1]*(ρ-u[3]) - u[2]
+    du3 = u[1]*u[2] - β*u[3]
+    return SVector(du1, du2, du3)
+end
 
+lo = CoupledODEs(lorenz_rule, [1.0, 1.0, 50.0], [10, 28, 8/3])
+tr, tvec = trajectory(lo, 100; Δt = 0.01, Ttr = 10)
+```
+
+```@example MAIN
+using DelayEmbeddings
 s = vec(tr[:, 1]) # input timeseries = x component of Lorenz
 theiler = estimate_delay(s, "mi_min") # estimate a Theiler window
 Tmax = 100 # maximum possible delay
@@ -30,7 +43,7 @@ The output reveals that PECUZAL suggests a 3-dimensional embedding out of the
 un-lagged time series as the 1st component of the reconstruction, the time
 series lagged by 18 samples as the 2nd component and the time series lagged by
 9 samples as the 3rd component. In the third embedding cycle there is no *ΔL<0*
-and the algorithm breaks. The result after two successful embedding cycles is
+and the algorithm terminates. The result after two successful embedding cycles is
 the 3-dimensional embedding `Y` which is also returned.
 The total obtained decrease of *ΔL* throughout all encountered embedding cycles has been ~ -1.24.
 
@@ -78,7 +91,7 @@ println(τ_vals_m)
 println(ts_vals_m)
 ```
 ```
-[0, 12, 0, 79, 64, 53]
+[0, 12, 0, 84, 69, 56]
 [3, 1, 1, 1, 1, 1]
 ```
 
@@ -87,15 +100,18 @@ as 1st and 3rd component of the reconstruction vectors, as well as the *x*-compo
 lagged by 12, 79, 64, and 53 samples. The total decrease of *ΔL* is ~-1.64, and
 thus, way smaller compared to the univariate case, as we would expect it. Nevertheless,
 the main contribution to this increase is made by the first two embedding cycles.
-For surpressing embedding cycles, which yield negligible - but negative - *ΔL*-values
+For suppressing embedding cycles, which yield negligible - but negative - *ΔL*-values
 one can use the keyword argument *L_threshold*
-```@example MAIN
 
-Y_mt, τ_vals_mt, ts_vals_mt, Ls_mt , εs_mt = pecuzal_embedding(tr; τs = 0:Tmax , L_threshold = 0.05, w = theiler, econ = true)
+```@example MAIN
+Y_mt, τ_vals_mt, ts_vals_mt, Ls_mt, εs_mt = pecuzal_embedding(tr;
+    τs = 0:Tmax, L_threshold = 0.2, w = theiler, econ = true
+)
 
 println(τ_vals_mt)
 println(ts_vals_mt)
 ```
+
 As you can see here the algorithm stopped already at 3-dimensional embedding.
 
 Let's plot these three components:
@@ -108,7 +124,7 @@ lines!(ax1, Y_mt[:,1], Y_mt[:,2], Y_mt[:,3]; linewidth = 1.0)
 ax1.xlabel = "$(ts_str[ts_vals_mt[1]])(t+$(τ_vals_mt[1]))"
 ax1.ylabel = "$(ts_str[ts_vals_mt[2]])(t+$(τ_vals_mt[2]))"
 ax1.zlabel = "$(ts_str[ts_vals_mt[3]])(t+$(τ_vals_mt[3]))"
-ax1.azimuth = π/2 + π/4
+ax1.azimuth = 3π/2 + π/4
 
 ax2 = Axis3(fig[1,2], title = "original")
 lines!(ax2, tr[:,1], tr[:,2], tr[:,3]; linewidth = 1.0, color = Cycled(2))
