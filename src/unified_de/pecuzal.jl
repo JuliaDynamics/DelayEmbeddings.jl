@@ -5,7 +5,7 @@ export pecuzal_embedding
 """
     pecuzal_embedding(s; kwargs...) → Y, τ_vals, ts_vals, ΔLs, ⟨ε★⟩
 A unified approach to properly embed a timeseries or a set of timeseries
-(`Dataset`) based on the recent PECUZAL algorithm due to Kraemer et al.[^Kraemer2021].
+(`StateSpaceSet`) based on the recent PECUZAL algorithm due to Kraemer et al.[^Kraemer2021].
 
 For more details, see the description below.
 
@@ -60,7 +60,7 @@ phase space trajectory `Y_actual` and compute the continuity statistic `⟨ε★
    L-value. `Y_actual` -> `Y`.
 
 In case of multivariate embedding, i.e. when embedding a set of M time series
-(`s::Dataset`), in each embedding cycle the continuity statistic `⟨ε★⟩` gets
+(`s::StateSpaceSet`), in each embedding cycle the continuity statistic `⟨ε★⟩` gets
 computed for all M time series available. The optimal delay value `τ` in each
 embedding cycle is chosen as the peak/`τ`-value for which `ΔL` is
 minimal under all available peaks and under all M `⟨ε★⟩`'s. In the first
@@ -70,7 +70,7 @@ component of the embedding vector and form `Y_actual`.
 
 The range of considered delay values is determined in `τs` and for the
 nearest neighbor search we respect the Theiler window `w`. The final embedding
-vector is stored in `Y` (`Dataset`). The chosen delay values for each embedding
+vector is stored in `Y` (`StateSpaceSet`). The chosen delay values for each embedding
 cycle are stored in `τ_vals` and the according time series numbers chosen for
 each delay value in `τ_vals` are stored in `ts_vals`. For univariate embedding
 (`s::Vector`) `ts_vals` is a vector of ones of length `τ_vals`, because there is
@@ -101,7 +101,7 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 0,
     s_orig = s
     s = standardize(s) # especially important for comparative L-statistics
     # define actual phase space trajectory
-    Y_act = Dataset(s)
+    Y_act = StateSpaceSet(s)
 
     # set a flag, in order to tell the while loop when to stop. Each loop
     # stands for encountering a new embedding dimension
@@ -134,7 +134,7 @@ function pecuzal_embedding(s::Vector{T}; τs = 0:50 , w::Int = 0,
 end
 
 # Multivariate version
-function pecuzal_embedding(Y::Dataset{D, T}; τs = 0:50 , w::Int = 1,
+function pecuzal_embedding(Y::StateSpaceSet{D, T}; τs = 0:50 , w::Int = 1,
     samplesize::Real = 1, K::Int = 13, KNN::Int = 3, L_threshold::Real = 0,
     α::Real = 0.05, p::Real = 0.5, max_cycles::Int = 50, econ::Bool = false,
     verbose = true,
@@ -188,7 +188,7 @@ end
 """
 Perform one univariate embedding cycle on `Y_act`. Return the new `Y_act`
 """
-function pecuzal_embedding_cycle!(Y_act::Dataset{D, T}, flag::Bool, s::Vector,
+function pecuzal_embedding_cycle!(Y_act::StateSpaceSet{D, T}, flag::Bool, s::Vector,
         τs, w::Int, counter::Int, ε★s::AbstractArray, τ_vals::Vector{Int}, metric,
         Ls::Vector{T}, ts_vals::Vector{Int}, samplesize::Real, K::Int, α::Real,
         p::Real, KNN::Int, econ::Bool) where {D, T}
@@ -218,7 +218,7 @@ end
 Perform one embedding cycle on `Y_act` with a multivariate set Ys
 """
 function pecuzal_multivariate_embedding_cycle!(Y_act, flag::Bool,
-        Ys::AbstractDataset, τs, w::Int, counter::Int, ε★s::AbstractMatrix,
+        Ys::AbstractStateSpaceSet, τs, w::Int, counter::Int, ε★s::AbstractMatrix,
         τ_vals::AbstractVector{Int}, metric, Ls::AbstractVector, ts_vals::AbstractVector{Int},
         samplesize::Real, K::Int, α::Real, p::Real, KNN::Int, econ::Bool
     )
@@ -242,7 +242,7 @@ end
 Perform the first embedding cycle of the multivariate embedding. Return the
 actual reconstruction vector `Y_act`.
 """
-function first_embedding_cycle_pecuzal!(Ys::Dataset{D, T}, M::Int, τs, w::Int,
+function first_embedding_cycle_pecuzal!(Ys::StateSpaceSet{D, T}, M::Int, τs, w::Int,
             samplesize::Real, K::Int, metric, α::Real, p::Real, KNN::Int,
             τ_vals::Vector{Int}, ts_vals::Vector{Int}, Ls::Vector{T},
             ε★s::AbstractMatrix, econ::Bool) where {D, T}
@@ -281,7 +281,7 @@ end
 Perform an embedding cycle of the multivariate embedding, but the first one.
 Return the actual reconstruction vector `Y_act`.
 """
-function embedding_cycle_pecuzal!(Y_act::Dataset{D, T}, Ys::Dataset{DT, T},
+function embedding_cycle_pecuzal!(Y_act::StateSpaceSet{D, T}, Ys::StateSpaceSet{DT, T},
             counter::Int, M::Int, τs, w::Int, samplesize::Real, K::Int, metric,
             α::Real, p::Real, KNN::Int, τ_vals::Vector{Int}, ts_vals::Vector{Int},
             Ls::Vector{T}, ε★s::AbstractMatrix, econ::Bool) where {D, DT, T}
@@ -304,7 +304,7 @@ end
 based on picking the peak in ε★, which corresponds to the minimal `L`-statistic.
 """
 function choose_right_embedding_params!(ε★::AbstractMatrix, Y_act,
-            Ys::Dataset{D, T}, τ_vals::Vector{Int}, ts_vals::Vector{Int},
+            Ys::StateSpaceSet{D, T}, τ_vals::Vector{Int}, ts_vals::Vector{Int},
             Ls::Vector{T}, ε★s::AbstractMatrix, counter::Int, τs, KNN::Int,
             w::Int, samplesize::Real, metric, econ::Bool) where {D, T}
 
@@ -334,14 +334,14 @@ the chosen peak `τ_idx` and the number of the chosen time series to start with
 `idx`.
 """
 function choose_right_embedding_params(ε★::AbstractMatrix, Y_act,
-            Ys::Dataset{D, T}, τs, KNN::Int, w::Int, samplesize::Real, metric,
+            Ys::StateSpaceSet{D, T}, τs, KNN::Int, w::Int, samplesize::Real, metric,
             econ::Bool) where {D, T}
     L_min_ = zeros(size(Ys,2))
     τ_idx = zeros(Int,size(Ys,2))
     for ts = 1:size(Ys,2)
         # zero-padding of ⟨ε★⟩ in order to also cover τ=0 (important for the multivariate case)
         # get the L-statistic for each peak in ⟨ε★⟩ and take the one according to L_min
-        L_trials_, max_idx_ = local_L_statistics(vec([0; ε★[:,ts]]), Dataset(Y_act), Ys[:,ts],
+        L_trials_, max_idx_ = local_L_statistics(vec([0; ε★[:,ts]]), StateSpaceSet(Y_act), Ys[:,ts],
                                         τs, KNN, w, samplesize, metric, econ)
         L_min_[ts], min_idx_ = findmin(L_trials_)
         τ_idx[ts] = max_idx_[min_idx_]-1
@@ -355,7 +355,7 @@ end
     Return the maximum decrease of the L-statistic `L_decrease` and corresponding
 delay-indices `max_idx` for all local maxima in ε★
 """
-function local_L_statistics(ε★::Vector{T}, Y_act::Dataset{D, T}, s::Vector{T},
+function local_L_statistics(ε★::Vector{T}, Y_act::StateSpaceSet{D, T}, s::Vector{T},
         τs, KNN::Int, w::Int, samplesize::Real, metric, econ::Bool
         ) where {D, T}
     _, max_idx = get_maxima(ε★) # determine local maxima in ⟨ε★⟩
@@ -428,7 +428,7 @@ end
 
 
 """
-    uzal_cost_pecuzal(Y1::Dataset, Y2::Dataset, Tw; kwargs...) → L_decrease
+    uzal_cost_pecuzal(Y1::StateSpaceSet, Y2::StateSpaceSet, Tw; kwargs...) → L_decrease
 This function is based on the functionality of [`uzal_cost`](@ref), here
 specifically tailored for the needs in the PECUZAL algorithm.
 Compute the L-statistics `L1` and `L2` for the input datasets `Y1` and `Y2` for
@@ -454,7 +454,7 @@ minimum. Return the according minimum `L_decrease`-value.
 * `samplesize::Real = 1`: determine the fraction of all phase space points
   to be considered (fiducial points v) for computing the L-statistic
 """
-function uzal_cost_pecuzal(Y::Dataset{D, ET}, Y_trial::Dataset{DT, ET}, Tw::Int;
+function uzal_cost_pecuzal(Y::StateSpaceSet{D, ET}, Y_trial::StateSpaceSet{DT, ET}, Tw::Int;
         K::Int = 3, w::Int = 1, econ::Bool = false, metric = Euclidean(),
         samplesize::Real = 1) where {D, DT, ET}
 
@@ -527,8 +527,8 @@ function uzal_cost_pecuzal(Y::Dataset{D, ET}, Y_trial::Dataset{DT, ET}, Tw::Int;
 end
 
 function compute_conditional_variances!(ns, vs, vs_trial, allNNidxs::Vector{Array{Int64,1}},
-        allNNidxs_trial::Vector{Array{Int64,1}}, Y::Dataset{D, P},
-        Y_trial::Dataset{DT, P}, ϵ_ball::Array{P, 2}, ϵ_ball_trial::Array{P, 2},
+        allNNidxs_trial::Vector{Array{Int64,1}}, Y::StateSpaceSet{D, P},
+        Y_trial::StateSpaceSet{DT, P}, ϵ_ball::Array{P, 2}, ϵ_ball_trial::Array{P, 2},
         u_k::Vector{P}, u_k_trial::Vector{P}, T::Int, K::Int, metric, ϵ²::Vector,
         ϵ²_trial::Vector, E²::Array{P, 2}, E²_trial::Array{P, 2}, cnt::Int) where {P, D, DT}
 
@@ -575,7 +575,7 @@ Returns the approximated conditional variance for a specific point in state spac
 `NNidxs`, for a time horizon `T`. This corresponds to Eqs. 13 & 14 in [^Uzal2011].
 The norm specified in input parameter `metric` is used for distance computations.
 """
-function comp_Ek2!(ϵ_ball::Array{P, 2}, u_k::Vector{P}, Y::Dataset{D, P},
+function comp_Ek2!(ϵ_ball::Array{P, 2}, u_k::Vector{P}, Y::StateSpaceSet{D, P},
         ns::Int, NNidxs::Vector, T::Int, K::Int, metric
         ) where {D, P}
     # determine neighborhood `T` time steps ahead

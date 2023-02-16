@@ -9,7 +9,6 @@
 
 Contained here:
 
-1. Defines the `Dataset` structure, which is a wrapper of `Vector{SVector}`, used in **DynamicalSystems.jl**.
 2. Implements methods for delay coordinates embedding with high performance and many features.
 3. Algorithms for estimating optimal delay embedding parameters, the delay time and the number of temporal neighbors (generalization of the "embedding dimension").
 4. New, _unified_ algorithms for optimal delay embedding.

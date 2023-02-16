@@ -10,8 +10,8 @@ println("\nTesting uzal_cost.jl...")
     Random.seed!(1516578735)
     tr1 = randn(10000)
     tr2 = randn(5000)
-    tr1 = Dataset(tr1)
-    tr2 = Dataset(tr2)
+    tr1 = StateSpaceSet(tr1)
+    tr2 = StateSpaceSet(tr2)
     L = uzal_cost(tr1;
         Tw = 60, K= 3, w = 1, samplesize = 1.0,
         metric = Euclidean()
@@ -31,7 +31,7 @@ println("\nTesting uzal_cost.jl...")
     tr = zeros(10000)
     tr[1:5000] = zeros(5000)
     tr[5001:end] = ones(5000)
-    tr = Dataset(tr)
+    tr = StateSpaceSet(tr)
     L = uzal_cost(tr;
         Tw = 60, K= 3, w = 1, samplesize = 1.0,
         metric = Euclidean()
@@ -43,7 +43,7 @@ println("\nTesting uzal_cost.jl...")
     tr = zeros(10000)
     tr[1:5000] = zeros(5000) .+ 0.001 .* randn(5000)
     tr[5001:end] = ones(5000) .+ 0.001 .* randn(5000)
-    tr = Dataset(tr)
+    tr = StateSpaceSet(tr)
     L = uzal_cost(tr;
         Tw = 60, K= 3, w = 1, samplesize = 1.0,
         metric = Euclidean()
@@ -62,7 +62,7 @@ end
     # lo = Systems.lorenz(u0; σ=10, ρ=28, β=8/3)
     # tr = trajectory(lo, 100; Δt = 0.01, Ttr = 100)
     tr = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
-    tr = Dataset(tr)
+    tr = StateSpaceSet(tr)
 
     # check local cost function output
     Tw = 60
@@ -89,7 +89,7 @@ end
     # ro = Systems.roessler(u0; a=0.15, b = 0.2, c=10)
     # tr = trajectory(ro, 1000; Δt = 0.1, Ttr = 100)
     tr = readdlm(joinpath(tsfolder, "test_time_series_roessler_N_10000_multivariate.csv"))
-    tr = Dataset(tr)
+    tr = StateSpaceSet(tr)
 
     x = tr[:, 1]
 

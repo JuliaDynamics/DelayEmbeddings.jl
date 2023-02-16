@@ -1,5 +1,5 @@
 """
-Delay coordinates embedding, `Dataset` structure and neighhborhoods.
+Delay coordinates embedding, `StateSpaceSet` structure and neighhborhoods.
 Basic package used in the ecosystem of DynamicalSystems.jl.
 """
 module DelayEmbeddings

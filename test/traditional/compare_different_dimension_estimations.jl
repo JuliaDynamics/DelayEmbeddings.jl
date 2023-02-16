@@ -11,14 +11,14 @@ function ar_process(u0::T, α::T, p::T, N::Int) where {T<:Real}
 end
 
 trajectories = Dict(
-    "White noise" => Dataset(randn(5000)),
-    "AR(1)" => Dataset(ar_process(.2,.9,.1,5000)),
+    "White noise" => StateSpaceSet(randn(5000)),
+    "AR(1)" => StateSpaceSet(ar_process(.2,.9,.1,5000)),
     "Hénon (chaotic)" => trajectory(Systems.henon(a=1.4, b=0.3), 199, Ttr=1000),
     "Hénon (periodic)" => trajectory(Systems.henon(a=1.054, b=0.3), 199, Ttr=1000),
     "Lorenz" => trajectory(Systems.lorenz(), 1000.0; Ttr=1000, Δt = 0.05),
     "Lorenz96" => trajectory(Systems.lorenz96(5; F = 8.0), 1000.0; Ttr=1000, Δt = 0.05),
     "Roessler" => trajectory(Systems.roessler(), 1000.0; Ttr=1000, Δt = 0.05),
-    "Sine wave" => Dataset(map(x->[sin.(x) cos.(x)], StepRangeLen(0.0,0.2,200)))
+    "Sine wave" => StateSpaceSet(map(x->[sin.(x) cos.(x)], StepRangeLen(0.0,0.2,200)))
 )
 dict_keys = ["White noise","AR(1)","Hénon (chaotic)","Hénon (periodic)","Lorenz","Lorenz96","Roessler","Sine wave"]
 

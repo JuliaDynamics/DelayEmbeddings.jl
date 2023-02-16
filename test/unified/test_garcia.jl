@@ -15,10 +15,10 @@ println("\nTesting garcia_almeida.jl...")
 # lo = Systems.lorenz(u0; σ=10, ρ=28, β=8/3)
 # tr = trajectory(lo, 100; Δt = 0.01, Ttr = 100)
 tr = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
-tr = Dataset(tr)
+tr = StateSpaceSet(tr)
 
 x = tr[:, 1]
-Y = Dataset(x)
+Y = StateSpaceSet(x)
 Y = standardize(Y)
 
 @testset "N-statistic" begin
@@ -78,7 +78,7 @@ end
 
 
 @testset "garcia_embed multivariate" begin
-    
+
     Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embedding(tr; τs=0:100,  w = 17, T = 17)
     Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embedding(tr; τs=0:100,  w = 1, T = 1)
 
@@ -93,7 +93,7 @@ end
     @test τ_vals2 == [0, 1, 2]
 
     # try to reproduce Fig.2a in [^Garcia2005b]
-    tra = Dataset(hcat(tr[:,1], tr[:,3]))
+    tra = StateSpaceSet(hcat(tr[:,1], tr[:,3]))
     tra = standardize(tra)
     taus = 0:100
 

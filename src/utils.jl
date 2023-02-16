@@ -77,7 +77,7 @@ function findlocalextrema(y)
 end
 
 """
-    all_neighbors(A::Dataset, stype, w = 0) → idxs, dists
+    all_neighbors(A::StateSpaceSet, stype, w = 0) → idxs, dists
     all_neighbors(vtree, vs, ns, K, w)
 Return the `maximum(K)`-th nearest neighbors for all input points `vs`,
 with indices `ns` in original data, while respecting the theiler window `w`.
@@ -93,7 +93,7 @@ function all_neighbors(vtree, vs, ns, K, w)
     idxs, dists = bulksearch(vtree, vs, NeighborNumber(k), tw)
 end
 
-function all_neighbors(A::AbstractDataset, stype, w::Int = 0)
+function all_neighbors(A::AbstractStateSpaceSet, stype, w::Int = 0)
     theiler = Theiler(w)
     tree = KDTree(A)
     idxs, dists = bulksearch(tree, A, stype, theiler)
@@ -102,10 +102,10 @@ end
 """
     hcat_lagged_values(Y, s::Vector, τ::Int) -> Z
 Add the `τ` lagged values of the timeseries `s` as additional component to `Y`
-(`Vector` or `Dataset`), in order to form a higher embedded
+(`Vector` or `StateSpaceSet`), in order to form a higher embedded
 dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
 """
-function hcat_lagged_values(Y::AbstractDataset{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
+function hcat_lagged_values(Y::AbstractStateSpaceSet{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
     N = length(Y)
     MM = length(s)
     @assert N ≤ MM
@@ -116,7 +116,7 @@ function hcat_lagged_values(Y::AbstractDataset{D,T}, s::Vector{T}, τ::Int) wher
     @inbounds for i in 1:M
         data[i] = SVector{D+1, T}(Y[i]..., s[i+τ])
     end
-    return Dataset{D+1, T}(data)
+    return StateSpaceSet{D+1, T}(data)
 end
 
 function hcat_lagged_values(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
@@ -125,5 +125,5 @@ function hcat_lagged_values(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
     @assert N ≤ MM
     MMM = MM - τ
     M = min(N, MMM)
-    return Dataset(view(Y, 1:M), view(s, τ+1:τ+M))
+    return StateSpaceSet(view(Y, 1:M), view(s, τ+1:τ+M))
 end
