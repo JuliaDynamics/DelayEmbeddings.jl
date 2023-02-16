@@ -1,6 +1,5 @@
-using StaticArrays
 using Base: @_inline_meta
-export reconstruct, DelayEmbedding, embed, τrange
+export DelayEmbedding, embed, τrange
 export AbstractEmbedding
 
 #####################################################################################
