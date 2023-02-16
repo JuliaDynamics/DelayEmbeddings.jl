@@ -22,7 +22,6 @@ diffeq = (atol = 1e-9, rtol = 1e-9)
     @test estimate_delay(x,"exp_extrema", 0:10)  ≤ 4
     @test estimate_delay(x,"mi_min", 0:10) == 10
 
-
     # Chaotic Roessler timeseries
     function roessler_rule(u, p, t)
         @inbounds begin
