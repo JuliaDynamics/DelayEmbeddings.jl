@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/JuliaDynamics/DelayEmbeddings.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaDynamics/DelayEmbeddings.jl)
 [![Package Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/DelayEmbeddings)](https://pkgs.genieframework.com?packages=DelayEmbeddings)
 
-A Julia package that provides a generic interface and cutting edge algorithms for performing delay coordinates embeddings.
+A Julia package that provides a generic interface for performing delay coordinate embeddings, as well as cutting edge algorithms for creating optimal embeddings given some data.
 It can be used as a standalone package, or as part of
 [DynamicalSystems.jl](https://juliadynamics.github.io/DynamicalSystems.jl/dev/).
 
