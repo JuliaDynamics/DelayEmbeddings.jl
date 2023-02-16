@@ -6,7 +6,6 @@ The main functions to use for embedding some input data are [`embed`](@ref) or [
 
 ## Timeseries embedding
 
-Delay embeddings are done through `embed`:
 ```@docs
 embed
 ```
@@ -28,8 +27,7 @@ embed(x, 3, 1)
 ```
 
 !!! note "`τ` and `Δt`"
-    Keep in mind that whether a value of `τ` is "reasonable" for continuous systems depends on `Δt`. In the above example the value `τ=30` is good, *only* for the case
-    of using `Δt = 0.05`. For shorter/longer `Δt` one has to adjust properly `τ` so that their product `τ*Δt` is the same.
+    Keep in mind that whether a value of `τ` is "reasonable" for continuous time systems depends on the sampling time `Δt`.
 
 ### Embedding Structs
 The high level function [`embed`](@ref) utilizes a low-level interface for creating embedded vectors on-the-fly. The high level interface simply loops over the low level interface.

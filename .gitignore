@@ -1,2 +1,11 @@
 Manifest.toml
 *.csv
+docs/build/*
+Manifest.toml
+*.scss
+*.css
+.DS_Store
+*vscode
+*.css
+*.scss
+*style.jl

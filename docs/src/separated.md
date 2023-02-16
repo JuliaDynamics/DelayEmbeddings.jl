@@ -1,7 +1,7 @@
 # Separated optimal embedding
 This page discusses and provides algorithms for estimating optimal parameters to do Delay Coordinates Embedding (DCE) with.
 
-The approaches can be grouped into two schools:
+There are two approaches for estimating optimal parameters to do delay embeddings:
 1. **Separated**, where one tries to find the best value for a delay time `τ` and then an optimal embedding dimension `d`.
 2. **Unified**, where at the same time an optimal combination of `τ, d` is found, and is discussed in the [Unified optimal embedding](@ref) page.
 
@@ -33,7 +33,9 @@ DelayEmbeddings.stochastic_indicator
 
 ## Example
 ```@example MAIN
-using DynamicalSystems, CairoMakie
+using DelayEmbeddings, CairoMakie
+using DynamicalSystemsBase
+
 
 ds = Systems.roessler()
 # This trajectory is a chaotic attractor with fractal dim ≈ 2
