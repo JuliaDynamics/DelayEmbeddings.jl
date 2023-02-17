@@ -22,13 +22,3 @@ Reexport = "1"
 StateSpaceSets = "1"
 StatsBase = "0.24, 0.32, 0.33"
 julia = "1.5"
-
-[extras]
-DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
-Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
-PredefinedDynamicalSystems = "31e2f376-db9e-427a-b76e-a14f56347a14"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[targets]
-test = ["PredefinedDynamicalSystems", "Test", "Random", "DelimitedFiles", "Downloads"]
