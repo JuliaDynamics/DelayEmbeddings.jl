@@ -1,6 +1,5 @@
-using StaticArrays
 using Base: @_inline_meta
-export reconstruct, DelayEmbedding, embed, τrange
+export DelayEmbedding, embed, τrange
 export AbstractEmbedding
 
 #####################################################################################
@@ -56,7 +55,7 @@ hweights(::Val{γ}, h::AbstractVector) where {γ} = SVector{γ}(h)
 end
 
 # This is the version with weights
-@generated function (r::DelayEmbedding{γ})(s::AbstractArray{T}, i) where {γ, T, R<:Real}
+@generated function (r::DelayEmbedding{γ})(s::AbstractArray{T}, i) where {γ, T}
     gens = [:(r.h[$k]*(s[i + r.delays[$k]])) for k=1:γ]
     quote
         @_inline_meta
@@ -67,8 +66,9 @@ end
 
 """
     embed(s, d, τ [, h])
+
 Embed `s` using delay coordinates with embedding dimension `d` and delay time `τ`
-and return the result as a [`Dataset`](@ref). Optionally use weight `h`, see below.
+and return the result as a [`StateSpaceSet`](@ref). Optionally use weight `h`, see below.
 
 Here `τ > 0`, use [`genembed`](@ref) for a generalized version.
 
@@ -84,7 +84,7 @@ then the ``n``-th entry is
 ```
 
 The resulting set can have same
-invariant quantities (like e.g. lyapunov exponents) with the original system
+invariant quantities (like e.g. Lyapunov exponents) with the original system
 that the timeseries were recorded from, for proper `d` and `τ`.
 This is known as the Takens embedding theorem [^Takens1981] [^Sauer1991].
 The case of different delay times allows embedding systems with many time scales,
@@ -111,7 +111,7 @@ Systems and Turbulence*, Lecture Notes in Mathematics **366**, Springer (1981)
 """
 function embed(s::AbstractVector{T}, d, τ, h::H = nothing) where {T, H}
     if d == 1
-        return Dataset(s)
+        return StateSpaceSet(s)
     end
     htype = H <: Union{Nothing, Real} ? H : eltype(H)
     de::DelayEmbedding{d-1, htype} = DelayEmbedding(d-1, τ, h)
@@ -124,7 +124,7 @@ end
     @inbounds for i in r
         data[i] = de(s, i)
     end
-    return Dataset{γ+1, T}(data)
+    return StateSpaceSet{γ+1, T}(data)
 end
 
 """
@@ -141,7 +141,7 @@ export GeneralizedEmbedding, genembed
 """
     GeneralizedEmbedding(τs, js = ones(length(τs)), ws = nothing) -> `embedding`
 Return a delay coordinates embedding structure to be used as a function.
-Given a timeseries *or* trajectory (i.e. `Dataset`) `s` and calling
+Given a timeseries *or* trajectory (i.e. `StateSpaceSet`) `s` and calling
 ```julia
 embedding(s, n)
 ```
@@ -182,10 +182,10 @@ function Base.show(io::IO, g::GeneralizedEmbedding{D, W}) where {D, W}
     print(io, "  ws: $(wp)")
 end
 
-const Data{T} = Union{Dataset{D, T}, AbstractVector{T}} where {D}
+const Data{T} = Union{StateSpaceSet{D, T}, AbstractVector{T}} where {D}
 
 # dataset version
-@generated function (g::GeneralizedEmbedding{D, W})(s::AbstractDataset{Z, T}, i::Int) where {D,W,Z,T}
+@generated function (g::GeneralizedEmbedding{D, W})(s::AbstractStateSpaceSet{Z, T}, i::Int) where {D,W,Z,T}
     gens = if W == Nothing
         [:(s[i + g.τs[$k], g.js[$k]]) for k=1:D]
     else
@@ -218,8 +218,8 @@ max(1, (-minimum(ge.τs) + 1)):min(length(s), length(s) - maximum(ge.τs))
 
 """
     genembed(s, τs, js = ones(...); ws = nothing) → dataset
-Create a generalized embedding of `s` which can be a timeseries or arbitrary `Dataset`,
-and return the result as a new `Dataset`.
+Create a generalized embedding of `s` which can be a timeseries or arbitrary `StateSpaceSet`,
+and return the result as a new `StateSpaceSet`.
 
 The generalized embedding works as follows:
 - `τs` denotes what delay times will be used for each of the entries
@@ -232,7 +232,7 @@ The generalized embedding works as follows:
 
 `τs, js, ws` are tuples (or vectors) of length `D`, which also coincides with the embedding
 dimension. For example, imagine input trajectory ``s = [x, y, z]`` where ``x, y, z`` are
-timeseries (the columns of the `Dataset`).
+timeseries (the columns of the `StateSpaceSet`).
 If `js = (1, 3, 2)` and `τs = (0, 2, -7)` the created delay vector at
 each step ``n`` will be
 ```math
@@ -244,7 +244,7 @@ Using `ws = (1, 0.5, 0.25)` as well would create
 ```
 
 `js` can be skipped, defaulting to index 1 (first timeseries) for all delay entries, while
-it has no effect if `s` is a timeseries instead of a `Dataset`.
+it has no effect if `s` is a timeseries instead of a `StateSpaceSet`.
 
 See also [`embed`](@ref). Internally uses [`GeneralizedEmbedding`](@ref).
 """
@@ -263,5 +263,5 @@ function genembed(s, ge::GeneralizedEmbedding{D, W}) where {D, W}
     @inbounds for (i, n) in enumerate(r)
         data[i] = ge(s, n)
     end
-    return Dataset{D, X}(data)
+    return StateSpaceSet{D, X}(data)
 end

@@ -5,7 +5,7 @@ export uzal_cost
 export uzal_cost_local
 
 """
-    uzal_cost(Y::Dataset; kwargs...) → L
+    uzal_cost(Y::StateSpaceSet; kwargs...) → L
 Compute the L-statistic `L` for input dataset `Y` according to Uzal et al.[^Uzal2011], based on
 theoretical arguments on noise amplification, the complexity of the
 reconstructed attractor and a direct measure of local stretch which constitutes
@@ -58,7 +58,7 @@ the inverse of all `ϵ²`'s for all considered reference points.
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost(Y::AbstractDataset{D, ET};
+function uzal_cost(Y::AbstractStateSpaceSet{D, ET};
         Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Real = 0.5,
         metric = Euclidean()
     ) where {D, ET}
@@ -135,7 +135,7 @@ end
 
 
 """
-    uzal_cost_local(Y::Dataset; kwargs...) → L_local
+    uzal_cost_local(Y::StateSpaceSet; kwargs...) → L_local
 Compute the local L-statistic `L_local` for input dataset `Y` according to
 Uzal et al.[^Uzal2011]. The length of `L_local` is `length(Y)-Tw` and
 denotes a value of the local cost-function to each of the points of the
@@ -150,7 +150,7 @@ Keywords as in [`uzal_cost`](@ref).
 
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
 """
-function uzal_cost_local(Y::AbstractDataset{D, ET};
+function uzal_cost_local(Y::AbstractStateSpaceSet{D, ET};
         Tw::Int = 40, K::Int = 3, w::Int = 1, samplesize::Real = 0.5,
         metric = Euclidean()
     ) where {D, ET}

@@ -1,9 +1,15 @@
 using DelayEmbeddings
-using StaticArrays
 using Test
-import Downloads
+
+function testfile(file, testname=defaultname(file))
+    println("running test file $(file)")
+    @testset "$testname" begin; include(file); end
+    return
+end
+defaultname(file) = uppercasefirst(replace(splitext(basename(file))[1], '_' => ' '))
 
 # Download some test timeseries
+import Downloads
 tsfolder = joinpath(@__DIR__, "timeseries")
 todownload1 = ["$n.csv" for n in 1:4]
 todownload = ["test_time_series_lorenz_standard_N_10000_multivariate.csv", "test_time_series_roessler_N_10000_multivariate.csv"]
@@ -14,12 +20,10 @@ for a in todownload
     Downloads.download(repo*"/"*a, joinpath(tsfolder, a))
 end
 
-diffeq = (atol = 1e-9, rtol = 1e-9, maxiters = typemax(Int))
-
 @testset "DelayEmbeddings tests" begin
-    include("embedding_tests.jl")
-    include("traditional/delaytime_test.jl")
-    include("traditional/embedding_dimension_test.jl")
+    testfile("embedding_tests.jl")
+    testfile("traditional/delaytime_test.jl")
+    testfile("traditional/embedding_dimension_test.jl")
     # TODO: All of these tests need to be re-written to be "good" tests,
     # and not just test the output the functions have had in the past in some
     # pre-existing data.

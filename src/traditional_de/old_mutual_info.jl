@@ -31,7 +31,7 @@ function mutinfo(k, Xm::Vararg{<:AbstractVector,M}) where M
     N = size(Xm[1],1)
     invN = 1/N
 
-    d = Dataset(Xm...)
+    d = StateSpaceSet(Xm...)
     tree = KDTree(d.data, Chebyshev())
 
     n_x_m = zeros(M)
@@ -126,7 +126,7 @@ end
 
 """
     mi_fs(s,τs)
-    
+
 Compute the mutual information between the series `s` and various
 images of the same series delayed by `τ` ∈ `τs`, according to
 Fraser's and Swinney's algorithm [1].
@@ -222,7 +222,7 @@ function ami_kde(x::AbstractVector{T}, τs::AbstractVector{Int}) where {T}
     px = @view dx.density[tp+1:end-tp]
     hx = -sum(px.*log2.(px))*step(dx.x)
     ami = zeros(T, length(τs))
-    # 
+    #
     np2 = min(256, 2^floor(Int, log2(n)))
     tp = div(tp*np2,np)
     for (i,τ) in enumerate(τs)

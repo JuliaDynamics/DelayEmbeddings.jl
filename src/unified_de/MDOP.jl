@@ -9,7 +9,7 @@ export mdop_maximum_delay
 """
     mdop_embedding(s::Vector; kwargs...) → Y, τ_vals, ts_vals, FNNs, βS
 MDOP (for "maximizing derivatives on projection") is a unified approach to properly
-embed a timeseries or a set of timeseries (`Dataset`)
+embed a timeseries or a set of timeseries (`StateSpaceSet`)
 based on the paper of Chetan Nichkawde [^Nichkawde2013].
 
 ## Keyword arguments
@@ -30,7 +30,7 @@ based on the paper of Chetan Nichkawde [^Nichkawde2013].
 The method works iteratively and gradually builds the final embedding `Y`.
 Based on the [`beta_statistic`](@ref) the algorithm picks an optimal delay
 value `τ` for each embedding cycle as the global maximum of `β`. In case of
-multivariate embedding, i.e. when embedding a set of time series (`s::Dataset`),
+multivariate embedding, i.e. when embedding a set of time series (`s::StateSpaceSet`),
 the optimal delay value `τ` is chosen as the maximum from all maxima's of all
 considered `β`-statistics for each possible timeseries. The range of
 considered delay values is determined in `τs` and for the nearest neighbor
@@ -64,7 +64,7 @@ function mdop_embedding(s::Vector{T};
     s_orig = s
     s = standardize(s) # especially important for fnn-computation
     # define actual phase space trajectory
-    Y_act = Dataset(s)
+    Y_act = StateSpaceSet(s)
 
     # compute nearest neighbor distances in the first embedding dimension for
     # FNN statistic
@@ -101,7 +101,7 @@ function mdop_embedding(s::Vector{T};
 end
 
 
-function mdop_embedding(Y::AbstractDataset{D, T};
+function mdop_embedding(Y::AbstractStateSpaceSet{D, T};
         τs = 0:50 , w::Int = 1, fnn_thres::Real = 0.05,
         max_num_of_cycles = 50,
         r::Real = 2) where {D, T<:Real}
@@ -207,7 +207,7 @@ function first_embedding_cycle_MDOP!(M, Ys, τs, w, τ_vals,
     beta_counter = 1
     for ts = 1:M
         for ts2 = 1:M
-            βs[:,beta_counter] = beta_statistic(Dataset(Ys[:,ts]), Ys[:,ts2], τs, w)
+            βs[:,beta_counter] = beta_statistic(StateSpaceSet(Ys[:,ts]), Ys[:,ts2], τs, w)
             beta_counter += 1
         end
     end
@@ -225,7 +225,7 @@ function first_embedding_cycle_MDOP!(M, Ys, τs, w, τ_vals,
 
     # compute nearest neighbor distances in the first embedding dimension for
     # FNN statistic
-    Y_old = Dataset(Ys[:,ts_vals[counter]])
+    Y_old = StateSpaceSet(Ys[:,ts_vals[counter]])
     vtree = KDTree(Y_old, metric)
     _, NNdist_old = all_neighbors(vtree, Y_old, 1:length(Y_old), 1, w)
 
@@ -338,7 +338,7 @@ end
 
 
 """
-    beta_statistic(Y::Dataset, s::Vector) [, τs, w]) → β
+    beta_statistic(Y::StateSpaceSet, s::Vector) [, τs, w]) → β
 Compute the β-statistic `β` for input state space trajectory `Y` and a timeseries `s`
 according to Nichkawde [^Nichkawde2013], based on estimating derivatives on a
 projected manifold. For a range of delay values `τs`, `β` gets computed and its
@@ -376,7 +376,7 @@ trajectory `Y` can also be just a univariate time series.
 [^Nichkawde2013]: Nichkawde, Chetan (2013). [Optimal state-space reconstruction using derivatives on projected manifold. Physical Review E 87, 022905](https://doi.org/10.1103/PhysRevE.87.022905).
 [^Kennel1992]: Kennel, M. B., Brown, R., Abarbanel, H. D. I. (1992). [Determining embedding dimension for state-space reconstruction using a geometrical construction. Phys. Rev. A 45, 3403] (https://doi.org/10.1103/PhysRevA.45.3403).
 """
-function beta_statistic(Y::AbstractDataset{D,T}, s::Vector{T}, τs = 0:50, w::Int = 1) where {D, T<:Real}
+function beta_statistic(Y::AbstractStateSpaceSet{D,T}, s::Vector{T}, τs = 0:50, w::Int = 1) where {D, T<:Real}
     @assert length(s) ≥ length(Y) "The length of the input time series `s` must be at least the length of the input trajectory `Y` "
     @assert all(x -> x ≥ 0, τs)
     τ_max = maximum(τs)
@@ -411,8 +411,8 @@ For each of such a time window the `L`-statistic from Uzal et al. [^Uzal2011]
 will be computed. `samplesize` determines the fraction of points to be
 considered in the computation of `L` (see [`uzal_cost`](@ref)). When this
 statistic reaches its global minimum the maximum delay value `τ_max` gets
-returned. When `s` is a multivariate `Dataset`, `τ_max` will becomputed for all
-timeseries of that Dataset and the maximum value will be returned. The returned
+returned. When `s` is a multivariate `StateSpaceSet`, `τ_max` will becomputed for all
+timeseries of that StateSpaceSet and the maximum value will be returned. The returned
 `L`-statistic has size `(length(tw), size(s,2))`.
 
 [^Nichkawde2013]: Nichkawde, Chetan (2013). [Optimal state-space reconstruction using derivatives on projected manifold. Physical Review E 87, 022905](https://doi.org/10.1103/PhysRevE.87.022905).
@@ -423,7 +423,7 @@ function mdop_maximum_delay(s::Vector{T}, tw=1:50, samplesize::Real=1) where {T<
     L = zeros(T, length(tw))
     counter = 1
     for i in tw
-        i==1 ? Y_act = Dataset(s) : Y_act = embed(s,i,1)
+        i==1 ? Y_act = StateSpaceSet(s) : Y_act = embed(s,i,1)
         L[counter] = uzal_cost(Y_act; samplesize = samplesize)
         counter +=1
     end
@@ -431,7 +431,7 @@ function mdop_maximum_delay(s::Vector{T}, tw=1:50, samplesize::Real=1) where {T<
     return tw[τ_max], L
 end
 
-function mdop_maximum_delay(s::AbstractDataset{D,T}, tw=1:50, samplesize::Real=1) where {D, T<:Real}
+function mdop_maximum_delay(s::AbstractStateSpaceSet{D,T}, tw=1:50, samplesize::Real=1) where {D, T<:Real}
     τs_max = zeros(Int,D)
     Ls = zeros(T, length(tw), D)
     @inbounds for i = 1:D

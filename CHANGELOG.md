@@ -1,6 +1,12 @@
-# 2.6 - Refactoring release
+# v2.7 - Refactoring release
 
-All functionality related to `Dataset` has been refactored into a new package StateSpaceSets.jl. Since DelayEmbeddings.jl re-exports it, nothing should be breaking, but still, if you don't explicitly need delay embeddings, you should use StateSpaceSets.jl directly.
+The package has also been updated to all new names used in DynamicalSystems.jl v3.0,
+and now hosts its own documentation as per DynamicalSystems.jl v3.0 change.
+
+Nothing else has been changed.
+
+# v2.6 - Refactoring release
+All functionality related to `StateSpaceSet` has been refactored into a new package StateSpaceSets.jl. Since DelayEmbeddings.jl re-exports it, nothing should be breaking, but still, if you don't explicitly need delay embeddings, you should use StateSpaceSets.jl directly.
 
 Now DelayEmbeddings.jl really is only about delay coordinate embedding methods.
 
@@ -8,7 +14,7 @@ Now DelayEmbeddings.jl really is only about delay coordinate embedding methods.
 - `statespace_sampler` ported here from ChaosTools.jl
 
 # v2.4
-- It is now possible to horizontally concatenate more than two `Dataset`s using `hcat`. Providing multiple `Dataset`s of potentially different dimensions to the `Dataset` constructor will horizontally concatenate the inputs.
+- It is now possible to horizontally concatenate more than two `StateSpaceSet`s using `hcat`. Providing multiple `StateSpaceSet`s of potentially different dimensions to the `StateSpaceSet` constructor will horizontally concatenate the inputs.
 
 # v2.3
 - New function `dataset_distance` that calculates distances between datasets.
@@ -21,7 +27,7 @@ Now DelayEmbeddings.jl really is only about delay coordinate embedding methods.
 # v2.0.0
 **BREAKING**
 - All deprecations have been removed and errors will be thrown now instead. Switch to previous stable version to enable them again.
-- `Dataset[range_of_integers]` now returns a `Dataset` instead of `Vector{SVector}`.
+- `StateSpaceSet[range_of_integers]` now returns a `StateSpaceSet` instead of `Vector{SVector}`.
 
 # v1.20.6
 * Name `regularize` has been deprecated in favor of `standardize`, which aligns more with current literature.
@@ -38,7 +44,7 @@ Now DelayEmbeddings.jl really is only about delay coordinate embedding methods.
 * Theiler window is now usable in Cao's method.
 
 # v1.18.0
-* `view` is now applicable to `AbstractDataset`, producing objects of the new type `SubDataset`.
+* `view` is now applicable to `AbstractStateSpaceSet`, producing objects of the new type `SubDataset`.
 
 # v1.17.0
 * All code related to neighborhoods and finding nearest neighbors has moved to Neighborhood.jl, and thus old names like `FixedMassNeighborhood` and `neighborhood` have been deprecated.
@@ -48,11 +54,11 @@ Now DelayEmbeddings.jl really is only about delay coordinate embedding methods.
 * Arbitrary weights can be given as options to `genembed`.
 
 # v1.15.0
-* Horizontal concatenation of same-length `Vector{<:Real}` and `Dataset` in any order using
+* Horizontal concatenation of same-length `Vector{<:Real}` and `StateSpaceSet` in any order using
   `Base.hcat(x, y)` or `[x y]` syntax.
 * Convenience constructors that uses horizontal concatenation:
-  `Dataset(::Dataset, ::Vector{<:Real})`, `Dataset(::Vector{<:Real}, ::Dataset)` and
-  `Dataset(::Dataset, ::Dataset)`.
+  `StateSpaceSet(::StateSpaceSet, ::Vector{<:Real})`, `StateSpaceSet(::Vector{<:Real}, ::StateSpaceSet)` and
+  `StateSpaceSet(::StateSpaceSet, ::StateSpaceSet)`.
 
 # v1.14.0
 * New unified embedding method `pecuzal` by Kraemer et al.
@@ -63,7 +69,7 @@ Now DelayEmbeddings.jl really is only about delay coordinate embedding methods.
 # v1.12.0
 * Possible delay times in `optimal_traditional_de` are now `1:100` for increased accuracy.
 * New method for univariate non-unified delay embedding by Hegger, Kantz
-* It is now possible to `embed` in one dimension (which just returns the vector as a Dataset)
+* It is now possible to `embed` in one dimension (which just returns the vector as a StateSpaceSet)
 * New function `optimal_traditional_de` for automated delay embeddings
 * `delay_afnn, delay_ifnn, delay_fnn, delay_f1nn` are part of public API now.
 * The argument `γs` and the function `reconstruct` is starting to be phased out in

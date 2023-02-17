@@ -49,7 +49,7 @@ end
 
 @testset "Pecora multivariate" begin
 ## %% Trajectory case
-    s = Dataset(data)
+    s = StateSpaceSet(data)
     optimal_τ = estimate_delay(s[:,2], "mi_min")
     Tmax = 100
     K = 14

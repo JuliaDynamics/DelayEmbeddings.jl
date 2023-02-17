@@ -36,7 +36,7 @@ println("\nTesting mdop_embedding.jl...")
 
 s = readdlm(joinpath(tsfolder, "1.csv"))
 s = vec(s)
-Y = Dataset(s)
+Y = StateSpaceSet(s)
 
 # For comparison reasons using Travis CI we carry out the integration on a UNIX
 # OS and save the resulting time series
@@ -145,7 +145,7 @@ end
 
     τ_m, L = mdop_maximum_delay(sroe[:, 2], tws)
     @test τ_m == 26
-    τ_m, Ls = mdop_maximum_delay(Dataset(sroe[:, 1:2]), tws)
+    τ_m, Ls = mdop_maximum_delay(StateSpaceSet(sroe[:, 1:2]), tws)
     @test τ_m == 26
 
     # # reproduce Fig.2 of the paper
@@ -172,7 +172,7 @@ end
 end
 
 @testset "mdop_embedding multivariate" begin
-    tra = Dataset(sroe)
+    tra = StateSpaceSet(sroe)
     w1 = estimate_delay(sroe[:,1], "mi_min")
     w2 = estimate_delay(sroe[:,2], "mi_min")
 
@@ -188,9 +188,9 @@ end
 
     Y2, τ_vals2, ts_vals2, FNNs2, betas2 = mdop_embedding(tra; τs = taus, w = theiler, max_num_of_cycles = mc)
     ttra = standardize(tra)
-    b1 = DelayEmbeddings.beta_statistic(Dataset(ttra[:,ts_vals2[1]]), ttra[:,1], taus, theiler)
-    b2 = DelayEmbeddings.beta_statistic(Dataset(ttra[:,ts_vals2[1]]), ttra[:,2], taus, theiler)
-    b3 = DelayEmbeddings.beta_statistic(Dataset(ttra[:,ts_vals2[1]]), ttra[:,3], taus, theiler)
+    b1 = DelayEmbeddings.beta_statistic(StateSpaceSet(ttra[:,ts_vals2[1]]), ttra[:,1], taus, theiler)
+    b2 = DelayEmbeddings.beta_statistic(StateSpaceSet(ttra[:,ts_vals2[1]]), ttra[:,2], taus, theiler)
+    b3 = DelayEmbeddings.beta_statistic(StateSpaceSet(ttra[:,ts_vals2[1]]), ttra[:,3], taus, theiler)
 
     @test betas2[1][:,1] == b1
     @test betas2[1][:,2] == b2

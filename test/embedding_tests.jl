@@ -4,7 +4,7 @@ println("\nTesting delay embeddings...")
 
 @testset "embedding" begin
 
-    data = Dataset(rand(10001,3))
+    data = StateSpaceSet(rand(10001,3))
     s = data[:, 1]; N = length(s)
 
     @testset "standard" begin
@@ -55,7 +55,7 @@ println("\nTesting generalized embedding...")
     τs = (0, 2, -7)
     js = (1, 3, 2)
     ge = GeneralizedEmbedding(τs, js)
-    s = Dataset(rand(20, 3))
+    s = StateSpaceSet(rand(20, 3))
     x, y, z = columns(s)
     τr = τrange(s, ge)
     @testset "univariate" begin

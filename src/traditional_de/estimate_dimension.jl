@@ -222,7 +222,7 @@ function delay_f1nn(s::AbstractVector, τ::Int, ds = 2:6; metric = Euclidean())
     return f1nn_ratio
 end
 
-function _compare_first_nn(s, γ::Int, τ::Int, Rγ::AbstractDataset{D,T}, metric) where {D,T}
+function _compare_first_nn(s, γ::Int, τ::Int, Rγ::AbstractStateSpaceSet{D,T}, metric) where {D,T}
     # This function compares the first nearest neighbors of `s`
     # embedded with Dimensions `γ` and `γ+1` (the former given as input)
     tree = KDTree(Rγ,metric)

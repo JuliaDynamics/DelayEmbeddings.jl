@@ -8,7 +8,7 @@ export n_statistic
 """
     garcia_almeida_embedding(s; kwargs...) → Y, τ_vals, ts_vals, FNNs ,NS
 A unified approach to properly embed a time series (`Vector` type) or a
-set of time series (`Dataset` type) based on the papers of Garcia & Almeida
+set of time series (`StateSpaceSet` type) based on the papers of Garcia & Almeida
 [^Garcia2005a],[^Garcia2005b].
 
 ## Keyword arguments
@@ -38,7 +38,7 @@ The method works iteratively and gradually builds the final embedding vectors
 `Y`. Based on the `N`-statistic the algorithm
 picks an optimal delay value `τ` for each embedding cycle as the first local
 minimum of `N`. In case of multivariate embedding, i.e. when embedding a set of
-time series (`s::Dataset`), the optimal delay value `τ` is chosen as the first
+time series (`s::StateSpaceSet`), the optimal delay value `τ` is chosen as the first
 minimum from all minimum's of all considered `N`-statistics for each embedding
 cycle. The range of considered delay values is determined in `τs` and for the
 nearest neighbor search we respect the Theiler window `w`. After each embedding
@@ -46,7 +46,7 @@ cycle the FNN-statistic `FNNs` [^Hegger1999][^Kennel1992] is being checked and
 as soon as this statistic drops below the threshold `fnn_thres`, the algorithm
 breaks. In order to increase the  practability of the method the algorithm also
 breaks, when the FNN-statistic `FNNs` increases . The final embedding vector is
-stored in `Y` (`Dataset`). The chosen delay values for each embedding cycle are
+stored in `Y` (`StateSpaceSet`). The chosen delay values for each embedding cycle are
 stored in the `τ_vals` and the according time series number chosen for the
 according delay value in `τ_vals` is stored in `ts_vals`. For univariate
 embedding (`s::Vector`) `ts_vals` is a vector of ones of length `τ_vals`,
@@ -69,7 +69,7 @@ function garcia_almeida_embedding(s::Vector{F}; τs = 0:50 , w::Int = 1,
     s_orig = s
     s = standardize(s) # especially important for fnn-computation
     # define actual phase space trajectory
-    Y_act = Dataset(s)
+    Y_act = StateSpaceSet(s)
 
     # compute nearest neighbor distances in the first embedding dimension for
     # FNN statistic
@@ -111,7 +111,7 @@ function garcia_almeida_embedding(s::Vector{F}; τs = 0:50 , w::Int = 1,
 end
 
 
-function garcia_almeida_embedding(Y::AbstractDataset{D, F}; τs = 0:50 , w::Int = 1,
+function garcia_almeida_embedding(Y::AbstractStateSpaceSet{D, F}; τs = 0:50 , w::Int = 1,
     r1::Real = 10, r2::Real = 2, fnn_thres::Real = 0.05,
     T::Int = 1, metric = Euclidean(), max_num_of_cycles = 50) where {D, F<:Real}
 
@@ -165,7 +165,7 @@ end
 """
     n_statistic(Y, s; kwargs...) → N, d_E1
 Perform one embedding cycle according to the method proposed in [^Garcia2005a]
-for a given phase space trajectory `Y` (of type `Dataset`) and a time series `s
+for a given phase space trajectory `Y` (of type `StateSpaceSet`) and a time series `s
 (of type `Vector`). Return the proposed N-Statistic `N` and all nearest
 neighbor distances `d_E1` for each point of the input phase space trajectory
 `Y`. Note that `Y` is a single time series in case of the first embedding cycle.
@@ -204,7 +204,7 @@ this embedding cycle as the value, where `N` has its first local minimum.
 
 [^Garcia2005a]: Garcia, S. P., Almeida, J. S. (2005). [Nearest neighbor embedding with different time delays. Physical Review E 71, 037204](https://doi.org/10.1103/PhysRevE.71.037204).
 """
-function n_statistic(Y::AbstractDataset{D, F}, s::Vector{F}; τs = 0:50 , r::Real = 10,
+function n_statistic(Y::AbstractStateSpaceSet{D, F}, s::Vector{F}; τs = 0:50 , r::Real = 10,
     T::Int = 1, w::Int = 1, metric = Euclidean()) where {D, F<:Real}
 
     # assert a minimum length of the input time series
@@ -310,7 +310,7 @@ function first_embedding_cycle!(M, Ys, τs, r1, r2, T, w, metric, τ_vals, ts_va
     n_counter = 1
     for ts = 1:M
         for ts2 = 1:M
-            Ns[:,n_counter], _ = n_statistic(Dataset(Ys[:,ts]), Ys[:,ts2];
+            Ns[:,n_counter], _ = n_statistic(StateSpaceSet(Ys[:,ts]), Ys[:,ts2];
                                             τs = τs , r = r1, T = T, w = w,
                                             metric = metric)
             n_counter += 1
@@ -330,7 +330,7 @@ function first_embedding_cycle!(M, Ys, τs, r1, r2, T, w, metric, τ_vals, ts_va
 
     # compute nearest neighbor distances in the first embedding dimension for
     # FNN statistic
-    Y_old = Dataset(Ys[:,ts_vals[counter]])
+    Y_old = StateSpaceSet(Ys[:,ts_vals[counter]])
     vtree = KDTree(Y_old, metric)
     _, NNdist_old = all_neighbors(vtree, Y_old, 1:length(Y_old), 1, w)
 

@@ -2,7 +2,7 @@
 # Description of the algorithm and definition of used symbols
 
 ## 0. Input embedding
-s is the input timeseries or Dataset.
+s is the input timeseries or StateSpaceSet.
 On s one performs a d-dimensional embedding, that uses a combination of d timeseries
 (with arbitrary amount of repetitions) and d delay times.
 
@@ -162,7 +162,7 @@ export pecora
 Compute the (average) continuity statistic `⟨ε★⟩` and undersampling statistic `⟨Γ⟩`
 according to Pecora et al.[^Pecoral2007] (A unified approach to attractor reconstruction),
 for a given input
-`s` (timeseries or `Dataset`) and input generalized embedding defined by `(τs, js)`,
+`s` (timeseries or `StateSpaceSet`) and input generalized embedding defined by `(τs, js)`,
 according to [`genembed`](@ref). The continuity statistic represents functional independence
 between the components of the existing embedding and one additional timeseries.
 The returned results are *matrices* with size `T`x`J`.
