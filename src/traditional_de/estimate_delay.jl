@@ -69,6 +69,21 @@ function estimate_delay(x::AbstractVector, method::String,
         end
         τ = exponential_decay_fit(τa, ca)
         return round(Int,τ)
+    elseif method=="dist_diagonal"
+        n = length(τs)
+        m = 7
+        threshold = 0.4
+        rv = 0
+        for i = 1:n
+            τ = τs[i]
+            prv = rv
+            rv = average_displacement(x,τ,m)
+            if (abs(rv-prv) < threshold)
+                return τ
+            end
+        end
+        error("Optimal delay could not be found in the range of τ provided.")
+        return 
     else
         throw(ArgumentError("Unknown method for `estimate_delay`."))
     end
@@ -115,7 +130,19 @@ function exponential_decay_fit(X, Y, weight = :equal)
     end
 end
 
-
+function average_displacement(x::Vector, τ::Int, m::Int)
+    @inbounds begin
+        summation = 0
+        for i in 1:length(x)
+            point = 0
+            for j in 1:m-1
+                point += (x[i+(τ*j)] - x[i]) ^ 2
+            end
+            summation += point ^ (1/2)
+        end
+        return summation/length(x)
+    end
+end
 #####################################################################################
 #                               Mutual information                                  #
 #####################################################################################
