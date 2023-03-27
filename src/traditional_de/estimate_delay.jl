@@ -19,6 +19,9 @@ The `method` can be one of the following:
    to an integer (uses least squares on `c(t) = exp(-t/τ)` to find `τ`).
 * `"exp_extrema"` : same as above but the exponential fit is done to the
   absolute value of the local extrema of the correlation function.
+* `"dist_diagonal"` : first delay at which the average distance from the diagonal
+  reaches `threshold`.
+  Keyword `m` are propagated into [`average_displacement`](@ref).
 
 Both the mutual information and correlation function (`autocor`) are computed _only_
 for delays `τs`. This means that the `min` methods can never return the first value
@@ -70,19 +73,15 @@ function estimate_delay(x::AbstractVector, method::String,
         τ = exponential_decay_fit(τa, ca)
         return round(Int,τ)
     elseif method=="dist_diagonal"
-        n = length(τs)
-        m = 7
-        threshold = 0.4
         rv = 0
-        for i = 1:n
-            τ = τs[i]
+        for τ in τs
             prv = rv
-            rv = average_displacement(x,τ,m)
-            if (abs(rv-prv) < threshold)
+            rv = average_displacement(x,τ; kwargs[:m])
+            if (abs(rv-prv) < kwargs[:threshold])
                 return τ
             end
         end
-        error("Optimal delay could not be found in the range of τ provided.")
+        error("Optimal delay could not be found in the range of τs provided.")
         return 
     else
         throw(ArgumentError("Unknown method for `estimate_delay`."))
@@ -130,7 +129,14 @@ function exponential_decay_fit(X, Y, weight = :equal)
     end
 end
 
-function average_displacement(x::Vector, τ::Int, m::Int)
+"""
+    average_displacement(x, τ, m) -> S_m(τ)
+Determines the average displacement from the diagonal generalized SSR given a τ.
+Adapted from:  https://www.delucafoundation.org/download/bibliography/de-luca/061.pdf.
+
+Method requires the embedding dimension as arg m.
+"""
+function average_displacement(x::Vector, τ::Int; m::Int)
     @inbounds begin
         summation = 0
         for i in 1:length(x)
