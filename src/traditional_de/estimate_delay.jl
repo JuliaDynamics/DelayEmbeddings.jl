@@ -73,16 +73,7 @@ function estimate_delay(x::AbstractVector, method::String,
         τ = exponential_decay_fit(τa, ca)
         return round(Int,τ)
     elseif method=="dist_diagonal"
-        rv = 0
-        for τ in τs
-            prv = rv
-            rv = average_displacement(x,τ; kwargs[:m])
-            if (abs(rv-prv) < kwargs[:threshold])
-                return τ
-            end
-        end
-        error("Optimal delay could not be found in the range of τs provided.")
-        return 
+        return displacement_plateau(x, τs; kwargs...)
     else
         throw(ArgumentError("Unknown method for `estimate_delay`."))
     end
@@ -136,10 +127,11 @@ Adapted from:  https://www.delucafoundation.org/download/bibliography/de-luca/06
 
 Method requires the embedding dimension as arg m.
 """
-function average_displacement(x::Vector, τ::Int; m::Int)
+function average_displacement(x::Vector, τ::Int; m::Int=7)
     @inbounds begin
         summation = 0
-        for i in 1:length(x)
+        l = length(x) - (τ * (m - 1))
+        for i in 1:l
             point = 0
             for j in 1:m-1
                 point += (x[i+(τ*j)] - x[i]) ^ 2
@@ -149,6 +141,35 @@ function average_displacement(x::Vector, τ::Int; m::Int)
         return summation/length(x)
     end
 end
+
+function displacement_plateau(x::Vector, τs::AbstractVector{Int}; kwargs...)
+    @inbounds begin
+        if length(kwargs) > 2
+            throw(ArgumentError("the keyword arguments are only be either `m` and `threshold`"))
+        elseif haskey(kwargs, :threshold)     # threshold is specified
+            thresh = kwargs[:threshold]
+        else
+            thresh = 0.4 # default threshold
+        end
+        prv = -1
+        pτ = -1
+        for τ in τs
+            if haskey(kwargs, :m) #If we have a specified dimension m use it.
+                rv = average_displacement(x, τ; m=kwargs[:m])
+            else
+                rv = average_displacement(x, τ)
+            end
+            if (abs(rv-prv)/(τ - pτ) < thresh)
+                return τ
+            end
+            prv = rv
+            pτ = τ
+        end
+        error("Optimal delay could not be found in the range of τs provided.")
+        return τ
+    end
+end
+
 #####################################################################################
 #                               Mutual information                                  #
 #####################################################################################
