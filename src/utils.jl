@@ -58,9 +58,9 @@ function findlocalextrema(y)
         end
 
         for i in 2:l-1
-            left = i-1
-            right = i+1
-            if  y[left] < y[i] > y[right]
+            left = i - 1
+            right = i + 1
+            if y[left] < y[i] > y[right]
                 push!(maxargs, i)
             elseif y[left] > y[i] < y[right]
                 push!(minargs, i)
@@ -87,15 +87,16 @@ This function is nothing more than a convinience call to `Neighborhood.bulksearc
 It is an internal, convenience function.
 """
 function all_neighbors(vtree, vs, ns, K, w)
-    w ≥ length(vtree.data)-1 && error("Theiler window larger than the entire data span!")
+    w ≥ length(vtree.data) - 1 && error("Theiler window larger than the entire data span!")
     k = maximum(K)
     tw = Theiler(w, ns)
     idxs, dists = bulksearch(vtree, vs, NeighborNumber(k), tw)
 end
 
-function all_neighbors(A::AbstractStateSpaceSet, stype, w::Int = 0)
+function all_neighbors(A::AbstractStateSpaceSet, stype, w::Int=0)
     theiler = Theiler(w)
     tree = KDTree(A)
+    w ≥ length(tree.data) - 1 && error("Theiler window larger than the entire data span!")
     idxs, dists = bulksearch(tree, A, stype, theiler)
 end
 
@@ -105,18 +106,18 @@ Add the `τ` lagged values of the timeseries `s` as additional component to `Y`
 (`Vector` or `StateSpaceSet`), in order to form a higher embedded
 dataset `Z`. The dimensionality of `Z` is thus equal to that of `Y` + 1.
 """
-function hcat_lagged_values(Y::AbstractStateSpaceSet{D,T}, s::Vector{T}, τ::Int) where {D, T<:Real}
+function hcat_lagged_values(Y::AbstractStateSpaceSet{D,T}, s::Vector{T}, τ::Int) where {D,T<:Real}
     N = length(Y)
     MM = length(s)
     @assert N ≤ MM
 
     MMM = MM - τ
     M = min(N, MMM)
-    data = Vector{SVector{D+1, T}}(undef, M)
+    data = Vector{SVector{D + 1,T}}(undef, M)
     @inbounds for i in 1:M
-        data[i] = SVector{D+1, T}(Y[i]..., s[i+τ])
+        data[i] = SVector{D + 1,T}(Y[i]..., s[i+τ])
     end
-    return StateSpaceSet{D+1, T}(data)
+    return StateSpaceSet{D + 1,T}(data)
 end
 
 function hcat_lagged_values(Y::Vector{T}, s::Vector{T}, τ::Int) where {T<:Real}
