@@ -51,20 +51,9 @@ function estimate_delay(x::AbstractVector, method::String,
         return mincrossing(c, τs)
     elseif method=="exp_decay"
         c = autocor(x, τs; demean=true)
-        start = false
-        fin = length(c)
-        s = 1
-        for (i, cor) in enumarate(c)
-            if cor > 0.0 && !start
-                start = true
-                s = i
-            end
-            if cor <= 0.0 && start
-                fin = i - 1
-                break
-            end
-        end
-        τ = exponential_decay_fit(τs[s:fin], c[s:fin])
+        idx = length(c)
+        idx = findfirst(<(0), c)
+        τ = exponential_decay_fit(τs[:idx], c[:idx])
         return round(Int,τ)
     elseif method=="exp_extrema"
         c = autocor(x, τs; demean=true)
