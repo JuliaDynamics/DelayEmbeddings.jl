@@ -4,7 +4,7 @@ export optimal_separated_de
     optimal_separated_de(s, method = "afnn", dmethod = "mi_min"; kwargs...) → 𝒟, τ, E
 
 Produce an optimal delay embedding `𝒟` of the given timeseries `s` by
-using the traditional approach of first finding an optimal (and constant) delay
+using the *separated* approach of first finding an optimal (and constant) delay
 time using [`estimate_delay`](@ref) with the given `dmethod`, and then an optimal
 embedding dimension, by calculating an appropriate statistic for each dimension `d ∈ 1:dmax`.
 Return the embedding `𝒟`, the optimal delay time `τ`
@@ -34,7 +34,8 @@ For more details, see individual methods: [`delay_afnn`](@ref), [`delay_ifnn`](@
     you should directly calculate the statistic and plot its values versus the
     dimensions.
 
-## Keyword Arguments
+## Keyword arguments
+
 The keywords
 ```julia
 τs = 1:100, dmax = 10
@@ -51,6 +52,7 @@ w, rtol, atol, τs, metric, r
 ```
 
 ## Description
+
 We estimate the optimal embedding dimension based on the given delay time gained
 from `dmethod` as follows: For Cao's method the optimal dimension is reached,
 when the slope of the `E₁`-statistic (output from `"afnn"`) falls below the
@@ -84,7 +86,6 @@ function optimal_separated_de(s::AbstractVector, dimensionmethod::String = "afnn
     @assert dimensionmethod ∈ ("afnn", "fnn", "ifnn", "f1nn")
     τ = estimate_delay(s, delaymethod, τs)
     ds = 1:dmax
-    γs = ds .- 1 # TODO: This must be updated to dimension in 2.0
 
     if dimensionmethod=="afnn"
         dimension_statistic = delay_afnn(s, τ, ds; metric, w)
