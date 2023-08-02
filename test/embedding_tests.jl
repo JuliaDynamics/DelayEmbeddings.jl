@@ -5,13 +5,14 @@ println("\nTesting delay embeddings...")
 @testset "embedding" begin
 
     data = StateSpaceSet(rand(10001,3))
-    s = data[:, 1]; N = length(s)
+    s = data[:, 1];
+    N = length(s)
 
     @testset "standard" begin
 
     	@testset "D = $(D), τ = $(τ)" for D in [2,3], τ in [2,3]
     		R = embed(s, D, τ)
-    		@test R[(1+τ):end, 1] == R[1:end-τ, 2]
+    		@test R[(1+τ):N, 1] == R[1:N-τ, 2]
     		@test size(R) == (length(s) - τ*(D-1), D)
     	end
     end
@@ -41,8 +42,9 @@ println("\nTesting delay embeddings...")
         @test R1 == R0
 
         R2y = R2[:, 2]
-        @test R2y == R0[5:end, 1]
-        @test R2[:, 1] == R0[1:end-4, 1]
+        N = lenth(R0)
+        @test R2y == R0[5:N, 1]
+        @test R2[:, 1] == R0[1:N-4, 1]
         @test size(R2) == (N-maximum(τ2), 3)
 
         @test_throws ArgumentError embed(s, 4, τ1)
