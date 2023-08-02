@@ -5,6 +5,7 @@ export GeneralizedEmbedding, genembed
 
 """
     GeneralizedEmbedding(τs, js = ones(length(τs)), ws = nothing) -> `embedding`
+
 Return a delay coordinates embedding structure to be used as a function.
 Given a timeseries *or* trajectory (i.e. `StateSpaceSet`) `s` and calling
 ```julia
@@ -82,7 +83,8 @@ max(1, (-minimum(ge.τs) + 1)):min(length(s), length(s) - maximum(ge.τs))
 
 
 """
-    genembed(s, τs, js = ones(...); ws = nothing) → dataset
+    genembed(s, τs, js = ones(...); ws = nothing) → ssset
+
 Create a generalized embedding of `s` which can be a timeseries or arbitrary `StateSpaceSet`,
 and return the result as a new `StateSpaceSet`.
 

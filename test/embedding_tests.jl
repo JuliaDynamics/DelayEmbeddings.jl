@@ -1,25 +1,22 @@
 using Test, DelayEmbeddings
 
-println("\nTesting delay embeddings...")
+@testset "embed" begin
 
-@testset "embedding" begin
-
-    data = StateSpaceSet(rand(10001,3))
+    data = StateSpaceSet(rand(1001,3))
     s = data[:, 1];
     N = length(s)
 
     @testset "standard" begin
-
     	@testset "D = $(D), τ = $(τ)" for D in [2,3], τ in [2,3]
     		R = embed(s, D, τ)
     		@test R[(1+τ):N, 1] == R[1:N-τ, 2]
-    		@test size(R) == (length(s) - τ*(D-1), D)
+            @test length(R) == length(s) - τ*(D-1)
+    		@test @test dimension(R) == D
     	end
     end
 
     @testset "weighted" begin
     	@testset "D = $(D), τ = $(τ)" for D in [2,3], τ in [2,3]
-
             w = 0.1
     		R1 = embed(s, D, τ)
     		R2 = embed(s, D, τ, w)
@@ -45,14 +42,14 @@ println("\nTesting delay embeddings...")
         N = lenth(R0)
         @test R2y == R0[5:N, 1]
         @test R2[:, 1] == R0[1:N-4, 1]
-        @test size(R2) == (N-maximum(τ2), 3)
+        @test length(R2) == N-maximum(τ2)
+        @test dimension(R2) == D
 
         @test_throws ArgumentError embed(s, 4, τ1)
     end
 
 end
 
-println("\nTesting generalized embedding...")
 @testset "genembed" begin
     τs = (0, 2, -7)
     js = (1, 3, 2)
@@ -84,7 +81,6 @@ println("\nTesting generalized embedding...")
     @testset "weighted integer" begin
         ws = (1, 0, -0.1)
         x = collect(1:100)
-        ge = GeneralizedEmbedding(τs, js, ws)
         em = genembed(x, τs, js; ws)
         @test em[1:3, 1] == x[1+7:3+7]
         @test em[1:3, 2] == 0 .* x[1+7+2:3+7+2]
