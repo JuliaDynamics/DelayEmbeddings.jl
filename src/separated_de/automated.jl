@@ -1,7 +1,7 @@
-export optimal_traditional_de
+export optimal_separated_de
 
 """
-    optimal_traditional_de(s, method = "afnn", dmethod = "mi_min"; kwargs...) → 𝒟, τ, E
+    optimal_separated_de(s, method = "afnn", dmethod = "mi_min"; kwargs...) → 𝒟, τ, E
 
 Produce an optimal delay embedding `𝒟` of the given timeseries `s` by
 using the traditional approach of first finding an optimal (and constant) delay
@@ -74,7 +74,7 @@ See also the file `test/compare_different_dimension_estimations.jl` for a compar
 
 [^Hegger1999]: Hegger & Kantz, [Improved false nearest neighbor method to detect determinism in time series data. Physical Review E 60, 4970](https://doi.org/10.1103/PhysRevE.60.4970).
 """
-function optimal_traditional_de(s::AbstractVector, dimensionmethod::String = "afnn",
+function optimal_separated_de(s::AbstractVector, dimensionmethod::String = "afnn",
         delaymethod::String= "mi_min";
         fnn_thres::Real = 0.05, slope_thres::Real = .05, dmax::Int = 10, w::Int=1,
         rtol=10.0, atol=2.0, τs = 1:100, metric = Euclidean(), r::Real=2.0,

@@ -43,16 +43,16 @@ data = trajectory(lo, 1000.0; Δt=0.05, Ttr = 100.0)[1]
 s_lorenz = data[:,1]
 
 @testset "Caos method" begin
-    𝒟, τ, x = optimal_traditional_de(s_roessler, "afnn")
+    𝒟, τ, x = optimal_separated_de(s_roessler, "afnn")
     @test 3 ≤ size(𝒟, 2) ≤ 5
 
     E2s = DelayEmbeddings.stochastic_indicator(s_roessler, τ, 1:6)
     @test minimum(E2s) < 0.3
 
-    𝒟, τ, x = optimal_traditional_de(s_roessler, "afnn"; metric = Chebyshev())
+    𝒟, τ, x = optimal_separated_de(s_roessler, "afnn"; metric = Chebyshev())
     @test 3 ≤ size(𝒟, 2) ≤ 5
 
-    𝒟, τ, x = optimal_traditional_de(s_lorenz, "afnn")
+    𝒟, τ, x = optimal_separated_de(s_lorenz, "afnn")
     @test 4 ≤ size(𝒟, 2) ≤ 8
 
     #Test against random signal
@@ -61,27 +61,27 @@ s_lorenz = data[:,1]
 end
 
 @testset "fnn method" begin
-    𝒟, τ, x = optimal_traditional_de(s_sin, "fnn")
+    𝒟, τ, x = optimal_separated_de(s_sin, "fnn")
     @test 1 ≤ size(𝒟, 2) ≤ 3
 
-    𝒟, τ, x = optimal_traditional_de(s_roessler, "fnn")
+    𝒟, τ, x = optimal_separated_de(s_roessler, "fnn")
     @test 3 ≤ size(𝒟, 2) ≤ 5
 
-    𝒟, τ, x = optimal_traditional_de(s_lorenz, "fnn")
+    𝒟, τ, x = optimal_separated_de(s_lorenz, "fnn")
     @test 4 ≤ size(𝒟, 2) ≤ 8
 end
 
 @testset "ifnn method" begin
-    𝒟, τ, x = optimal_traditional_de(s_sin, "ifnn")
+    𝒟, τ, x = optimal_separated_de(s_sin, "ifnn")
     @test 1 ≤ size(𝒟, 2) ≤ 4
 
-    𝒟, τ, x = optimal_traditional_de(s_roessler, "ifnn")
+    𝒟, τ, x = optimal_separated_de(s_roessler, "ifnn")
     @test 3 ≤ size(𝒟, 2) ≤ 5
 
-    𝒟, τ, x = optimal_traditional_de(s_roessler, "ifnn"; metric = Chebyshev())
+    𝒟, τ, x = optimal_separated_de(s_roessler, "ifnn"; metric = Chebyshev())
     @test 3 ≤ size(𝒟, 2) ≤ 5
 
-    𝒟, τ, x = optimal_traditional_de(s_lorenz, "ifnn")
+    𝒟, τ, x = optimal_separated_de(s_lorenz, "ifnn")
     @test 4 ≤ size(𝒟, 2) ≤ 8
 end
 

@@ -36,7 +36,7 @@ find `d` for which the value `E₁` saturates at some value around 1.
 
 `w` is the [Theiler window](@ref).
 
-See also: [`optimal_traditional_de`](@ref) and [`stochastic_indicator`](@ref).
+See also: [`optimal_separated_de`](@ref) and [`stochastic_indicator`](@ref).
 """
 function delay_afnn(s::AbstractVector{T}, τ::Int, ds = 2:6; metric=Euclidean(), w=0) where {T}
     E1s = zeros(length(ds))
@@ -153,7 +153,7 @@ The returned value is a vector with the number of FNN for each `γ ∈ γs`. The
 optimal value for `γ` is found at the point where the number of FNN approaches
 zero.
 
-See also: [`optimal_traditional_de`](@ref).
+See also: [`optimal_separated_de`](@ref).
 """
 function delay_fnn(s::AbstractVector, τ::Int, ds = 2:6; rtol=10.0, atol=2.0)
     rtol2 = rtol^2
@@ -201,7 +201,7 @@ The returned value is a vector with the ratio between the number of FFNN and
 the number of points in the dataset for each `d ∈ ds`. The optimal value for `d`
 is found at the point where this ratio approaches zero.
 
-See also: [`optimal_traditional_de`](@ref).
+See also: [`optimal_separated_de`](@ref).
 """
 function delay_f1nn(s::AbstractVector, τ::Int, ds = 2:6; metric = Euclidean())
     f1nn_ratio = zeros(length(ds))
@@ -262,7 +262,7 @@ reached.
 *`metric = Euclidean`: The norm used for distance computations.
 *`w = 1` = The [Theiler window](@ref).
 
-See also: [`optimal_traditional_de`](@ref).
+See also: [`optimal_separated_de`](@ref).
 """
 function delay_ifnn(s::AbstractVector{T}, τ::Int, ds = 1:10;
             r::Real = 2, w::Int = 1, metric = Euclidean()) where {T}

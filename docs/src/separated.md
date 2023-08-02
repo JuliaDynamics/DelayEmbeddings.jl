@@ -17,7 +17,7 @@ It is also trivial to define it yourself using `entropy` from `ComplexityMeasure
 
 ## Optimal embedding dimension
 ```@docs
-optimal_traditional_de
+optimal_separated_de
 delay_afnn
 delay_ifnn
 delay_fnn
@@ -50,7 +50,7 @@ ax = Axis(fig[1,1]; xlabel = "embedding dimension", ylabel = "estimator")
 for (i, method) in enumerate(["afnn", "fnn", "f1nn", "ifnn"])
     # Plot statistic used to estimate optimal embedding
     # as well as the automated output embedding
-    𝒟, τ, E = optimal_traditional_de(x, method; dmax)
+    𝒟, τ, E = optimal_separated_de(x, method; dmax)
     lines!(ax, 1:dmax, E; label = method, marker = :circle, color = Cycled(i))
     optimal_d = size(𝒟, 2)
     ## Scatter the optimal embedding dimension as a lager marker
