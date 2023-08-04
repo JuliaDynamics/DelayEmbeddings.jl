@@ -11,7 +11,7 @@ using Test, DelayEmbeddings
             N = length(R)
     		@test R[(1+τ):N, 1] == R[1:N-τ, 2]
             @test length(R) == length(s) - τ*(D-1)
-    		@test @test dimension(R) == D
+    		@test dimension(R) == D
     	end
     end
 
@@ -42,7 +42,7 @@ using Test, DelayEmbeddings
         N = length(R0)
         @test R2y == R0[5:N, 1]
         @test R2[:, 1] == R0[1:N-4, 1]
-        @test length(R2) == N-maximum(τ2)
+        @test length(R2) == length(s) - maximum(τ2)
         @test dimension(R2) == D
 
         @test_throws ArgumentError embed(s, 4, τ1)

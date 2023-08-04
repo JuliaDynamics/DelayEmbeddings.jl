@@ -4,7 +4,16 @@ using Random
 
 @testset "Pecora" begin
 # %% Generate data
-lor = Systems.lorenz([0.0;1.0;0.0];ρ=60)
+function lorenz(u0=[0.0, 10.0, 0.0]; σ = 10.0, ρ = 28.0, β = 8/3)
+    return CoupledODEs(lorenz_rule, u0, [σ, ρ, β])
+end
+@inbounds function lorenz_rule(u, p, t)
+    du1 = p[1]*(u[2]-u[1])
+    du2 = u[1]*(ρ-u[3]) - u[2]
+    du3 = u[1]*u[2] - p[3]*u[3]
+    return SVector{3}(du1, du2, du3)
+end
+lor = Systems.lorenz([0.0, 1.0, 0.0]; ρ=60)
 data = trajectory(lor, 200; Δt=0.02, Ttr = 10)
 metric = Chebyshev()
 
