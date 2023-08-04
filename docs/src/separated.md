@@ -1,11 +1,19 @@
 # Separated optimal embedding
 This page discusses and provides algorithms for estimating optimal parameters to do Delay Coordinates Embedding (DCE) with using the separated approach.
 
+## Automated function
+
+```@docs
+optimal_separated_de
+```
+
 ## Optimal delay time
+
 ```@docs
 estimate_delay
 exponential_decay_fit
 ```
+
 ### Self Mutual Information
 
 ```@docs
@@ -16,8 +24,8 @@ Notice that mutual information between two *different* timeseries x, y exists in
 It is also trivial to define it yourself using `entropy` from `ComplexityMeasures`.
 
 ## Optimal embedding dimension
+
 ```@docs
-optimal_traditional_de
 delay_afnn
 delay_ifnn
 delay_fnn
@@ -26,6 +34,7 @@ DelayEmbeddings.stochastic_indicator
 ```
 
 ## Example
+
 ```@example MAIN
 using DelayEmbeddings, CairoMakie
 using DynamicalSystemsBase
@@ -50,7 +59,7 @@ ax = Axis(fig[1,1]; xlabel = "embedding dimension", ylabel = "estimator")
 for (i, method) in enumerate(["afnn", "fnn", "f1nn", "ifnn"])
     # Plot statistic used to estimate optimal embedding
     # as well as the automated output embedding
-    𝒟, τ, E = optimal_traditional_de(x, method; dmax)
+    𝒟, τ, E = optimal_separated_de(x, method; dmax)
     lines!(ax, 1:dmax, E; label = method, marker = :circle, color = Cycled(i))
     optimal_d = size(𝒟, 2)
     ## Scatter the optimal embedding dimension as a lager marker

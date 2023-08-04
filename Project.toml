@@ -1,7 +1,7 @@
 name = "DelayEmbeddings"
 uuid = "5732040d-69e3-5649-938a-b6b4f237613f"
 repo = "https://github.com/JuliaDynamics/DelayEmbeddings.jl.git"
-version = "2.7.1"
+version = "2.7.2"
 
 [deps]
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
