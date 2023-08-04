@@ -39,7 +39,7 @@ using Test, DelayEmbeddings
         @test R1 == R0
 
         R2y = R2[:, 2]
-        N = lenth(R0)
+        N = length(R0)
         @test R2y == R0[5:N, 1]
         @test R2[:, 1] == R0[1:N-4, 1]
         @test length(R2) == N-maximum(τ2)
