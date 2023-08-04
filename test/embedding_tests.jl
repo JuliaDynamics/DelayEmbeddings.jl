@@ -4,11 +4,11 @@ using Test, DelayEmbeddings
 
     data = StateSpaceSet(rand(1001,3))
     s = data[:, 1];
-    N = length(s)
 
     @testset "standard" begin
     	@testset "D = $(D), τ = $(τ)" for D in [2,3], τ in [2,3]
     		R = embed(s, D, τ)
+            N = length(R)
     		@test R[(1+τ):N, 1] == R[1:N-τ, 2]
             @test length(R) == length(s) - τ*(D-1)
     		@test @test dimension(R) == D
