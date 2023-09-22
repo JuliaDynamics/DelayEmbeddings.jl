@@ -94,6 +94,7 @@ function all_neighbors(vtree, vs, ns, K, w)
 end
 
 function all_neighbors(A::AbstractStateSpaceSet, stype, w::Int = 0)
+    w ≥ length(A)-1 && error("Theiler window larger than the entire data span!")
     theiler = Theiler(w)
     tree = KDTree(A)
     idxs, dists = bulksearch(tree, A, stype, theiler)
