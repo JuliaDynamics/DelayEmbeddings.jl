@@ -1,3 +1,7 @@
+# v2.8
+
+Updated to StateSpaceSets.jl v2: the name `Dataset` no longer exists.
+
 # v2.7 - Refactoring release
 
 The package has also been updated to all new names used in DynamicalSystems.jl v3.0,
