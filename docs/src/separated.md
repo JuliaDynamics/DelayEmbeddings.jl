@@ -61,7 +61,7 @@ for (i, method) in enumerate(["afnn", "fnn", "f1nn", "ifnn"])
     # as well as the automated output embedding
     𝒟, τ, E = optimal_separated_de(x, method; dmax)
     lines!(ax, 1:dmax, E; label = method, marker = :circle, color = Cycled(i))
-    optimal_d = size(𝒟, 2)
+    optimal_d = dimension(𝒟)
     ## Scatter the optimal embedding dimension as a lager marker
     scatter!(ax, [optimal_d], [E[optimal_d]];
         color = Cycled(i), markersize = 30
