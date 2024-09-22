@@ -1,6 +1,7 @@
 using DelayEmbeddings
 using Test
 using DynamicalSystemsBase
+using DelayEmbeddings: oldsize
 
 test_value = (val, vmin, vmax) -> @test vmin <= val <= vmax
 
@@ -44,16 +45,16 @@ s_lorenz = data[:,1]
 
 @testset "Caos method" begin
     𝒟, τ, x = optimal_separated_de(s_roessler, "afnn")
-    @test 3 ≤ size(𝒟, 2) ≤ 5
+    @test 3 ≤ oldsize(𝒟, 2) ≤ 5
 
     E2s = DelayEmbeddings.stochastic_indicator(s_roessler, τ, 1:6)
     @test minimum(E2s) < 0.3
 
     𝒟, τ, x = optimal_separated_de(s_roessler, "afnn"; metric = Chebyshev())
-    @test 3 ≤ size(𝒟, 2) ≤ 5
+    @test 3 ≤ oldsize(𝒟, 2) ≤ 5
 
     𝒟, τ, x = optimal_separated_de(s_lorenz, "afnn")
-    @test 4 ≤ size(𝒟, 2) ≤ 8
+    @test 4 ≤ oldsize(𝒟, 2) ≤ 8
 
     #Test against random signal
     E2s = DelayEmbeddings.stochastic_indicator(rand(10000), 1, 1:5)
@@ -62,27 +63,27 @@ end
 
 @testset "fnn method" begin
     𝒟, τ, x = optimal_separated_de(s_sin, "fnn")
-    @test 1 ≤ size(𝒟, 2) ≤ 3
+    @test 1 ≤ oldsize(𝒟, 2) ≤ 3
 
     𝒟, τ, x = optimal_separated_de(s_roessler, "fnn")
-    @test 3 ≤ size(𝒟, 2) ≤ 5
+    @test 3 ≤ oldsize(𝒟, 2) ≤ 5
 
     𝒟, τ, x = optimal_separated_de(s_lorenz, "fnn")
-    @test 4 ≤ size(𝒟, 2) ≤ 8
+    @test 4 ≤ oldsize(𝒟, 2) ≤ 8
 end
 
 @testset "ifnn method" begin
     𝒟, τ, x = optimal_separated_de(s_sin, "ifnn")
-    @test 1 ≤ size(𝒟, 2) ≤ 4
+    @test 1 ≤ oldsize(𝒟, 2) ≤ 4
 
     𝒟, τ, x = optimal_separated_de(s_roessler, "ifnn")
-    @test 3 ≤ size(𝒟, 2) ≤ 5
+    @test 3 ≤ oldsize(𝒟, 2) ≤ 5
 
     𝒟, τ, x = optimal_separated_de(s_roessler, "ifnn"; metric = Chebyshev())
-    @test 3 ≤ size(𝒟, 2) ≤ 5
+    @test 3 ≤ oldsize(𝒟, 2) ≤ 5
 
     𝒟, τ, x = optimal_separated_de(s_lorenz, "ifnn")
-    @test 4 ≤ size(𝒟, 2) ≤ 8
+    @test 4 ≤ oldsize(𝒟, 2) ≤ 8
 end
 
 end

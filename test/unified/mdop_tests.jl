@@ -2,6 +2,7 @@ using DynamicalSystemsBase
 using DelayEmbeddings
 using Test
 using DelimitedFiles
+using DelayEmbeddings: oldsize
 
 println("\nTesting mdop_embedding.jl...")
 @testset "Nichkawde method MDOP" begin
@@ -103,8 +104,8 @@ end
     Y2, τ_vals2, ts_vals2, FNNs2, betas2 = mdop_embedding(s; τs = taus2, w = theiler)
 
     @test round.(β, digits=6) == round.(betas[:,1], digits=6)
-    @test size(Y,2) == 5
-    @test size(Y,2) == size(Y2,2)
+    @test oldsize(Y,2) == 5
+    @test oldsize(Y,2) == oldsize(Y2,2)
     @test sum(findall(x -> x != 1, ts_vals))==0
     @test sum(abs.(diff(τ_vals)) .< 10) == 0
 
@@ -114,7 +115,7 @@ end
     # # Figure as in Fig.3 in the paper
     # plot(taus, betas[:,1], linewidth = 3, label = "embedding cycle 1")
     # plot!([taus[τ_vals[2]+1]],[betas[τ_vals[2]+1,1]], seriestype = :scatter, color="red", label = "")
-    # for i = 2:size(betas,2)
+    # for i = 2:oldsize(betas,2)
     #   plot!(taus, betas[:,i], linewidth = 3, label = "embedding cycle $i")
     #   plot!([taus[τ_vals[i+1]+1]],[betas[τ_vals[i+1]+1,i]], seriestype = :scatter, color="red", label = "")
     # end
@@ -128,7 +129,7 @@ end
     # plot(taus22, betas2[:,1], linewidth = 3, label = "embedding cycle 1")
     # trueind = findall(x -> x == τ_vals2[2], taus22)
     # plot!(taus22[trueind],[betas2[trueind,1]], seriestype = :scatter, color="red", label = "")
-    # for i = 2:size(betas2,2)
+    # for i = 2:oldsize(betas2,2)
     #   plot!(taus22, betas2[:,i], linewidth = 3, label = "embedding cycle $i")
     #   trueind = findall(x -> x == τ_vals2[i+1], taus22)
     #   plot!(taus22[trueind],[betas2[trueind,i]], seriestype = :scatter, color="red", label = "")
@@ -196,7 +197,7 @@ end
     @test betas2[1][:,2] == b2
     @test betas2[1][:,3] == b3
 
-    @test size(Y2,2) == 3
+    @test oldsize(Y2,2) == 3
     @test τ_vals2[1] == τ_vals2[2] == 0
     @test τ_vals2[3] == maximum(taus)
 

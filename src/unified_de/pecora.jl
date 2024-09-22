@@ -252,11 +252,11 @@ function pecora(
     return all_ε★, all_Γ
 end
 
-maxdimspan(s) = 1:size(s)[2]
-maxdimspan(s::AbstractVector) = 1
+maxdimspan(s) = 1:oldsize(s)[2]
+maxdimspan(s::AbstractVector{<:Real}) = 1
 
 function continuity_per_timeseries(x::AbstractVector, ns, allNNidxs, delays, K, α, p)
-    avrg_ε★ = zeros(size(delays))
+    avrg_ε★ = zeros(oldsize(delays))
     Ks = [k for k in 8:K]
     δ_to_ε_amount = get_binomial_table(p, α; trial_range = length(Ks))
     for (ι, τ) in enumerate(delays) # Loop over the different delays
@@ -293,7 +293,7 @@ end
 # Undersampling statistic code
 ##########################################################################################
 function undersampling_per_timeseries(x, vspace, ns, uidxs, udist, JS, delays, ρs)
-    avrg_Γ = zeros(size(delays))
+    avrg_Γ = zeros(oldsize(delays))
     for (ι, τ) in enumerate(delays) # loop over delay times
         println("τ = $τ")
         c = 0

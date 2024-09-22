@@ -1,5 +1,6 @@
 using DelayEmbeddings
 using Test, Random, DelimitedFiles
+using DelayEmbeddings: oldsize
 
 println("\nTesting pecuzal_method.jl...")
 @testset "PECUZAL" begin
@@ -13,6 +14,7 @@ println("\nTesting pecuzal_method.jl...")
 # u0 = [0, 10.0, 0.0]
 # lo = Systems.lorenz(u0; σ=10, ρ=28, β=8/3)
 # tr = trajectory(lo, 100; Δt = 0.01, Ttr = 100)
+
 tr = readdlm(joinpath(tsfolder, "test_time_series_lorenz_standard_N_10000_multivariate.csv"))
 tr = StateSpaceSet(tr)
 
@@ -108,7 +110,7 @@ end
                                         τs = 0:Tmax , w = w, econ = true, L_threshold = 0.2)
     @test -1.40 < Ls[1] < -1.36
     @test -0.76 < Ls[2] < -0.72
-    @test size(Y,2) == 3
+    @test oldsize(Y,2) == 3
 
 end
 
@@ -127,7 +129,7 @@ end
     @time Y, τ_vals, ts_vals, Ls , ε★ = pecuzal_embedding(dummy_set;
                                     τs = 0:Tmax , w = w, econ = true)
 
-    @test size(Y,2) == 1
+    @test dimension(Y) == 1
 end
 
 end

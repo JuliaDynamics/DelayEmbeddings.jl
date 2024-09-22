@@ -1,6 +1,7 @@
 using DelayEmbeddings, DynamicalSystemsBase
 using Test
 using Random
+using DelayEmbeddings: oldsize
 
 @testset "Pecora" begin
 # Generate data

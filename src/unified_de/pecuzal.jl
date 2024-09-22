@@ -161,7 +161,7 @@ function pecuzal_embedding(Y::StateSpaceSet{D, T}; τs = 0:50 , w::Int = 1,
     τ_vals = Int64[0]
     ts_vals = Int64[]
     Ls = Float64[]
-    ε★s = fill(zeros(T, length(τs), size(Y,2)), 1, max_cycles)
+    ε★s = fill(zeros(T, length(τs), oldsize(Y,2)), 1, max_cycles)
 
     # loop over increasing embedding dimensions until some break criterion will
     # tell the loop to stop/break
@@ -223,13 +223,13 @@ function pecuzal_multivariate_embedding_cycle!(Y_act, flag::Bool,
         samplesize::Real, K::Int, α::Real, p::Real, KNN::Int, econ::Bool
     )
 
-    M = size(Ys,2)
-    # in the 1st cycle we have to check all (size(Y,2)^2 combinations and pick
+    M = oldsize(Ys,2)
+    # in the 1st cycle we have to check all (oldsize(Y,2)^2 combinations and pick
     # the tau according to maximum L-statistic decrease)
     if counter == 1
         Y_act = first_embedding_cycle_pecuzal!(Ys, M, τs, w, samplesize, K,
                                 metric, α, p, KNN, τ_vals, ts_vals, Ls, ε★s, econ)
-    # in all other cycles we just have to check (size(Y,2)) combinations and pick
+    # in all other cycles we just have to check (oldsize(Y,2)) combinations and pick
     # the tau according to maximum L-statistic decrease
     else
         Y_act = embedding_cycle_pecuzal!(Y_act, Ys, counter, M, τs, w, samplesize,
@@ -257,6 +257,7 @@ function first_embedding_cycle_pecuzal!(Ys::StateSpaceSet{D, T}, M::Int, τs, w:
         ε★[:,1+(M*(ts-1)):M*ts], _ = pecora(Ys, (0,), (ts,); delays = τs,
                     w = w, samplesize = samplesize, K = K, metric = metric,
                     α = α, p = p, undersampling = false)
+
         L_min[ts], L_min_idx[ts], idx[ts]  = choose_right_embedding_params(
                                         ε★[:,1+(M*(ts-1)):M*ts], Ys[:,ts],
                                         Ys, τs, KNN, w, samplesize,
@@ -308,9 +309,9 @@ function choose_right_embedding_params!(ε★::AbstractMatrix, Y_act,
             Ls::Vector{T}, ε★s::AbstractMatrix, counter::Int, τs, KNN::Int,
             w::Int, samplesize::Real, metric, econ::Bool) where {D, T}
 
-    L_min_ = zeros(size(Ys,2))
-    τ_idx = zeros(Int,size(Ys,2))
-    for ts = 1:size(Ys,2)
+    L_min_ = zeros(oldsize(Ys,2))
+    τ_idx = zeros(Int,oldsize(Ys,2))
+    for ts = 1:oldsize(Ys,2)
         # zero-padding of ⟨ε★⟩ in order to also cover τ=0 (important for the multivariate case)
         # get the L-statistic for each peak in ⟨ε★⟩ and take the one according to L_min
         L_trials_, max_idx_ = local_L_statistics(vec([0; ε★[:,ts]]), Y_act, Ys[:,ts],
@@ -336,9 +337,9 @@ the chosen peak `τ_idx` and the number of the chosen time series to start with
 function choose_right_embedding_params(ε★::AbstractMatrix, Y_act,
             Ys::StateSpaceSet{D, T}, τs, KNN::Int, w::Int, samplesize::Real, metric,
             econ::Bool) where {D, T}
-    L_min_ = zeros(size(Ys,2))
-    τ_idx = zeros(Int,size(Ys,2))
-    for ts = 1:size(Ys,2)
+    L_min_ = zeros(oldsize(Ys,2))
+    τ_idx = zeros(Int,oldsize(Ys,2))
+    for ts = 1:oldsize(Ys,2)
         # zero-padding of ⟨ε★⟩ in order to also cover τ=0 (important for the multivariate case)
         # get the L-statistic for each peak in ⟨ε★⟩ and take the one according to L_min
         L_trials_, max_idx_ = local_L_statistics(vec([0; ε★[:,ts]]), StateSpaceSet(Y_act), Ys[:,ts],
@@ -585,7 +586,7 @@ function comp_Ek2!(ϵ_ball::Array{P, 2}, u_k::Vector{P}, Y::StateSpaceSet{D, P},
     end
 
     # compute center of mass
-    @inbounds for i in 1:size(Y)[2]; u_k[i] = sum(view(ϵ_ball, :, i))/(K+1); end # Eq. 14
+    @inbounds for i in 1:oldsize(Y)[2]; u_k[i] = sum(view(ϵ_ball, :, i))/(K+1); end # Eq. 14
 
     E²_sum = 0
     @inbounds for j = 1:K+1

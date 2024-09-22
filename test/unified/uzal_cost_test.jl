@@ -2,6 +2,7 @@ using DelayEmbeddings
 using Test
 using Random
 using DelimitedFiles
+using DelayEmbeddings: oldsize
 
 println("\nTesting uzal_cost.jl...")
 @testset "Uzal cost" begin
