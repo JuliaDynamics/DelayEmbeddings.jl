@@ -10,6 +10,14 @@ end DelayEmbeddings
 using Reexport
 @reexport using StateSpaceSets
 
+# for backwards compatibility with SSSets.jl v1
+# TODO: Cleanup: go through the instances in the codebase
+# where `oldsize` is called: replace it with `size` if the
+# input is a `Matrix`, and with `dimension` if the input is a `StateSpaceSet`.
+oldsize(s::AbstractStateSpaceSet) = (length(s), dimension(s))
+oldsize(s) = size(s)
+oldsize(s, i::Int) = oldsize(s)[i]
+
 include("embeddings/embed.jl")
 include("embeddings/genembed.jl")
 include("utils.jl")

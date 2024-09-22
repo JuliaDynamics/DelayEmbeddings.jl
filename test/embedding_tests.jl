@@ -1,4 +1,5 @@
 using Test, DelayEmbeddings
+using DelayEmbeddings: oldsize
 
 @testset "embed" begin
 

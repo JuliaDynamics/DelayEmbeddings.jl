@@ -1,6 +1,7 @@
 using DynamicalSystemsBase
 using DelayEmbeddings
 using Test, DelimitedFiles
+using DelayEmbeddings: oldsize
 
 println("\nTesting garcia_almeida.jl...")
 @testset "Garcia & Almeida method" begin
@@ -59,13 +60,13 @@ end
     Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embedding(x; τs=0:100,  w = 1, T = 1)
     Y_act3, τ_vals3, ts_vals3, FNNs3, NS3 = garcia_almeida_embedding(x; τs=0:100,  w = 17, T = 17, fnn_thres=0.1)
 
-    @test size(Y_act,2) == 3
-    @test size(Y_act2,2) == 3
+    @test oldsize(Y_act,2) == 3
+    @test oldsize(Y_act2,2) == 3
     @test 15 ≤ τ_vals[2] ≤ 17
     @test 1 ≤ τ_vals2[2] ≤ 3
     @test FNNs[1] ≥ FNNs[2] ≤ FNNs[3]
     @test FNNs2[end]>FNNs2[end-1]
-    @test size(Y_act3,2) == 2
+    @test oldsize(Y_act3,2) == 2
     @test τ_vals3 == τ_vals[1:2]
 
     # using Plots
@@ -82,8 +83,8 @@ end
     Y_act, τ_vals, ts_vals, FNNs, NS = garcia_almeida_embedding(tr; τs=0:100,  w = 17, T = 17)
     Y_act2, τ_vals2, ts_vals2, FNNs2, NS2 = garcia_almeida_embedding(tr; τs=0:100,  w = 1, T = 1)
 
-    @test size(Y_act,2) == 5
-    @test size(Y_act2,2) == 3
+    @test oldsize(Y_act,2) == 5
+    @test oldsize(Y_act2,2) == 3
     @test ts_vals[1] == ts_vals[4] == 1
     @test ts_vals[2] == ts_vals[5] == 3
     @test ts_vals[3] == 2

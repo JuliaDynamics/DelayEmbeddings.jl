@@ -8,7 +8,7 @@ using the *separated* approach of first finding an optimal (and constant) delay
 time using [`estimate_delay`](@ref) with the given `dmethod`, and then an optimal
 embedding dimension, by calculating an appropriate statistic for each dimension `d ∈ 1:dmax`.
 Return the embedding `𝒟`, the optimal delay time `τ`
-(the optimal embedding dimension `d` is just `size(𝒟, 2)`) and the actual
+(the optimal embedding dimension `d` is just `dimension(𝒟)`) and the actual
 statistic `E` used to estimate optimal `d`.
 
 Notice that `E` is a function of the embedding dimension, which ranges from 1 to `dmax`.

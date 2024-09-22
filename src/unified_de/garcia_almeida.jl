@@ -131,7 +131,7 @@ function garcia_almeida_embedding(Y::AbstractStateSpaceSet{D, F}; τs = 0:50 , w
     τ_vals = Int64[0]
     ts_vals = Int64[1]
     FNNs = Float64[]
-    NS = fill(zeros(F, length(τs), size(Y,2)), 1, max_num_of_cycles)
+    NS = fill(zeros(F, length(τs), oldsize(Y,2)), 1, max_num_of_cycles)
 
     # loop over increasing embedding dimensions until some break criterion will
     # tell the loop to stop/break
@@ -282,14 +282,14 @@ function garcia_multivariate_embedding_cycle!(
     FNNs, fnn_thres, ts_vals, NNdist_old
     )
 
-    M = size(Ys,2)
-    # in the 1st cycle we have to check all (size(Y,2)^2 combinations
+    M = oldsize(Ys,2)
+    # in the 1st cycle we have to check all (oldsize(Y,2)^2 combinations
     if counter == 1
         Y_act, NNdist_new = first_embedding_cycle!(M, Ys, τs, r1, r2, T, w,
                                                 metric, τ_vals, ts_vals,
                                                 NS, FNNs)
 
-    # in all other cycles we just have to check (size(Y,2)) combinations
+    # in all other cycles we just have to check (oldsize(Y,2)) combinations
     else
         Y_act, NNdist_new = embedding_cycle!(Y_act, M, counter, Ys, τs, r1, r2, T, w,
                                             metric, NNdist_old, τ_vals, ts_vals,
@@ -386,7 +386,7 @@ time series number corresponding to that 1st minimum of all 1st minima. In this
 first embedding cycle it also returns the time series number, which act as Y_act.
 """
 function choose_optimal_tau1_garcia(Ns::Array{T, 2}, M::Int) where {T}
-    NN = size(Ns,2)
+    NN = oldsize(Ns,2)
     min_idx = zeros(Int, NN)
     for i = 1:NN
         # determine optimal tau value and minimum vals from all N-statistic's
@@ -408,7 +408,7 @@ of the N-statistics. It returns the index of this 1st minimum as well as the
 time series number corresponding to that 1st minimum of the 1st minima.
 """
 function choose_optimal_tau2_garcia(Ns::Array{T, 2}) where {T}
-    NN = size(Ns,2)
+    NN = oldsize(Ns,2)
     min_idx = zeros(Int, NN)
     for i = 1:NN
         # determine optimal tau value and minimum vals from all N-statistic's

@@ -124,7 +124,7 @@ function comp_Ek2!(ϵ_ball, u_k, Y, ns::Int, NNidxs, T::Int, K::Int, metric)
     end
 
     # compute center of mass
-    @inbounds for i in 1:size(Y)[2]; u_k[i] = sum(view(ϵ_ball, :, i))/(K+1); end # Eq. 14
+    @inbounds for i in 1:oldsize(Y)[2]; u_k[i] = sum(view(ϵ_ball, :, i))/(K+1); end # Eq. 14
 
     E²_sum = 0
     @inbounds for j = 1:K+1

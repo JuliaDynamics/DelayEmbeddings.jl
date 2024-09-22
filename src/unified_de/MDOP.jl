@@ -122,7 +122,7 @@ function mdop_embedding(Y::AbstractStateSpaceSet{D, T};
     τ_vals = Int64[0]
     ts_vals = Int64[]
     FNNs = Float64[]
-    βS = fill(zeros(T, length(τs), size(Y,2)), 1, max_num_of_cycles)
+    βS = fill(zeros(T, length(τs), oldsize(Y,2)), 1, max_num_of_cycles)
 
     # loop over increasing embedding dimensions until some break criterion will
     # tell the loop to stop/break
@@ -179,13 +179,13 @@ function mdop_multivariate_embedding_cycle!(
         FNNs, fnn_thres, ts_vals, NNdist_old
     )
 
-    M = size(Ys,2)
-    # in the 1st cycle we have to check all (size(Y,2)^2 combinations
+    M = oldsize(Ys,2)
+    # in the 1st cycle we have to check all (oldsize(Y,2)^2 combinations
     if counter == 1
         Y_act, NNdist_new = first_embedding_cycle_MDOP!(M, Ys, τs, w, τ_vals,
                                                 ts_vals, βS, metric, FNNs, r)
 
-    # in all other cycles we just have to check (size(Y,2)) combinations
+    # in all other cycles we just have to check (oldsize(Y,2)) combinations
     else
 
         Y_act, NNdist_new = embedding_cycle_MDOP!(Y_act, counter, NNdist_old, M, Ys, τs, w,
@@ -281,7 +281,7 @@ corresponding to that maximum of maxima. In this first embedding cycle it also
 returns the time series number, which act as Y_act.
 """
 function choose_optimal_tau1(βs::Array{T, 2}, M::Int) where {T}
-    NN = size(βs,2)
+    NN = oldsize(βs,2)
     maxis = zeros(T, NN)
     max_idx = zeros(Int, NN)
     for i = 1:NN
@@ -303,7 +303,7 @@ maxima. It returns the index of this maximum as well as the time series number
 corresponding to that maximum of maxima.
 """
 function choose_optimal_tau2(βs::Array{T, 2}) where {T}
-    NN = size(βs,2)
+    NN = oldsize(βs,2)
     maxis = zeros(T, NN)
     max_idx = zeros(Int, NN)
     for i = 1:NN
@@ -413,7 +413,7 @@ considered in the computation of `L` (see [`uzal_cost`](@ref)). When this
 statistic reaches its global minimum the maximum delay value `τ_max` gets
 returned. When `s` is a multivariate `StateSpaceSet`, `τ_max` will becomputed for all
 timeseries of that StateSpaceSet and the maximum value will be returned. The returned
-`L`-statistic has size `(length(tw), size(s,2))`.
+`L`-statistic has size `(length(tw), oldsize(s,2))`.
 
 [^Nichkawde2013]: Nichkawde, Chetan (2013). [Optimal state-space reconstruction using derivatives on projected manifold. Physical Review E 87, 022905](https://doi.org/10.1103/PhysRevE.87.022905).
 [^Uzal2011]: Uzal, L. C., Grinblat, G. L., Verdes, P. F. (2011). [Optimal reconstruction of dynamical systems: A noise amplification approach. Physical Review E 84, 016223](https://doi.org/10.1103/PhysRevE.84.016223).
