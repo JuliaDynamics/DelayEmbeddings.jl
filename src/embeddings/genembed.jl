@@ -124,7 +124,7 @@ end
 
 function genembed(s, ge::GeneralizedEmbedding{D, W}) where {D, W}
     r = τrange(s, ge)
-    T = eltype(s)
+    T = eltype(eltype(s))
     X = W == Nothing ? T : promote_type(T, W)
     data = Vector{SVector{D, X}}(undef, length(r))
     @inbounds for (i, n) in enumerate(r)
